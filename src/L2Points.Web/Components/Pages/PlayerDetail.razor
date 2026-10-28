@@ -4,6 +4,7 @@
 @using L2Points.Domain.Time
 @using L2Points.Infrastructure.Services
 @using L2Points.Web.Components.Attendance
+@using L2Points.Web.Components.Jewels
 @using L2Points.Web.Components.Stats
 @using L2Points.Web.Formatting
 @using PlayerDetailData = L2Points.Infrastructure.Services.PlayerDetail
@@ -48,6 +49,28 @@ else
         <WeekSummaryCard Summary="_detail.Overall" Title="Celkově" PointsLabel="Body celkem" />
         <WeekSummaryCard Summary="_detail.CurrentWeek" Title="Aktuální týden" />
     </div>
+
+    <MudText Typo="Typo.h5" Class="mb-2">Šperky</MudText>
+    @if (_detail.Jewels.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">Zatím žádný šperk.</MudText>
+    }
+    else
+    {
+        <div class="l2p-pd-jewels mb-4">
+            @foreach (var jewel in _detail.Jewels)
+            {
+                <MudChip T="string" Variant="Variant.Outlined" Size="Size.Medium" Class="l2p-pd-jewel-chip">
+                    <JewelIcon Type="jewel.Type" Count="1" Size="24" />
+                    <span>@jewel.Type.Name</span>
+                    @if (jewel.Count > 1)
+                    {
+                        <strong>×@jewel.Count</strong>
+                    }
+                </MudChip>
+            }
+        </div>
+    }
 
     <MudText Typo="Typo.h5" Class="mb-2">Historie po týdnech</MudText>
     @if (_detail.History.Count == 0)

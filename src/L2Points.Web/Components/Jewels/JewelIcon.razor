@@ -1,0 +1,25 @@
+@using L2Points.Domain.Jewels
+@using L2Points.Web.Formatting
+
+@* One jewel type: its icon and, when the player holds more than one piece, a "×N" count. *@
+<span class="l2p-jewel" title="@Title">
+    <img src="@Type.ImagePath" alt="@Title" title="@Title" width="@Size" height="@Size" />
+    @if (Count > 1)
+    {
+        <span class="l2p-jewel-count">×@Count</span>
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public JewelType Type { get; set; } = default!;
+
+    [Parameter]
+    public int Count { get; set; } = 1;
+
+    /// <summary>Icon edge length in pixels.</summary>
+    [Parameter]
+    public int Size { get; set; } = 20;
+
+    private string Title => DisplayFormat.JewelTitle(Type.Name, Count);
+}

@@ -1,0 +1,34 @@
+@using L2Points.Domain.Jewels
+@using L2Points.Domain.Stats
+@using L2Points.Domain.Time
+@using L2Points.Web.Components.Jewels
+@using L2Points.Web.Formatting
+
+@* Sticky table cell (MudTd) with a player's nick (link to the detail), the "inactive" chip and the jewel icons.
+   Its styles are global (app.css): scoped CSS does not reach the td that MudTd renders. *@
+<MudTd Class="@CellClass">
+    <MudLink Href="@DisplayFormat.PlayerUrl(Player.UserId, Week)" Underline="Underline.Hover"
+             Color="@(Player.IsActive ? Color.Primary : Color.Inherit)">@Player.Nick</MudLink>
+    @if (!Player.IsActive)
+    {
+        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="l2p-nick-chip">neaktivní</MudChip>
+    }
+    <JewelIcons Jewels="Jewels" />
+</MudTd>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlayerInfo Player { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<PlayerJewel> Jewels { get; set; } = [];
+
+    /// <summary>Week the detail link is pinned to; null opens the current week.</summary>
+    [Parameter]
+    public Week? Week { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    private string CellClass => Class is null ? "l2p-nick-cell" : $"l2p-nick-cell {Class}";
+}

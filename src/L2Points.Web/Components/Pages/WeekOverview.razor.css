@@ -1,6 +1,6 @@
 /* Cells are rendered by MudBlazor components, so reach them via ::deep. */
 .l2p-wk ::deep th,
-.l2p-wk ::deep td {
+.l2p-wk ::deep td:not(.l2p-nick-cell) {
     white-space: nowrap;
 }
 
@@ -19,20 +19,6 @@
     color: var(--mud-palette-text-disabled);
 }
 
-/* Player column stays pinned to the left while the table scrolls horizontally. */
-.l2p-wk ::deep .l2p-wk-nick {
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    background: var(--mud-palette-surface);
-    border-right: 1px solid var(--mud-palette-lines-default);
-}
-
-.l2p-wk ::deep .l2p-wk-chip {
-    margin: 0 0 0 0.5rem;
-    height: 1.25rem;
-}
-
 .l2p-wk-event-head {
     display: flex;
     align-items: baseline;
@@ -49,20 +35,4 @@
 
 .l2p-wk-attendees ::deep .mud-chip {
     margin: 0;
-}
-
-@media (max-width: 959.98px) {
-    /* Long nicks wrap and the "inactive" chip drops below the nick. */
-    .l2p-wk ::deep .l2p-wk-nick {
-        min-width: 6rem;
-        max-width: 8rem;
-        white-space: normal;
-        overflow-wrap: anywhere;
-    }
-
-    .l2p-wk ::deep .l2p-wk-chip {
-        display: flex;
-        width: fit-content;
-        margin: 0.1rem 0 0;
-    }
 }

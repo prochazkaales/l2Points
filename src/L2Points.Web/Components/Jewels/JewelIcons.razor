@@ -1,0 +1,17 @@
+@using L2Points.Domain.Jewels
+
+@* A row of jewel icons (one per type held, with a count), or nothing when the player has none. *@
+@if (Jewels.Count > 0)
+{
+    <span class="l2p-jewels">
+        @foreach (var jewel in Jewels)
+        {
+            <JewelIcon Type="jewel.Type" Count="jewel.Count" />
+        }
+    </span>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<PlayerJewel> Jewels { get; set; } = [];
+}

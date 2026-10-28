@@ -34,4 +34,20 @@ public class DisplayFormatTests
         Assert.Equal("/players/a%2Fb%3Fc", DisplayFormat.PlayerUrl("a/b?c"));
         Assert.Equal("/players/abc?week=2026-10-26", DisplayFormat.PlayerUrl("abc", new Week(new DateOnly(2026, 10, 26))));
     }
+
+    [Theory]
+    [InlineData(1, "Ring of Baium")]
+    [InlineData(2, "Ring of Baium ×2")]
+    public void JewelTitle_adds_count_only_above_one(int count, string expected) =>
+        Assert.Equal(expected, DisplayFormat.JewelTitle("Ring of Baium", count));
+
+    [Theory]
+    [InlineData(0, "0 kusů")]
+    [InlineData(1, "1 kus")]
+    [InlineData(2, "2 kusy")]
+    [InlineData(4, "4 kusy")]
+    [InlineData(5, "5 kusů")]
+    [InlineData(22, "22 kusů")]
+    public void Pieces_czech_plural(int count, string expected) =>
+        Assert.Equal(expected, DisplayFormat.Pieces(count));
 }

@@ -246,3 +246,50 @@ h1:focus {
     color: var(--account-error-text);
     font-size: 0.8rem;
 }
+
+/* Player nick cell of the overview tables (PlayerNickCell): pinned to the left while the table scrolls horizontally.
+   Global because scoped CSS does not reach the td/th rendered by MudTd/MudTh. */
+.l2p-nick-cell {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    white-space: nowrap;
+    background: var(--l2p-row-bg, var(--mud-palette-surface));
+    border-right: 1px solid var(--mud-palette-lines-default);
+}
+
+td.l2p-nick-cell .l2p-nick-chip {
+    margin: 0 0 0 0.5rem;
+    height: 1.25rem;
+}
+
+.l2p-jewels {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.4rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+@media (max-width: 959.98px) {
+    /* Long nicks wrap; the "inactive" chip and the jewels drop below the nick. */
+    .l2p-nick-cell {
+        min-width: 6rem;
+        max-width: 8rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    td.l2p-nick-cell .l2p-nick-chip {
+        display: flex;
+        width: fit-content;
+        margin: 0.1rem 0 0;
+    }
+
+    .l2p-jewels {
+        display: flex;
+        width: fit-content;
+        margin: 0.2rem 0 0;
+    }
+}

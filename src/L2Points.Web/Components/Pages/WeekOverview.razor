@@ -36,7 +36,7 @@ else
         <MudTable T="LeaderboardRow" Items="_overview.Players" Dense="true" Elevation="0" Outlined="true"
                   Breakpoint="Breakpoint.None">
             <HeaderContent>
-                <MudTh Class="l2p-wk-nick">Hráč</MudTh>
+                <MudTh Class="l2p-nick-cell">Hráč</MudTh>
                 <MudTh Class="l2p-wk-col">Body</MudTh>
                 <MudTh Class="l2p-wk-col">Celkem</MudTh>
                 <MudTh Class="l2p-wk-col">@DisplayFormat.CategoryLabel(StatCategory.Normal)</MudTh>
@@ -45,14 +45,7 @@ else
                 <MudTh Class="l2p-wk-col">@DisplayFormat.CategoryLabel(StatCategory.CastleSiege)</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd Class="l2p-wk-nick">
-                    <MudLink Href="@DisplayFormat.PlayerUrl(context.Player.UserId, _week)" Underline="Underline.Hover"
-                             Color="@(context.Player.IsActive ? Color.Primary : Color.Inherit)">@context.Player.Nick</MudLink>
-                    @if (!context.Player.IsActive)
-                    {
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="l2p-wk-chip">neaktivní</MudChip>
-                    }
-                </MudTd>
+                <PlayerNickCell Player="context.Player" Jewels="_overview.Jewels.Of(context.Player.UserId)" Week="_week" />
                 <StatCells Stats="context.Week.Stats" Points="context.Week.Points" />
             </RowTemplate>
         </MudTable>

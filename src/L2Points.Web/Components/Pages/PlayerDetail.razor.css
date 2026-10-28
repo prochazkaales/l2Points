@@ -45,3 +45,19 @@
 .l2p-pd-grid-anchor {
     scroll-margin-top: 5rem;
 }
+
+.l2p-pd-jewels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.l2p-pd-jewels ::deep .l2p-pd-jewel-chip {
+    margin: 0;
+}
+
+.l2p-pd-jewels ::deep .mud-chip-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}

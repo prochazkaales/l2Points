@@ -1,0 +1,16 @@
+.l2p-jewel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    vertical-align: middle;
+}
+
+.l2p-jewel img {
+    display: block;
+}
+
+.l2p-jewel-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+}

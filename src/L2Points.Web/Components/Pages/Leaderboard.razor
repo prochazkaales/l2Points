@@ -1,4 +1,5 @@
 @page "/leaderboard"
+@using L2Points.Domain.Jewels
 @using L2Points.Domain.Stats
 @using L2Points.Domain.Time
 @using L2Points.Infrastructure.Services
@@ -52,7 +53,7 @@ else
               Breakpoint="Breakpoint.None" CustomHeader="true" RowClassFunc="RowClass">
         <HeaderContent>
             <MudTHeadRow Class="l2p-lb-groups">
-                <MudTh rowspan="2" Class="l2p-lb-nick">Hráč</MudTh>
+                <MudTh rowspan="2" Class="l2p-nick-cell">Hráč</MudTh>
                 <MudTh colspan="6" Class="l2p-lb-group l2p-lb-overall">Celkově</MudTh>
                 <MudTh colspan="6" Class="l2p-lb-group l2p-lb-week">Týden @DisplayFormat.WeekLabel(_week)</MudTh>
             </MudTHeadRow>
@@ -78,14 +79,7 @@ else
             </MudTHeadRow>
         </HeaderContent>
         <RowTemplate>
-            <MudTd Class="l2p-lb-nick">
-                <MudLink Href="@DisplayFormat.PlayerUrl(context.Player.UserId)" Underline="Underline.Hover"
-                         Color="@(context.Player.IsActive ? Color.Primary : Color.Inherit)">@context.Player.Nick</MudLink>
-                @if (!context.Player.IsActive)
-                {
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="l2p-lb-chip">neaktivní</MudChip>
-                }
-            </MudTd>
+            <PlayerNickCell Player="context.Player" Jewels="_jewels.Of(context.Player.UserId)" />
             <StatCells Stats="context.Overall.Stats" Points="context.Overall.Points" CellClass="l2p-lb-overall" />
             <StatCells Stats="context.Week.Stats" Points="context.Week.Points" CellClass="l2p-lb-week" />
         </RowTemplate>
@@ -115,6 +109,7 @@ else
     private readonly CancellationTokenSource _disposed = new();
 
     private IReadOnlyList<LeaderboardRow>? _rows;
+    private JewelsByPlayer _jewels = JewelsByPlayer.Empty;
     private DateOnly _today;
     private Week _week;
     private bool _includeInactive;
@@ -206,10 +201,11 @@ else
         _error = false;
         try
         {
-            var rows = (await Overview.GetLeaderboardAsync(week, _includeInactive, _disposed.Token)).Rows;
+            var result = await Overview.GetLeaderboardAsync(week, _includeInactive, _disposed.Token);
             if (version == _version)
             {
-                _rows = rows;
+                _rows = result.Rows;
+                _jewels = result.Jewels;
             }
         }
         catch (OperationCanceledException)

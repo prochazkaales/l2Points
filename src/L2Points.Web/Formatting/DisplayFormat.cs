@@ -49,5 +49,16 @@ public static class DisplayFormat
         return week is null ? url : $"{url}?week={week.Value.Monday:yyyy-MM-dd}";
     }
 
+    /// <summary>Label of a jewel icon: the name, with " ×N" when the player holds more than one piece.</summary>
+    public static string JewelTitle(string name, int count) => count > 1 ? $"{name} ×{count}" : name;
+
+    /// <summary>Czech count of pieces ("1 kus", "2 kusy", "5 kusů").</summary>
+    public static string Pieces(int count) => count switch
+    {
+        1 => "1 kus",
+        >= 2 and <= 4 => $"{count} kusy",
+        _ => $"{count} kusů",
+    };
+
     private static string ShortDate(DateOnly d) => $"{d.Day}. {d.Month}.";
 }
