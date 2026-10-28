@@ -45,6 +45,24 @@ public class PlayerStatsServiceTests
     }
 
     [Fact]
+    public async Task Week_summary_ignores_attendance_before_tracking_start()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
+        await using var provider = TestServices.Create(timeProvider: time);
+        await TestData.SeedCatalogAsync(provider);
+        var player = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        await TestData.AddAttendanceAsync(provider, player.Id, "Baium", new DateOnly(2026, 10, 31));
+        await TestData.AddAttendanceAsync(provider, player.Id, "CastleSiege", new DateOnly(2026, 11, 1));
+        var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        Assert.Equal(CatalogChangeResult.Ok, await new CatalogAdminService(factory).SetTrackingStartAsync(new DateOnly(2026, 11, 1)));
+        var (stats, _) = CreateServices(provider, time);
+
+        var summary = await stats.GetWeekSummaryAsync(player.Id, Week.Containing(Monday));
+
+        Assert.Equal(1, summary.Points);
+    }
+
+    [Fact]
     public async Task Future_week_has_no_stats()
     {
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-10-28T10:00:00Z"));

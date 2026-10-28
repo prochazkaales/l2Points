@@ -7,6 +7,9 @@ namespace L2Points.Infrastructure.Persistence;
 
 public static class CatalogQueries
 {
+    /// <summary>Storage format of the tracking start date in AppSettings.</summary>
+    public const string TrackingStartFormat = "yyyy-MM-dd";
+
     /// <summary>Whole catalog including inactive activities, ordered by SortOrder.</summary>
     public static async Task<IReadOnlyList<Activity>> LoadActivitiesAsync(this AppDbContext db, CancellationToken ct = default) =>
         await db.Activities
@@ -27,6 +30,6 @@ public static class CatalogQueries
             .Select(s => s.Value)
             .SingleOrDefaultAsync(ct);
 
-        return DateOnly.ParseExact(value ?? DefaultCatalog.TrackingStartDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return DateOnly.ParseExact(value ?? DefaultCatalog.TrackingStartDate, TrackingStartFormat, CultureInfo.InvariantCulture);
     }
 }

@@ -25,7 +25,7 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
         var window = week.Range;
         var attendances = await db.Attendances
             .AsNoTracking()
-            .Where(a => a.UserId == userId && a.Date >= window.From && a.Date <= window.To)
+            .Where(a => a.UserId == userId && a.Date >= window.From && a.Date >= trackingStart && a.Date <= window.To)
             .Select(a => new AttendanceEntry(a.ActivityId, a.Date, a.Slot))
             .ToListAsync(ct);
 
