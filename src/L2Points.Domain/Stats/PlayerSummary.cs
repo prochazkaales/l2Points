@@ -1,4 +1,7 @@
 namespace L2Points.Domain.Stats;
 
 /// <summary>Points and participation of one player over a window.</summary>
-public sealed record PlayerSummary(int Points, ParticipationStats Stats);
+public sealed record PlayerSummary(int Points, ParticipationStats Stats)
+{
+    public static PlayerSummary Empty { get; } = new(0, ParticipationStats.Empty);
+}
