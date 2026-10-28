@@ -27,4 +27,11 @@ public class DisplayFormatTests
     [InlineData(2026, 12, 28, "28. 12. 2026 – 3. 1. 2027")]
     public void WeekLabel_same_and_cross_year(int year, int month, int day, string expected) =>
         Assert.Equal(expected, DisplayFormat.WeekLabel(new Week(new DateOnly(year, month, day))));
+
+    [Fact]
+    public void PlayerUrl_escapes_id_and_appends_week()
+    {
+        Assert.Equal("/players/a%2Fb%3Fc", DisplayFormat.PlayerUrl("a/b?c"));
+        Assert.Equal("/players/abc?week=2026-10-26", DisplayFormat.PlayerUrl("abc", new Week(new DateOnly(2026, 10, 26))));
+    }
 }

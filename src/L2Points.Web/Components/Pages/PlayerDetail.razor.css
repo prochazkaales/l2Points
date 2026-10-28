@@ -1,0 +1,42 @@
+.l2p-pd-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.l2p-pd-summaries {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+    gap: 1rem;
+}
+
+/* Cells are rendered by MudBlazor components, so reach them via ::deep. */
+.l2p-pd ::deep th,
+.l2p-pd ::deep td {
+    white-space: nowrap;
+}
+
+.l2p-pd ::deep th.l2p-pd-col,
+.l2p-pd ::deep td.l2p-stat-points,
+.l2p-pd ::deep td.l2p-stat-pct {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.l2p-pd ::deep td.l2p-stat-points {
+    font-weight: 700;
+}
+
+.l2p-pd ::deep .l2p-stat-empty {
+    color: var(--mud-palette-text-disabled);
+}
+
+/* Week column stays pinned to the left while the table scrolls horizontally. */
+.l2p-pd ::deep .l2p-pd-week {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--mud-palette-surface);
+    border-right: 1px solid var(--mud-palette-lines-default);
+}

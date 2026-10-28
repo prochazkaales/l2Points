@@ -77,7 +77,7 @@ else
         </HeaderContent>
         <RowTemplate>
             <MudTd Class="l2p-lb-nick">
-                <MudLink Href="@($"/players/{context.Player.UserId}")" Underline="Underline.Hover"
+                <MudLink Href="@DisplayFormat.PlayerUrl(context.Player.UserId)" Underline="Underline.Hover"
                          Color="@(context.Player.IsActive ? Color.Primary : Color.Inherit)">@context.Player.Nick</MudLink>
                 @if (!context.Player.IsActive)
                 {

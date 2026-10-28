@@ -28,17 +28,13 @@
 
     private string Css(string own) => CellClass is null ? own : $"{own} {CellClass}";
 
+    // A native title (not MudTooltip) keeps the row light: ten popovers per row would be too heavy on long tables.
     private static RenderFragment Pct(CategoryStat stat) => builder =>
     {
-        builder.OpenComponent<MudTooltip>(0);
-        builder.AddAttribute(1, nameof(MudTooltip.Text), $"{stat.Attended} / {stat.Expected}");
-        builder.AddAttribute(2, nameof(MudTooltip.ChildContent), (RenderFragment)(inner =>
-        {
-            inner.OpenElement(0, "span");
-            inner.AddAttribute(1, "class", stat.Percent is null ? "l2p-stat-empty" : "l2p-stat-value");
-            inner.AddContent(2, DisplayFormat.Percent(stat.Percent));
-            inner.CloseElement();
-        }));
-        builder.CloseComponent();
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", stat.Percent is null ? "l2p-stat-empty" : "l2p-stat-value");
+        builder.AddAttribute(2, "title", $"{stat.Attended} / {stat.Expected}");
+        builder.AddContent(3, DisplayFormat.Percent(stat.Percent));
+        builder.CloseElement();
     };
 }

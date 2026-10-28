@@ -4,7 +4,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 
 - Spec (zdroj pravdy pro doménová pravidla): `docs/superpowers/specs/2026-10-28-l2points-design.md`
 - Roadmapa částí implementace: `docs/superpowers/plans/2026-10-28-00-roadmap.md`
-- Stav: hotové části 1 až 3 (kostra, doména a persistence, stránka Můj týden). Další stránky přijdou v částech 4 až 6.
+- Stav: hotové části 1 až 4 (kostra, doména a persistence, stránka Můj týden, přehledy: Přehled, Týden – všichni, Detail hráče). Další stránky přijdou v částech 5 a 6.
 
 ## Struktura solution
 
@@ -13,7 +13,9 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 - `src/L2Points.Domain` – entity, enumy a čistá logika, bez závislosti na EF Core, UI i `AppUser` (viz sekce Doména a persistence).
 - `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `Configurations/`, `ReferenceDataSeeder`, `CatalogQueries`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`), aplikační služby (`Services/`: `AttendanceService` – týdenní mřížka a změna účasti s kontrolou pravidel úprav na serveru, `PlayerStatsService` – body a procenta hráče za týden), DI přes `AddInfrastructure`.
 - `src/L2Points.Web` – Blazor Web App (MudBlazor 9.x), `Program.cs`, stránky, layout; aplikační služby jen volá. Účtové stránky (`Components/Account`: `/login`, `/profile`) jsou statické SSR.
-  - Znovupoužitelné komponenty jsou v `Components/Attendance`: `WeekGridView` (mřížka, jen zobrazení a události), `EditableWeekGrid` (načtení, ukládání a obnova mřížky ze serveru pro cílového hráče; použije i část 6), `WeekSummaryCard` (body a procenta), `WeekNavigator` (přepínání týdnů). Formátování textů pro UI je ve `Formatting/DisplayFormat`.
+  - Znovupoužitelné komponenty jsou v `Components/Attendance`: `WeekGridView` (mřížka, jen zobrazení a události), `EditableWeekGrid` (načtení, ukládání a obnova mřížky ze serveru pro cílového hráče; použije i část 6), `WeekSummaryCard` (body a procenta), `WeekNavigator` (přepínání týdnů). Formátování textů pro UI a odkazy na detail hráče (`PlayerUrl`, id escapované) jsou ve `Formatting/DisplayFormat`.
+  - Stránky přehledů (část 4): `/leaderboard` (Přehled – žebříček celkově a za týden, `?week=`, `?inactive=1`), `/week` (Týden – všichni: tabulka hráčů a události týdne, `?week=`), `/players/{Id}` (Detail hráče: souhrny, historie po týdnech, jen čtecí mřížka účasti vybraného týdne, `?week=`). Data berou jen přes `OverviewService` a `PlayerStatsService`, mřížku přes `AttendanceService`.
+  - `Components/Stats/StatCells` vykreslí buňky tabulky (body + pět procent) pro jednoho hráče a období; poměr „započteno / očekáváno“ je v nativním `title` (ne `MudTooltip`, na dlouhých tabulkách by bylo desítky popoverů). Sloupec s nickem je přilepený vlevo přes scoped CSS (`::deep`) kvůli vodorovnému scrollu na mobilu.
 - `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
 - `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
 
@@ -46,7 +48,7 @@ Konfigurace: `ConnectionStrings__Default`, `Admin__UserName`, `Admin__Password`,
 
 - Jazyk: UI česky; kód, komentáře, názvy proměnných a větví, commit messages anglicky. Komunikace s uživatelem česky.
 - Časy se zobrazují v Europe/Prague, rozpis serveru se ukládá v UTC a převádí se. Aktuální čas jen přes `TimeProvider` (nikdy `DateTime.Now`/`UtcNow`), aby šla logika testovat.
-- Účtové stránky (login, profil) jsou statické SSR kvůli cookie, ostatní stránky Interactive Server. Výchozí autorizace je „přihlášený uživatel“, anonymní jsou jen login, chybová stránka (Error), `/health` a statické soubory.
+- Účtové stránky (login, profil) jsou statické SSR kvůli cookie, ostatní stránky Interactive Server. Prerender je vypnutý (`InteractiveServerRenderMode(prerender: false)` v `App.razor`): stránky načítají data jen jednou přes circuit, ne dvakrát (prerender + interaktivní start), a nic se neblikne se starými daty. Výchozí autorizace je „přihlášený uživatel“, anonymní jsou jen login, chybová stránka (Error), `/health` a statické soubory.
 - UI stavět z MudBlazor komponent, podporovat dark/light a mobil.
 - Přístup k DB: interaktivní komponenty a aplikační služby používají `IDbContextFactory<AppDbContext>` (krátce žijící kontext na jednu operaci) nebo `OwningComponentBase`, nikdy `AppDbContext` injektovaný přímo do komponenty (v Blazor circuitu by žil celé spojení). Explicitní transakce jen přes `Database.CreateExecutionStrategy().ExecuteAsync(...)` kvůli `EnableRetryOnFailure`. `UserManager` v interaktivních komponentách je scoped na circuit, proto v admin stránkách (část 6) vytvářet scope na každou operaci.
 - Testy běží na SQLite in-memory a neodhalí rozdíly proti SQL Serveru (collation – unikátní Nick je na SQL Serveru case-insensitive, typy). Unikátnost nicku proto validovat case-insensitive i v aplikačním kódu (část 6).

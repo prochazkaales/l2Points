@@ -42,5 +42,12 @@ public static class DisplayFormat
         _ => c.ToString(),
     };
 
+    /// <summary>Link to a player's detail page, optionally pinned to a week. The id is escaped for use in a path.</summary>
+    public static string PlayerUrl(string userId, Week? week = null)
+    {
+        var url = $"/players/{Uri.EscapeDataString(userId)}";
+        return week is null ? url : $"{url}?week={week.Value.Monday:yyyy-MM-dd}";
+    }
+
     private static string ShortDate(DateOnly d) => $"{d.Day}. {d.Month}.";
 }

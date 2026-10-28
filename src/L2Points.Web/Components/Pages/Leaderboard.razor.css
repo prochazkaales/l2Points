@@ -86,6 +86,7 @@
 
     /* Long nicks wrap and the "inactive" chip drops below the nick. */
     .l2p-lb ::deep .l2p-lb-nick {
+        min-width: 6rem;
         max-width: 8rem;
         white-space: normal;
         overflow-wrap: anywhere;

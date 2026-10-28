@@ -1,6 +1,189 @@
 @page "/week"
+@using L2Points.Domain.Activities
+@using L2Points.Domain.Stats
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Attendance
+@using L2Points.Web.Components.Stats
+@using L2Points.Web.Formatting
+@using WeekOverviewData = L2Points.Infrastructure.Services.WeekOverview
+@inject OverviewService Overview
+@inject NavigationManager Navigation
+@inject TimeProvider Time
+@inject ILogger<WeekOverview> Logger
+@implements IDisposable
 
 <PageTitle>Týden – všichni – L2Points</PageTitle>
 
 <MudText Typo="Typo.h4" GutterBottom="true">Týden – všichni</MudText>
-<MudAlert Severity="Severity.Info">Připravujeme – část 4</MudAlert>
+
+<div class="mb-3">
+    <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
+</div>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Týden se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadAsync">Zkusit znovu</MudButton>
+}
+else if (_overview is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    <div class="l2p-wk">
+        <MudTable T="LeaderboardRow" Items="_overview.Players" Dense="true" Elevation="0" Outlined="true"
+                  Breakpoint="Breakpoint.None">
+            <HeaderContent>
+                <MudTh Class="l2p-wk-nick">Hráč</MudTh>
+                <MudTh Class="l2p-wk-col">Body</MudTh>
+                <MudTh Class="l2p-wk-col">Celkem</MudTh>
+                <MudTh Class="l2p-wk-col">@DisplayFormat.CategoryLabel(StatCategory.Normal)</MudTh>
+                <MudTh Class="l2p-wk-col">@DisplayFormat.CategoryLabel(StatCategory.Evening)</MudTh>
+                <MudTh Class="l2p-wk-col">@DisplayFormat.CategoryLabel(StatCategory.Morning)</MudTh>
+                <MudTh Class="l2p-wk-col">@DisplayFormat.CategoryLabel(StatCategory.CastleSiege)</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd Class="l2p-wk-nick">
+                    <MudLink Href="@DisplayFormat.PlayerUrl(context.Player.UserId, _week)" Underline="Underline.Hover"
+                             Color="@(context.Player.IsActive ? Color.Primary : Color.Inherit)">@context.Player.Nick</MudLink>
+                    @if (!context.Player.IsActive)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="l2p-wk-chip">neaktivní</MudChip>
+                    }
+                </MudTd>
+                <StatCells Stats="context.Week.Stats" Points="context.Week.Points" />
+            </RowTemplate>
+        </MudTable>
+    </div>
+
+    <MudText Typo="Typo.h5" Class="mt-6 mb-2">Události týdne</MudText>
+
+    @if (_days.Count == 0)
+    {
+        <MudAlert Severity="Severity.Normal">Tento týden zatím nikdo nic nezapsal.</MudAlert>
+    }
+    else
+    {
+        @foreach (var day in _days)
+        {
+            <MudText Typo="Typo.subtitle1" Class="mt-3 mb-1">@DisplayFormat.DayHeader(day.Date)</MudText>
+            @foreach (var ev in day.Events)
+            {
+                <MudPaper Outlined="true" Class="pa-3 mb-2">
+                    <div class="l2p-wk-event-head">
+                        <MudText Typo="Typo.subtitle2">@EventTitle(ev)</MudText>
+                        <MudText Typo="Typo.caption">@Count(ev.Attendees.Count)</MudText>
+                    </div>
+                    <div class="l2p-wk-attendees">
+                        @foreach (var attendee in ev.Attendees)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                                     Href="@DisplayFormat.PlayerUrl(attendee.UserId, _week)">@attendee.Nick</MudChip>
+                        }
+                    </div>
+                </MudPaper>
+            }
+        }
+    }
+}
+
+@code {
+    private sealed record Day(DateOnly Date, IReadOnlyList<WeekEvent> Events);
+
+    private readonly CancellationTokenSource _disposed = new();
+
+    private WeekOverviewData? _overview;
+    private IReadOnlyList<Day> _days = [];
+    private DateOnly _today;
+    private Week _week;
+    private bool _loadedOnce;
+    private bool _error;
+    // Only the result of the latest request is applied.
+    private int _version;
+
+    [SupplyParameterFromQuery(Name = "week")]
+    public string? WeekParameter { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _today = AppTime.TodayInPrague(Time);
+        var week = Week.ParseOrCurrent(WeekParameter, _today);
+        var changed = !_loadedOnce || week != _week;
+        _week = week;
+
+        if (!changed)
+        {
+            return;
+        }
+
+        _loadedOnce = true;
+        _overview = null;
+        await LoadAsync();
+    }
+
+    private void OnWeekChanged(Week week)
+    {
+        Navigation.NavigateTo(week == Week.Containing(_today) ? "/week" : $"/week?week={week.Monday:yyyy-MM-dd}");
+    }
+
+    private static string EventTitle(WeekEvent ev)
+    {
+        if (ev.Activity.Category != ActivityCategory.ChaoticEpic)
+        {
+            return ev.Activity.Name;
+        }
+
+        var title = $"{ev.Activity.Name} – {DisplayFormat.SlotLabel(ev.Slot)}";
+        return ev.TimeUtc is { } time
+            ? $"{title}, {AppTime.ToPragueTime(ev.Date, time):HH:mm}"
+            : title;
+    }
+
+    private static string Count(int count) => count switch
+    {
+        1 => "1 účastník",
+        >= 2 and <= 4 => $"{count} účastníci",
+        _ => $"{count} účastníků",
+    };
+
+    private async Task LoadAsync()
+    {
+        var version = ++_version;
+        var week = _week;
+        _error = false;
+        try
+        {
+            var overview = await Overview.GetWeekOverviewAsync(week, _disposed.Token);
+            if (version == _version)
+            {
+                _overview = overview;
+                _days = overview.Events
+                    .GroupBy(e => e.Date)
+                    .OrderBy(g => g.Key)
+                    .Select(g => new Day(g.Key, g.ToList()))
+                    .ToList();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading the overview of week {Week} failed", week.Monday);
+            if (version == _version)
+            {
+                _overview = null;
+                _error = true;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

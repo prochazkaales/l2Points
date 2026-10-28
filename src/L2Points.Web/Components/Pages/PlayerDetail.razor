@@ -1,11 +1,224 @@
 @page "/players/{Id}"
+@using L2Points.Domain.Attendances
+@using L2Points.Domain.Stats
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Attendance
+@using L2Points.Web.Components.Stats
+@using L2Points.Web.Formatting
+@using PlayerDetailData = L2Points.Infrastructure.Services.PlayerDetail
+@inject PlayerStatsService PlayerStats
+@inject AttendanceService Attendance
+@inject NavigationManager Navigation
+@inject TimeProvider Time
+@inject ILogger<PlayerDetail> Logger
+@implements IDisposable
 
-<PageTitle>Detail hráče – L2Points</PageTitle>
+<PageTitle>@(_detail is null ? "Detail hráče" : _detail.Player.Nick) – L2Points</PageTitle>
 
-<MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
-<MudAlert Severity="Severity.Info">Připravujeme – část 4</MudAlert>
+@if (_detailError)
+{
+    <MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
+    <MudAlert Severity="Severity.Error" Class="mb-3">Detail hráče se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadDetailAsync">Zkusit znovu</MudButton>
+}
+else if (!_detailLoaded)
+{
+    <MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else if (_detail is null)
+{
+    <MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
+    <MudAlert Severity="Severity.Warning" Class="mb-3">Hráč nenalezen.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/leaderboard">Zpět na Přehled</MudButton>
+}
+else
+{
+    <div class="l2p-pd-head mb-3">
+        <MudText Typo="Typo.h4">@_detail.Player.Nick</MudText>
+        @if (!_detail.Player.IsActive)
+        {
+            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
+        }
+    </div>
+
+    <div class="l2p-pd-summaries mb-4">
+        <WeekSummaryCard Summary="_detail.Overall" Title="Celkově" PointsLabel="Body celkem" />
+        <WeekSummaryCard Summary="_detail.CurrentWeek" Title="Aktuální týden" />
+    </div>
+
+    <MudText Typo="Typo.h5" Class="mb-2">Historie po týdnech</MudText>
+    @if (_detail.History.Count == 0)
+    {
+        <MudAlert Severity="Severity.Normal" Class="mb-4">Zatím tu žádná historie není.</MudAlert>
+    }
+    else
+    {
+        <div class="l2p-pd mb-4">
+            <MudTable T="WeekHistoryRow" Items="_detail.History" Dense="true" Elevation="0" Outlined="true"
+                      Breakpoint="Breakpoint.None">
+                <HeaderContent>
+                    <MudTh Class="l2p-pd-week">Týden</MudTh>
+                    <MudTh Class="l2p-pd-col">Body</MudTh>
+                    <MudTh Class="l2p-pd-col">Celkem</MudTh>
+                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Normal)</MudTh>
+                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Evening)</MudTh>
+                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Morning)</MudTh>
+                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.CastleSiege)</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Class="l2p-pd-week">
+                        <MudLink Href="@WeekHref(context.Week)" Underline="Underline.Hover"
+                                 Color="Color.Primary">@DisplayFormat.WeekLabel(context.Week)</MudLink>
+                    </MudTd>
+                    <StatCells Stats="context.Summary.Stats" Points="context.Summary.Points" />
+                </RowTemplate>
+            </MudTable>
+        </div>
+    }
+
+    <MudText Typo="Typo.h5" Class="mb-2">Účast v týdnu</MudText>
+    <div class="mb-3">
+        <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
+    </div>
+
+    @if (_gridError)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-3">Týden se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadGridAsync">Zkusit znovu</MudButton>
+    }
+    else if (_grid is null)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+    }
+    else
+    {
+        <WeekGridView Grid="_grid" ReadOnly="true" Today="_today" />
+    }
+}
 
 @code {
+    private readonly CancellationTokenSource _disposed = new();
+
+    private PlayerDetailData? _detail;
+    private bool _detailLoaded;
+    private bool _detailError;
+    private WeekGrid? _grid;
+    private bool _gridError;
+    private DateOnly _today;
+    private Week _week;
+    private string? _loadedId;
+    private Week? _loadedGridWeek;
+    // Only the result of the latest request is applied.
+    private int _detailVersion;
+    private int _gridVersion;
+
     [Parameter]
     public string Id { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "week")]
+    public string? WeekParameter { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _today = AppTime.TodayInPrague(Time);
+        var week = Week.ParseOrCurrent(WeekParameter, _today);
+        var idChanged = _loadedId != Id;
+        var weekChanged = _loadedGridWeek != week;
+        _week = week;
+
+        if (idChanged)
+        {
+            _loadedId = Id;
+            _detail = null;
+            _detailLoaded = false;
+            _grid = null;
+            _loadedGridWeek = week;
+            await LoadDetailAsync();
+            // Nothing to show a grid for when the player does not exist.
+            if (_detail is not null)
+            {
+                await LoadGridAsync();
+            }
+        }
+        else if (weekChanged)
+        {
+            _loadedGridWeek = week;
+            _grid = null;
+            if (_detail is not null)
+            {
+                await LoadGridAsync();
+            }
+        }
+    }
+
+    private string WeekHref(Week week) => DisplayFormat.PlayerUrl(Id, week);
+
+    private void OnWeekChanged(Week week) => Navigation.NavigateTo(DisplayFormat.PlayerUrl(Id, week));
+
+    private async Task LoadDetailAsync()
+    {
+        var version = ++_detailVersion;
+        var id = Id;
+        _detailError = false;
+        try
+        {
+            var detail = await PlayerStats.GetPlayerDetailAsync(id, _disposed.Token);
+            if (version == _detailVersion)
+            {
+                _detail = detail;
+                _detailLoaded = true;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading the detail of player {PlayerId} failed", id);
+            if (version == _detailVersion)
+            {
+                _detail = null;
+                _detailError = true;
+            }
+        }
+    }
+
+    private async Task LoadGridAsync()
+    {
+        var version = ++_gridVersion;
+        var id = Id;
+        var week = _week;
+        _gridError = false;
+        try
+        {
+            // The grid is read-only here, so the admin edit window is irrelevant.
+            var grid = await Attendance.GetWeekGridAsync(id, week, isAdmin: false, _disposed.Token);
+            if (version == _gridVersion)
+            {
+                _grid = grid;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading the attendance grid of player {PlayerId} for week {Week} failed", id, week.Monday);
+            if (version == _gridVersion)
+            {
+                _grid = null;
+                _gridError = true;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
 }
