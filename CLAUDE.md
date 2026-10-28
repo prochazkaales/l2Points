@@ -4,17 +4,17 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 
 - Spec (zdroj pravdy pro doménová pravidla): `docs/superpowers/specs/2026-10-28-l2points-design.md`
 - Roadmapa částí implementace: `docs/superpowers/plans/2026-10-28-00-roadmap.md`
-- Stav: hotová část 1 (kostra). Doménová logika a stránky přijdou v částech 2 až 6.
+- Stav: hotová část 1 (kostra) a část 2 (doména a persistence). Stránky přijdou v částech 3 až 6.
 
 ## Struktura solution
 
 `L2Points.slnx`, .NET 10 (`global.json`: SDK 10.0.204, rollForward latestMinor), společné nastavení v `Directory.Build.props` (Nullable, ImplicitUsings).
 
-- `src/L2Points.Domain` – entity, enumy a čistá logika (rozpis týdne, body, %, okno úprav). Bez závislosti na EF Core a UI. Zatím prázdný.
-- `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`), DI přes `AddInfrastructure`.
+- `src/L2Points.Domain` – entity, enumy a čistá logika, bez závislosti na EF Core, UI i `AppUser` (viz sekce Doména a persistence).
+- `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `Configurations/`, `ReferenceDataSeeder`, `CatalogQueries`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`), DI přes `AddInfrastructure`.
 - `src/L2Points.Web` – Blazor Web App (MudBlazor 9.x), `Program.cs`, stránky, layout, aplikační služby. Účtové stránky (`Components/Account`: `/login`, `/profile`) jsou statické SSR.
-- `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika (zatím bez testů).
-- `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed).
+- `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
+- `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
 
 ## Příkazy
 
@@ -66,6 +66,17 @@ Detail a výjimky viz spec, tady jen orientace.
 - Rozpis chaotic, body a očekávané počty jsou v DB a edituje je admin, ne v kódu.
 - Role Admin a Player, admin je zároveň hráč. Hesla generuje aplikace, žádná registrace ani e-maily.
 
+## Doména a persistence
+
+- Kde je logika: `src/L2Points.Domain` – `Time` (`AppTime`, `Week`, `DateRange`), `Activities` (entity, `DefaultCatalog`), `Attendances` (`Attendance`, `EditWindow`), `Schedule` (rozpis), `Stats` (body a procenta), `Settings`. Čisté statické kalkulátory bez I/O, čas dostávají parametrem nebo přes `TimeProvider`. Domain nezná `AppUser`: FK `Attendance.UserId` → `AspNetUsers` je nakonfigurovaná v Infrastructure (`HasOne<AppUser>()`).
+- `EventSlot` (`None`, `Evening`, `Morning`) je součástí klíče účasti. Aktivity bez slotů (normal epic, CS) používají `None`, chaotic `Evening`/`Morning`. Ukládá se jako `int`, hodnoty enumů neměnit.
+- Všechna `DateTime` v DB jsou UTC a čtou se s `DateTimeKind.Utc` (`UtcDateTimeConverter` registrovaný přes `ConfigureConventions`). Kalendářní dny jsou `DateOnly`, časy spawnů `TimeOnly` v UTC.
+- Seed katalogu běží za běhu (`ReferenceDataSeeder` po migraci a `IdentitySeeder`), ne přes `HasData`. Přidá jen chybějící aktivity (podle `Code`) a chybějící nastavení, existující hodnoty (body, očekávané počty, rozpis) nikdy nepřepisuje, protože je edituje admin.
+- Body vs. procenta: body = součet bodových hodnot účastí podle aktuálních hodnot aktivity (případně override v `ActivitySlotPoints`), bez stropu. Procenta = započtené účasti ÷ očekávané výskyty, u aktivity za týden nejvýš do očekávaného počtu. Počítá se v `Stats`, ne v DB ani UI.
+- Přidání nové aktivity: přidat ji do `DefaultCatalog.CreateActivities()` s unikátním `Code` (max 32) a novým `SortOrder`; při dalším startu ji seed doplní i do existující DB. Nový `ScheduleType` vyžaduje úpravu `ScheduleCalculator` a testů. Změna už existující aktivity v katalogu se do seedované DB nepromítne, ta se mění přes admin UI.
+- Globální začátek evidence je v `AppSettings` (`TrackingStartDate`, `yyyy-MM-dd`), čte se přes `CatalogQueries.GetTrackingStartAsync`; katalog přes `CatalogQueries.LoadActivitiesAsync`.
+- `IdentitySeeder` nastavuje adminovi `ActiveFrom` na pondělí aktuálního týdne v Europe/Prague.
+
 ## Workflow
 
 Superpowers: spec → plán části → implementace. Každá část z roadmapy má vlastní plán v `docs/superpowers/plans/` (psaný až podle aktuálního stavu kódu). Pracuje se na feature větvích, malé úpravy lze bez plného procesu.
@@ -74,5 +85,4 @@ Superpowers: spec → plán části → implementace. Každá část z roadmapy 
 
 - Deaktivace hráče musí volat `UpdateSecurityStampAsync` a Blazor circuity potřebují `RevalidatingServerAuthenticationStateProvider`, jinak běžící spojení deaktivaci nepoznají (část 6).
 - Data Protection klíče se ukládají do DB nešifrované (část 7, Azure: zvážit Key Vault / ochranu klíčů).
-- `IdentitySeeder` nastavuje `ActiveFrom` na dnešní datum v UTC, část 2 to upřesní na pondělí týdne v Europe/Prague.
 - Dockerfile a docker-compose zatím nebyly spuštěny.

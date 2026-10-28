@@ -13,5 +13,6 @@ public static class DatabaseInitializer
         await db.Database.MigrateAsync(ct);
 
         await scope.ServiceProvider.GetRequiredService<IdentitySeeder>().SeedAsync(ct);
+        await scope.ServiceProvider.GetRequiredService<ReferenceDataSeeder>().SeedAsync(ct);
     }
 }

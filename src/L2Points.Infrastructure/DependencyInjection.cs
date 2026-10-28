@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
         services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.SectionName));
         services.AddScoped<IdentitySeeder>();
+        services.AddScoped<ReferenceDataSeeder>();
 
         return services;
     }

@@ -1,3 +1,6 @@
+using L2Points.Domain.Activities;
+using L2Points.Domain.Attendances;
+using L2Points.Domain.Settings;
 using L2Points.Infrastructure.Identity;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -10,6 +13,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
+    public DbSet<Activity> Activities => Set<Activity>();
+
+    public DbSet<ActivitySpawn> ActivitySpawns => Set<ActivitySpawn>();
+
+    public DbSet<ActivitySlotPoints> ActivitySlotPoints => Set<ActivitySlotPoints>();
+
+    public DbSet<Attendance> Attendances => Set<Attendance>();
+
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+    }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -19,5 +39,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             user.Property(u => u.Nick).HasMaxLength(AppUser.NickMaxLength).IsRequired();
             user.HasIndex(u => u.Nick).IsUnique();
         });
+
+        builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

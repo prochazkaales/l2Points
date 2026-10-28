@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace L2Points.Infrastructure.Tests;
 
@@ -99,6 +100,21 @@ public class IdentitySeederTests
         Assert.NotNull(user);
         Assert.True(await verifyManager.IsInRoleAsync(user, Roles.Admin));
         Assert.True(await verifyManager.IsInRoleAsync(user, Roles.Player));
+    }
+
+    [Fact]
+    public async Task Seed_sets_active_from_to_monday_in_prague()
+    {
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero));
+        await using var provider = TestServices.Create(FullAdmin(), timeProvider: time);
+
+        await SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var user = await userManager.FindByNameAsync("admin");
+        Assert.NotNull(user);
+        Assert.Equal(new DateOnly(2026, 10, 26), user.ActiveFrom);
     }
 
     [Fact]
