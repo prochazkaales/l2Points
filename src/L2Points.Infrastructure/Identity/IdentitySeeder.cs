@@ -11,6 +11,8 @@ public class IdentitySeeder(
 {
     public async Task SeedAsync(CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
+
         foreach (var role in new[] { Roles.Admin, Roles.Player })
         {
             if (await roleManager.RoleExistsAsync(role))
@@ -36,18 +38,30 @@ public class IdentitySeeder(
                 "No admin account exists. Set Admin__UserName, Admin__Password and Admin__Nick.");
         }
 
-        var now = timeProvider.GetUtcNow();
-        var admin = new AppUser
+        // Self-healing: a previous run may have created the user but failed before assigning roles.
+        var admin = await userManager.FindByNameAsync(options.UserName);
+        if (admin is null)
         {
-            UserName = options.UserName,
-            Nick = options.Nick,
-            IsActive = true,
-            ActiveFrom = DateOnly.FromDateTime(now.UtcDateTime),
-            CreatedAt = now.UtcDateTime,
-        };
+            var now = timeProvider.GetUtcNow();
+            admin = new AppUser
+            {
+                UserName = options.UserName,
+                Nick = options.Nick,
+                IsActive = true,
+                ActiveFrom = DateOnly.FromDateTime(now.UtcDateTime),
+                CreatedAt = now.UtcDateTime,
+            };
 
-        ThrowIfFailed(await userManager.CreateAsync(admin, options.Password), "Creating admin account failed");
-        ThrowIfFailed(await userManager.AddToRolesAsync(admin, [Roles.Admin, Roles.Player]), "Assigning admin roles failed");
+            ThrowIfFailed(await userManager.CreateAsync(admin, options.Password), "Creating admin account failed");
+        }
+
+        foreach (var role in new[] { Roles.Admin, Roles.Player })
+        {
+            if (!await userManager.IsInRoleAsync(admin, role))
+            {
+                ThrowIfFailed(await userManager.AddToRoleAsync(admin, role), $"Assigning role '{role}' to admin failed");
+            }
+        }
     }
 
     private static void ThrowIfFailed(IdentityResult result, string message)

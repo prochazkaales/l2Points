@@ -77,6 +77,31 @@ public class IdentitySeederTests
     }
 
     [Fact]
+    public async Task Seed_repairs_existing_admin_user_without_roles()
+    {
+        await using var provider = TestServices.Create(FullAdmin());
+
+        using (var scope = provider.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var created = await userManager.CreateAsync(
+                new AppUser { UserName = "admin", Nick = "Boss", ActiveFrom = DateOnly.FromDateTime(DateTime.UtcNow), CreatedAt = DateTime.UtcNow },
+                "Admin1234");
+            Assert.True(created.Succeeded);
+        }
+
+        await SeedAsync(provider);
+
+        using var verifyScope = provider.CreateScope();
+        var verifyManager = verifyScope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        Assert.Equal(1, await verifyManager.Users.CountAsync());
+        var user = await verifyManager.FindByNameAsync("admin");
+        Assert.NotNull(user);
+        Assert.True(await verifyManager.IsInRoleAsync(user, Roles.Admin));
+        Assert.True(await verifyManager.IsInRoleAsync(user, Roles.Player));
+    }
+
+    [Fact]
     public async Task Seed_throws_with_identity_errors_when_password_invalid()
     {
         var admin = FullAdmin();
