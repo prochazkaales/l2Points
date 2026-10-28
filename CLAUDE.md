@@ -4,7 +4,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 
 - Spec (zdroj pravdy pro doménová pravidla): `docs/superpowers/specs/2026-10-28-l2points-design.md`
 - Roadmapa částí implementace: `docs/superpowers/plans/2026-10-28-00-roadmap.md`
-- Stav: hotová část 1 (kostra) a část 2 (doména a persistence). Stránky přijdou v částech 3 až 6.
+- Stav: hotové části 1 až 3 (kostra, doména a persistence, stránka Můj týden). Další stránky přijdou v částech 4 až 6.
 
 ## Struktura solution
 
@@ -13,6 +13,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 - `src/L2Points.Domain` – entity, enumy a čistá logika, bez závislosti na EF Core, UI i `AppUser` (viz sekce Doména a persistence).
 - `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `Configurations/`, `ReferenceDataSeeder`, `CatalogQueries`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`), aplikační služby (`Services/`: `AttendanceService` – týdenní mřížka a změna účasti s kontrolou pravidel úprav na serveru, `PlayerStatsService` – body a procenta hráče za týden), DI přes `AddInfrastructure`.
 - `src/L2Points.Web` – Blazor Web App (MudBlazor 9.x), `Program.cs`, stránky, layout; aplikační služby jen volá. Účtové stránky (`Components/Account`: `/login`, `/profile`) jsou statické SSR.
+  - Znovupoužitelné komponenty jsou v `Components/Attendance`: `WeekGridView` (mřížka, jen zobrazení a události), `EditableWeekGrid` (načtení, ukládání a obnova mřížky ze serveru pro cílového hráče; použije i část 6), `WeekSummaryCard` (body a procenta), `WeekNavigator` (přepínání týdnů). Formátování textů pro UI je ve `Formatting/DisplayFormat`.
 - `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
 - `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
 

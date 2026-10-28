@@ -1,0 +1,230 @@
+@using L2Points.Domain.Attendances
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@inject AttendanceService Attendance
+@inject ISnackbar Snackbar
+@inject ILogger<EditableWeekGrid> Logger
+@implements IDisposable
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Týden se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="RetryAsync">Zkusit znovu</MudButton>
+}
+else if (_grid is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    <WeekGridView Grid="_grid" Today="Today" ReadOnly="_loading" OnToggle="OnToggleAsync" />
+}
+
+@code {
+    private readonly CancellationTokenSource _disposed = new();
+    // Saves and grid loads run one at a time, so saves reach the database in click order
+    // and a load always reads the state after every save that was queued before it.
+    private readonly SemaphoreSlim _saveLock = new(1, 1);
+
+    private WeekGrid? _grid;
+    private bool _error;
+    private bool _loading;
+    // Discards the result of a load that was overtaken by a newer load or week change.
+    private int _loadVersion;
+    private (string Actor, string Target, Week Week, bool IsAdmin)? _loadedKey;
+
+    /// <summary>The signed-in user; taken from the authenticated principal, never from the URL.</summary>
+    [Parameter, EditorRequired]
+    public string ActorUserId { get; set; } = "";
+
+    [Parameter]
+    public bool ActorIsAdmin { get; set; }
+
+    /// <summary>The player whose attendance is shown and edited (the actor for "My week").</summary>
+    [Parameter, EditorRequired]
+    public string TargetUserId { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public Week Week { get; set; }
+
+    [Parameter]
+    public DateOnly? Today { get; set; }
+
+    /// <summary>Raised after an attendance change was saved, so the parent can refresh what depends on it.</summary>
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var key = (ActorUserId, TargetUserId, Week, ActorIsAdmin);
+        if (_loadedKey == key)
+        {
+            return;
+        }
+
+        _loadedKey = key;
+        await LoadAsync(keepGrid: false);
+    }
+
+    private Task RetryAsync() => LoadAsync(keepGrid: false);
+
+    /// <summary>
+    /// Loads the grid from the server after pending saves have finished. With <paramref name="keepGrid"/>
+    /// the current grid stays visible (read-only) until the result arrives.
+    /// </summary>
+    private async Task LoadAsync(bool keepGrid)
+    {
+        var version = ++_loadVersion;
+        var target = TargetUserId;
+        var week = Week;
+        var isAdmin = ActorIsAdmin;
+
+        _error = false;
+        _loading = true;
+        if (!keepGrid)
+        {
+            _grid = null;
+        }
+        else
+        {
+            Refresh();
+        }
+
+        try
+        {
+            await _saveLock.WaitAsync(_disposed.Token);
+            WeekGrid grid;
+            try
+            {
+                if (version != _loadVersion)
+                {
+                    return;
+                }
+
+                grid = await Attendance.GetWeekGridAsync(target, week, isAdmin, _disposed.Token);
+            }
+            finally
+            {
+                _saveLock.Release();
+            }
+
+            if (version == _loadVersion)
+            {
+                _grid = grid;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading week {Week} of user {UserId} failed", week.Monday, target);
+            if (version == _loadVersion)
+            {
+                _grid = null;
+                _error = true;
+            }
+        }
+        finally
+        {
+            if (version == _loadVersion)
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private async Task OnToggleAsync(WeekGridCellToggle toggle)
+    {
+        if (_grid is null)
+        {
+            return;
+        }
+
+        var actor = ActorUserId;
+        var isAdmin = ActorIsAdmin;
+        var target = TargetUserId;
+        var week = Week;
+
+        // Optimistic update: show the new state right away. Any failure reloads the grid from the server.
+        SetCell(week, toggle, toggle.Attended);
+
+        var result = AttendanceChangeResult.Ok;
+        var failed = false;
+        await _saveLock.WaitAsync();
+        try
+        {
+            result = await Attendance.SetAttendanceAsync(
+                actor, isAdmin, target, toggle.ActivityId, toggle.Date, toggle.Slot, toggle.Attended);
+        }
+        catch (Exception ex)
+        {
+            failed = true;
+            Logger.LogError(ex, "Saving attendance failed");
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
+
+        if (failed || result != AttendanceChangeResult.Ok)
+        {
+            if (failed)
+            {
+                Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+            }
+            else
+            {
+                Snackbar.Add(MessageFor(result), Severity.Warning);
+            }
+
+            // The server is the source of truth; do not compute a revert locally.
+            await LoadAsync(keepGrid: true);
+            return;
+        }
+
+        await OnChanged.InvokeAsync();
+    }
+
+    private void SetCell(Week week, WeekGridCellToggle toggle, bool isChecked)
+    {
+        if (_grid is null || _grid.Week != week)
+        {
+            return;
+        }
+
+        var rows = _grid.Rows
+            .Select(row => row.Activity.Id != toggle.ActivityId
+                ? row
+                : row with
+                {
+                    Cells = row.Cells
+                        .Select(c => c.Date == toggle.Date && c.Slot == toggle.Slot ? c with { IsChecked = isChecked } : c)
+                        .ToList(),
+                })
+            .ToList();
+        _grid = _grid with { Rows = rows };
+    }
+
+    private void Refresh()
+    {
+        if (!_disposed.IsCancellationRequested)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private static string MessageFor(AttendanceChangeResult result) => result switch
+    {
+        AttendanceChangeResult.Forbidden => "Tuto účast nemůžeš měnit.",
+        AttendanceChangeResult.OutsideEditWindow => "Tento den už nejde upravit.",
+        _ => "Tato událost v rozpisu neexistuje.",
+    };
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

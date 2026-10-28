@@ -9,7 +9,7 @@
         }
         <div class="l2p-summary-points">
             <MudText Typo="Typo.h3" Color="Color.Primary" Class="l2p-summary-points-value">@Summary.Points</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Default">Body za týden</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default">@PointsLabel</MudText>
         </div>
     </div>
     <div class="l2p-summary-grid">
@@ -39,6 +39,10 @@
 
     [Parameter]
     public string? Title { get; set; }
+
+    /// <summary>Caption next to the points value, e.g. "Body celkem" on the stats page.</summary>
+    [Parameter]
+    public string PointsLabel { get; set; } = "Body za týden";
 
     private static string Ratio(CategoryStat stat) => $"{stat.Attended} / {stat.Expected}";
 }

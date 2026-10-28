@@ -108,7 +108,8 @@
     {
         var label = CellLabel(cell);
         var ariaLabel = $"{activity.Name}, {DisplayFormat.DayHeader(cell.Date)}" + (label is null ? "" : $", {label}");
-        var disabled = ReadOnly || !cell.IsEditable;
+        // An unchecked cell outside the schedule cannot be added (the server rejects it); only removal is allowed.
+        var disabled = ReadOnly || !cell.IsEditable || (!cell.IsScheduled && !cell.IsChecked);
 
         <div class="l2p-grid-check">
             @if (!cell.IsScheduled)

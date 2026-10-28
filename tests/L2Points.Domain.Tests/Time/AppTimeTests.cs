@@ -14,6 +14,14 @@ public class AppTimeTests
     }
 
     [Fact]
+    public void TodayInPrague_in_summer_rolls_over_at_2200_utc()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-07-01T22:30:00Z"));
+
+        Assert.Equal(new DateOnly(2026, 7, 2), AppTime.TodayInPrague(time));
+    }
+
+    [Fact]
     public void ToPragueTime_in_winter_adds_one_hour()
     {
         var result = AppTime.ToPragueTime(new DateOnly(2026, 10, 26), new TimeOnly(18, 0));

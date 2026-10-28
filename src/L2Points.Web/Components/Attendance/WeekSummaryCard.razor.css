@@ -13,7 +13,7 @@
     margin-left: auto;
 }
 
-.l2p-summary-points-value {
+.l2p-summary-points ::deep .l2p-summary-points-value {
     font-weight: 700;
     line-height: 1;
 }

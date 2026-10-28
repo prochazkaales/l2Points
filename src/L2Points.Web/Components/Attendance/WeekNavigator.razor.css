@@ -5,16 +5,38 @@
     gap: 0.25rem;
 }
 
-.l2p-week-nav-label {
+/* The label is a MudText, so it does not carry this component's scope attribute; reach it via ::deep. */
+.l2p-week-nav ::deep .l2p-week-nav-label {
     min-width: 12.5rem;
     text-align: center;
     font-variant-numeric: tabular-nums;
 }
 
+.l2p-week-nav ::deep .l2p-week-nav-current {
+    white-space: nowrap;
+}
+
 @media (max-width: 599.98px) {
-    .l2p-week-nav-label {
+    /* Keep arrows, label and the "Tento týden" button on one compact row. */
+    .l2p-week-nav {
+        flex-wrap: nowrap;
+        gap: 0;
+    }
+
+    .l2p-week-nav ::deep .l2p-week-nav-label {
         min-width: 0;
-        flex: 1;
-        font-size: 1rem;
+        flex: 1 1 auto;
+        font-size: 0.95rem;
+        white-space: nowrap;
+    }
+
+    .l2p-week-nav ::deep .mud-icon-button {
+        padding: 0.25rem;
+    }
+
+    .l2p-week-nav ::deep .l2p-week-nav-current {
+        margin-left: 0.25rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
 }
