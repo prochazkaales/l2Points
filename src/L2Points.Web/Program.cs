@@ -80,6 +80,7 @@ app.UseAntiforgery();
 app.MapStaticAssets().AllowAnonymous();
 app.MapHealthChecks("/health").AllowAnonymous();
 
+// Anonymous on purpose: a tab with an expired cookie must still end on /login instead of a 401/405 page.
 app.MapPost("/logout", async (HttpContext context, IAntiforgery antiforgery, SignInManager<AppUser> signInManager) =>
 {
     try
@@ -88,12 +89,12 @@ app.MapPost("/logout", async (HttpContext context, IAntiforgery antiforgery, Sig
     }
     catch (AntiforgeryValidationException)
     {
-        return Results.BadRequest();
+        // Stale or missing token (e.g. expired session): sign out anyway and show the login page, not a 400.
     }
 
     await signInManager.SignOutAsync();
-    return TypedResults.LocalRedirect("/login");
-});
+    return Results.LocalRedirect("/login");
+}).AllowAnonymous();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

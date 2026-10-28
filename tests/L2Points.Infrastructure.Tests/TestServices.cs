@@ -33,7 +33,7 @@ internal static class TestServices
             });
         }
 
-        services.AddDbContext<AppDbContext>((sp, options) =>
+        services.AddDbContextFactory<AppDbContext>((sp, options) =>
             options.UseSqlite(sp.GetRequiredService<SqliteConnection>()));
 
         services.AddIdentityServices();

@@ -4,8 +4,28 @@ namespace L2Points.Web.Components.Layout;
 
 public static class AppTheme
 {
+    // System font stack (no external font CDN); Roboto is used when installed locally.
+    private static readonly string[] FontFamily = ["Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"];
+
     public static readonly MudTheme Theme = new()
     {
+        Typography = new Typography
+        {
+            Default = new DefaultTypography { FontFamily = FontFamily },
+            H1 = new H1Typography { FontFamily = FontFamily },
+            H2 = new H2Typography { FontFamily = FontFamily },
+            H3 = new H3Typography { FontFamily = FontFamily },
+            H4 = new H4Typography { FontFamily = FontFamily },
+            H5 = new H5Typography { FontFamily = FontFamily },
+            H6 = new H6Typography { FontFamily = FontFamily },
+            Subtitle1 = new Subtitle1Typography { FontFamily = FontFamily },
+            Subtitle2 = new Subtitle2Typography { FontFamily = FontFamily },
+            Body1 = new Body1Typography { FontFamily = FontFamily },
+            Body2 = new Body2Typography { FontFamily = FontFamily },
+            Button = new ButtonTypography { FontFamily = FontFamily },
+            Caption = new CaptionTypography { FontFamily = FontFamily },
+            Overline = new OverlineTypography { FontFamily = FontFamily },
+        },
         PaletteLight = new PaletteLight
         {
             Primary = "#6d4ae0",

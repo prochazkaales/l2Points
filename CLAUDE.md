@@ -44,9 +44,11 @@ Konfigurace: `ConnectionStrings__Default`, `Admin__UserName`, `Admin__Password`,
 ## Konvence
 
 - Jazyk: UI česky; kód, komentáře, názvy proměnných a větví, commit messages anglicky. Komunikace s uživatelem česky.
-- Časy se zobrazují v Europe/Prague, rozpis serveru se ukládá v UTC a převádí se. Aktuální čas jen přes `TimeProvider` (nikdy `DateTime.Now`/`UtcNow`), aby šel logika testovat.
-- Účtové stránky (login, profil) jsou statické SSR kvůli cookie, ostatní stránky Interactive Server. Výchozí autorizace je „přihlášený uživatel“, anonymní jsou jen login, `/health` a statické soubory.
+- Časy se zobrazují v Europe/Prague, rozpis serveru se ukládá v UTC a převádí se. Aktuální čas jen přes `TimeProvider` (nikdy `DateTime.Now`/`UtcNow`), aby šla logika testovat.
+- Účtové stránky (login, profil) jsou statické SSR kvůli cookie, ostatní stránky Interactive Server. Výchozí autorizace je „přihlášený uživatel“, anonymní jsou jen login, chybová stránka (Error), `/health` a statické soubory.
 - UI stavět z MudBlazor komponent, podporovat dark/light a mobil.
+- Přístup k DB: interaktivní komponenty a aplikační služby používají `IDbContextFactory<AppDbContext>` (krátce žijící kontext na jednu operaci) nebo `OwningComponentBase`, nikdy `AppDbContext` injektovaný přímo do komponenty (v Blazor circuitu by žil celé spojení). Explicitní transakce jen přes `Database.CreateExecutionStrategy().ExecuteAsync(...)` kvůli `EnableRetryOnFailure`. `UserManager` v interaktivních komponentách je scoped na circuit, proto v admin stránkách (část 6) vytvářet scope na každou operaci.
+- Testy běží na SQLite in-memory a neodhalí rozdíly proti SQL Serveru (collation – unikátní Nick je na SQL Serveru case-insensitive, typy). Unikátnost nicku proto validovat case-insensitive i v aplikačním kódu (část 6).
 - TDD pro doménovou logiku (body, %, rozpis, okno úprav). Pro čisté UI a konfiguraci TDD nepoužívat.
 - Konfigurace přes env proměnné, tajemství nepatří do repa (`.env` je v `.gitignore`).
 
@@ -59,7 +61,8 @@ Detail a výjimky viz spec, tady jen orientace.
 - 100 % = hráč byl na všem, co podle rozpisu proběhlo. Procento = započtené účasti ÷ očekávané výskyty (u aktivity za týden nejvýš do očekávaného počtu). Kategorie: Celkem, Normal, Večerní, Ranní, CS.
 - Aktuální týden se počítá jen do dneška, celkově od `ActiveFrom` hráče (deaktivovaný jen do `DeactivatedAt`), globálně od začátku evidence (26. 10. 2026).
 - Okno úprav: hráč mění jen vlastní účast v rozsahu dnes − 6 dní až dnes (Europe/Prague), kontrola vždy na serveru. Admin bez omezení.
-- Antharas/Valakas se střídají každou neděli, kotva: 1. 11. 2026 = Antharas.
+- Antharas/Valakas: každou neděli jeden z nich, střídavě; 1. 11. 2026 = Antharas, 8. 11. 2026 = Valakas.
+- Chaotic: 2 sloty (Večerní/Ranní), 40 výskytů týdně.
 - Rozpis chaotic, body a očekávané počty jsou v DB a edituje je admin, ne v kódu.
 - Role Admin a Player, admin je zároveň hráč. Hesla generuje aplikace, žádná registrace ani e-maily.
 

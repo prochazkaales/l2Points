@@ -47,7 +47,19 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    protected override void OnInitialized() => Input ??= new();
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+
+        // Already signed in (GET only; a form POST goes through the normal sign-in path).
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(IsLocalUrl(ReturnUrl) ? ReturnUrl! : "/", forceLoad: true);
+        }
+    }
 
     private async Task LoginUserAsync()
     {

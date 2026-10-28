@@ -19,7 +19,9 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
 
-        services.AddDbContext<AppDbContext>(options =>
+        // The factory is the primary registration: interactive components and app services create a short-lived
+        // context per operation. It also registers a scoped AppDbContext (used by Identity stores and Data Protection).
+        services.AddDbContextFactory<AppDbContext>(options =>
             options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
 
         services.AddIdentityServices();

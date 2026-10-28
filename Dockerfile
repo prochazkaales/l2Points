@@ -16,7 +16,8 @@ COPY src/ src/
 RUN dotnet publish src/L2Points.Web -c Release -o /app --no-restore
 
 # ---- Runtime stage ----
-# Debian-based image: ships ICU (cs-CZ culture) and tzdata (Europe/Prague)
+# Default (non-chiseled) aspnet image: includes ICU (cs-CZ culture) and tzdata (Europe/Prague).
+# TODO part 7: verify TimeZoneInfo.FindSystemTimeZoneById("Europe/Prague") on the first real docker build.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app .

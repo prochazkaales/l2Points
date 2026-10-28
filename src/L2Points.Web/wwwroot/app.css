@@ -90,7 +90,7 @@ h1:focus {
     box-sizing: border-box;
     background: var(--account-bg);
     color: var(--account-text);
-    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .account-card {
