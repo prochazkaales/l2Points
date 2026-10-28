@@ -12,6 +12,7 @@
 @inject NavigationManager Navigation
 @inject TimeProvider Time
 @inject ILogger<PlayerDetail> Logger
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>@(_detail is null ? "Detail hráče" : _detail.Player.Nick) – L2Points</PageTitle>
@@ -69,8 +70,8 @@ else
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd Class="l2p-pd-week">
-                        <MudLink Href="@WeekHref(context.Week)" Underline="Underline.Hover"
-                                 Color="Color.Primary">@DisplayFormat.WeekLabel(context.Week)</MudLink>
+                        <MudLink Href="@WeekHref(context.Week)" OnClick="@(() => OnHistoryWeekClickedAsync(context.Week))"
+                                 Underline="Underline.Hover" Color="Color.Primary">@DisplayFormat.WeekLabel(context.Week)</MudLink>
                     </MudTd>
                     <StatCells Stats="context.Summary.Stats" Points="context.Summary.Points" />
                 </RowTemplate>
@@ -78,7 +79,9 @@ else
         </div>
     }
 
-    <MudText Typo="Typo.h5" Class="mb-2">Účast v týdnu</MudText>
+    <div id="@GridSectionId" class="l2p-pd-grid-anchor">
+        <MudText Typo="Typo.h5" Class="mb-2">Účast v týdnu</MudText>
+    </div>
     <div class="mb-3">
         <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
     </div>
@@ -99,6 +102,8 @@ else
 }
 
 @code {
+    private const string GridSectionId = "l2p-pd-grid";
+
     private readonly CancellationTokenSource _disposed = new();
 
     private PlayerDetailData? _detail;
@@ -110,6 +115,7 @@ else
     private Week _week;
     private string? _loadedId;
     private Week? _loadedGridWeek;
+    private Week? _scrollTargetWeek;
     // Only the result of the latest request is applied.
     private int _detailVersion;
     private int _gridVersion;
@@ -166,9 +172,39 @@ else
         }
     }
 
-    private string WeekHref(Week week) => DisplayFormat.PlayerUrl(Id, week);
+    // The current week is the default, so it gets a URL without ?week= (like the other pages).
+    private string WeekHref(Week week) => DisplayFormat.PlayerUrl(Id, week == Week.Containing(_today) ? null : week);
 
-    private void OnWeekChanged(Week week) => Navigation.NavigateTo(DisplayFormat.PlayerUrl(Id, week));
+    private void OnWeekChanged(Week week) => Navigation.NavigateTo(WeekHref(week));
+
+    // The history link navigates through its Href; the grid is far below the history, so it is also scrolled into view.
+    private async Task OnHistoryWeekClickedAsync(Week week)
+    {
+        _scrollTargetWeek = week;
+        await ScrollToGridAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Scroll again once the clicked week's grid replaced the loading state (the page height changes meanwhile).
+        if (_scrollTargetWeek is { } target && (_gridError || _grid?.Week == target))
+        {
+            _scrollTargetWeek = null;
+            await ScrollToGridAsync();
+        }
+    }
+
+    private async Task ScrollToGridAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("l2pScroll.intoView", GridSectionId);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, nothing to scroll.
+        }
+    }
 
     private async Task LoadDetailAsync()
     {

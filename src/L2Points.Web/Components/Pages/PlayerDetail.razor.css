@@ -40,3 +40,8 @@
     background: var(--mud-palette-surface);
     border-right: 1px solid var(--mud-palette-lines-default);
 }
+
+/* Scroll target of the history links; keeps the heading clear of the fixed app bar. */
+.l2p-pd-grid-anchor {
+    scroll-margin-top: 5rem;
+}

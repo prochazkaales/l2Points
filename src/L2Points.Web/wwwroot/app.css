@@ -1,3 +1,40 @@
+/* Page background before the circuit connects (prerender is off): matches the theme background, dark by default.
+   Once MudThemeProvider defines --mud-palette-background it wins, so the chosen theme is respected. */
+html,
+body {
+    background-color: var(--mud-palette-background, #12101c);
+}
+
+@media (prefers-color-scheme: light) {
+    html,
+    body {
+        background-color: var(--mud-palette-background, #f4f3f9);
+    }
+}
+
+/* "Loading" placeholder of the interactive pages. It is rendered outside the Routes output, so it stays until
+   hidden here: as soon as MudLayout exists the app has rendered. */
+.l2p-loading {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #a8a3c2;
+}
+
+@media (prefers-color-scheme: light) {
+    .l2p-loading {
+        color: #5b5675;
+    }
+}
+
+body:has(.mud-layout) .l2p-loading {
+    display: none;
+}
+
 h1:focus {
     outline: none;
 }

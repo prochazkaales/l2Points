@@ -18,6 +18,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
   - `Components/Stats/StatCells` vykreslí buňky tabulky (body + pět procent) pro jednoho hráče a období; poměr „započteno / očekáváno“ je v nativním `title` (ne `MudTooltip`, na dlouhých tabulkách by bylo desítky popoverů). Sloupec s nickem je přilepený vlevo přes scoped CSS (`::deep`) kvůli vodorovnému scrollu na mobilu.
 - `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
 - `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
+- `tests/L2Points.Web.Tests` – xUnit, čistá logika webu bez UI (`Formatting/DisplayFormat`, `PlayerUrl`).
 
 ## Příkazy
 

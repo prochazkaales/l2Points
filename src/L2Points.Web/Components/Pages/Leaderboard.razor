@@ -47,7 +47,8 @@ else
     </div>
 
     <div class="@($"l2p-lb l2p-lb-show-{_view}")">
-    <MudTable T="LeaderboardRow" Items="_rows" Dense="true" Elevation="0" Outlined="true"
+    @* Keyed by the view so switching it recreates the table with that view's default sort. *@
+    <MudTable @key="_view" T="LeaderboardRow" Items="_rows" Dense="true" Elevation="0" Outlined="true"
               Breakpoint="Breakpoint.None" CustomHeader="true" RowClassFunc="RowClass">
         <HeaderContent>
             <MudTHeadRow Class="l2p-lb-groups">
@@ -60,7 +61,7 @@ else
                 {
                     <MudTh Class="@HeaderClass("l2p-lb-overall", column)">
                         <MudTableSortLabel T="LeaderboardRow" SortBy="@(new Func<LeaderboardRow, object>(r => column.Key(r.Overall)))"
-                                           InitialDirection="@(column.IsFirst ? SortDirection.Descending : SortDirection.None)">
+                                           InitialDirection="@InitialDirection(ViewOverall, column)">
                             @column.Label
                         </MudTableSortLabel>
                     </MudTh>
@@ -68,7 +69,8 @@ else
                 @foreach (var column in Columns)
                 {
                     <MudTh Class="@HeaderClass("l2p-lb-week", column)">
-                        <MudTableSortLabel T="LeaderboardRow" SortBy="@(new Func<LeaderboardRow, object>(r => column.Key(r.Week)))">
+                        <MudTableSortLabel T="LeaderboardRow" SortBy="@(new Func<LeaderboardRow, object>(r => column.Key(r.Week)))"
+                                           InitialDirection="@InitialDirection(ViewWeek, column)">
                             @column.Label
                         </MudTableSortLabel>
                     </MudTh>
@@ -153,6 +155,10 @@ else
         _rows = null;
         await LoadAsync();
     }
+
+    // Default sort is the points column of the chosen view; below md only that view's column set is visible.
+    private SortDirection InitialDirection(string view, Column column) =>
+        column.IsFirst && view == _view ? SortDirection.Descending : SortDirection.None;
 
     private static string HeaderClass(string set, Column column) =>
         column.IsFirst ? $"{set} l2p-lb-col l2p-lb-group-start" : $"{set} l2p-lb-col";

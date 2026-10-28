@@ -14,11 +14,22 @@
 </head>
 
 <body>
+    @if (HttpContext.AcceptsInteractiveRouting())
+    {
+        @* Static placeholder for the time before the circuit connects (prerender is off); app.css hides it once the layout exists. *@
+        <div class="l2p-loading" role="status">Načítám…</div>
+    }
     <Routes @rendermode="PageRenderMode" />
     <ReconnectModal />
+    <div id="blazor-error-ui" data-nosnippet>
+        Došlo k neočekávané chybě.
+        <a href="." class="reload">Načíst znovu</a>
+        <span class="dismiss">🗙</span>
+    </div>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
     <script src="@Assets["js/theme.js"]"></script>
+    <script src="@Assets["js/scroll.js"]"></script>
 </body>
 
 </html>
