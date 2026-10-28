@@ -1,0 +1,26 @@
+.l2p-admin-jewel-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.l2p-admin-jewel-row + .l2p-admin-jewel-row {
+    border-top: 1px solid var(--mud-palette-lines-default);
+}
+
+/* JewelIcon renders the <img>, so reach it via ::deep from this page's row. */
+.l2p-admin-jewel-row ::deep img {
+    image-rendering: pixelated;
+    display: block;
+}
+
+.l2p-admin-jewel-row ::deep .l2p-admin-jewel-name {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.l2p-admin-jewel-row ::deep .l2p-admin-jewel-count {
+    color: var(--mud-palette-text-secondary);
+    white-space: nowrap;
+}

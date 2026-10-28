@@ -1,0 +1,187 @@
+@page "/admin/jewels"
+@attribute [Authorize(Roles = Roles.Admin)]
+@using L2Points.Domain.Jewels
+@using L2Points.Domain.Stats
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Jewels
+@using L2Points.Web.Formatting
+@inject JewelService JewelData
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject ILogger<AdminJewels> Logger
+@implements IDisposable
+
+<PageTitle>Šperky – Admin – L2Points</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Šperky – přiřazení</MudText>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Šperky se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadAsync">Zkusit znovu</MudButton>
+}
+else if (_assignments is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    <MudSelect T="string" Label="Hráč" Variant="Variant.Outlined" Value="_selectedId"
+               ValueChanged="OnPlayerChanged" Class="mb-3" Style="max-width: 24rem;" Disabled="_saving">
+        @foreach (var player in _assignments.Players)
+        {
+            <MudSelectItem T="string" Value="@player.UserId">@PlayerText(player)</MudSelectItem>
+        }
+    </MudSelect>
+
+    @if (SelectedPlayer is { } selected)
+    {
+        <div class="mb-2">
+            <MudLink Href="@DisplayFormat.PlayerUrl(selected.UserId)">Detail hráče @selected.Nick</MudLink>
+        </div>
+
+        <MudPaper Outlined="true" Class="pa-2">
+            @foreach (var type in _assignments.Types)
+            {
+                var count = CountOf(type);
+                <div class="l2p-admin-jewel-row">
+                    <JewelIcon Type="type" Size="32" />
+                    <MudText Typo="Typo.body1" Class="l2p-admin-jewel-name">@type.Name</MudText>
+                    <MudText Typo="Typo.body1" Class="l2p-admin-jewel-count">@DisplayFormat.Pieces(count)</MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small" title="Odebrat kus"
+                                   aria-label="@($"Odebrat kus: {type.Name}")"
+                                   Disabled="@(_saving || count == 0)" OnClick="@(() => RemoveAsync(selected.UserId, type.Id))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" title="Přidat kus"
+                                   aria-label="@($"Přidat kus: {type.Name}")"
+                                   Disabled="_saving" OnClick="@(() => AssignAsync(selected.UserId, type.Id))" />
+                </div>
+            }
+        </MudPaper>
+    }
+}
+
+@code {
+    private readonly CancellationTokenSource _disposed = new();
+
+    private JewelAssignments? _assignments;
+    private string? _selectedId;
+    private bool _error;
+    private bool _saving;
+
+    [SupplyParameterFromQuery(Name = "player")]
+    public string? PlayerParameter { get; set; }
+
+    private PlayerInfo? SelectedPlayer =>
+        _assignments?.Players.FirstOrDefault(p => p.UserId == _selectedId);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    protected override void OnParametersSet()
+    {
+        // The id comes from the URL; an unknown id selects nothing.
+        _selectedId = _assignments?.Players.Any(p => p.UserId == PlayerParameter) == true ? PlayerParameter : null;
+    }
+
+    private static string PlayerText(PlayerInfo player) =>
+        player.IsActive ? player.Nick : $"{player.Nick} (neaktivní)";
+
+    private int CountOf(JewelType type) =>
+        _selectedId is null
+            ? 0
+            : _assignments!.Jewels.Of(_selectedId).FirstOrDefault(j => j.Type.Id == type.Id)?.Count ?? 0;
+
+    private void OnPlayerChanged(string? userId) =>
+        Navigation.NavigateTo(string.IsNullOrEmpty(userId)
+            ? "/admin/jewels"
+            : $"/admin/jewels?player={Uri.EscapeDataString(userId)}");
+
+    private Task AssignAsync(string userId, int jewelTypeId) =>
+        ChangeAsync(() => JewelData.AssignAsync(userId, jewelTypeId, _disposed.Token));
+
+    private Task RemoveAsync(string userId, int jewelTypeId) =>
+        ChangeAsync(() => JewelData.RemoveOneAsync(userId, jewelTypeId, _disposed.Token));
+
+    private async Task ChangeAsync(Func<Task<JewelChangeResult>> change)
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            var result = await change();
+            switch (result)
+            {
+                case JewelChangeResult.Ok:
+                    break;
+                case JewelChangeResult.NotHeld:
+                    Snackbar.Add("Hráč tento šperk už nemá.", Severity.Warning);
+                    break;
+                case JewelChangeResult.UnknownPlayer:
+                    Snackbar.Add("Hráč už neexistuje.", Severity.Warning);
+                    break;
+                default:
+                    Snackbar.Add("Šperk už neexistuje.", Severity.Warning);
+                    break;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while saving.
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Changing jewels failed");
+            Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+        }
+
+        // The server is the source of truth; reload after every change, successful or not.
+        try
+        {
+            _assignments = await JewelData.GetAssignmentsAsync(_disposed.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Reloading jewel assignments failed");
+            _assignments = null;
+            _error = true;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        try
+        {
+            _assignments = await JewelData.GetAssignmentsAsync(_disposed.Token);
+            OnParametersSet();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading jewel assignments failed");
+            _assignments = null;
+            _error = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}
