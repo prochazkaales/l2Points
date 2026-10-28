@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/L2Points.Domain/L2Points.Domain.csproj" />
+    <Project Path="src/L2Points.Infrastructure/L2Points.Infrastructure.csproj" />
+    <Project Path="src/L2Points.Web/L2Points.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/L2Points.Domain.Tests/L2Points.Domain.Tests.csproj" />
+    <Project Path="tests/L2Points.Infrastructure.Tests/L2Points.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>
