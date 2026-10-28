@@ -1,0 +1,32 @@
+.l2p-jewel-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+    gap: 1rem;
+}
+
+.l2p-jewel-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+/* JewelIcon renders the <img>, so reach it via ::deep from this page's wrapper. */
+.l2p-jewel-big ::deep img {
+    image-rendering: pixelated;
+    display: block;
+}
+
+.l2p-jewel-total {
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-jewel-none {
+    color: var(--mud-palette-text-disabled);
+}
+
+.l2p-jewel-holders {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
