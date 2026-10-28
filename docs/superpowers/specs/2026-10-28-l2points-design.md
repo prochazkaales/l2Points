@@ -127,7 +127,7 @@ Pravidla období *(moje volby)*:
 ### 3.6 Šperky
 
 Typy (seed, s obrázkem – originální herní ikona uložená v aplikaci):
-Ring of Queen Ant, Earring of Core, Earring of Orfen, Earring of Zaken, Necklace of Frintezza, Ring of Baium, Earring of Antharas, Necklace of Valakas.
+Ring of Queen Ant, Ring of Core, Earring of Orfen, Earring of Zaken, Necklace of Frintezza, Ring of Baium, Earring of Antharas, Necklace of Valakas.
 
 - Admin přiřazuje šperk hráči a může ho odebrat. Hráč může mít víc šperků, i stejného typu. **Bez data.**
 - Všichni vidí: počet kusů každého šperku v partě a kdo má jaký šperk.
@@ -222,7 +222,7 @@ Mazání hráče kaskádově maže Attendance a UserJewel.
 
 - Přesný vizuál, barvy a rozložení v rámci MudBlazor. Má být moderní, přehledný, s responzivitou pro mobil (zápis účasti z telefonu).
 - Konkrétní verze balíčků.
-- Dohledání a stažení ikon šperků (např. z L2 databází/wiki), uložení do `wwwroot/images/jewels`.
+- Dohledání a stažení ikon šperků (např. z L2 databází/wiki), uložení do `wwwroot/images/jewels`. Staženo z l2j.ru (32×32 PNG, název souboru = `Code` typu šperku).
 - Rozdělení služeb a komponent uvnitř projektu Web.
 - Indexy, výkonové optimalizace (malý počet uživatelů, desítky hráčů).
 
