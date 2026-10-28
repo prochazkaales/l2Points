@@ -37,4 +37,24 @@ public class WeekTests
         Assert.Equal(new DateOnly(2026, 11, 2), week.Next().Monday);
         Assert.Equal(new DateOnly(2026, 10, 19), week.Previous().Monday);
     }
+
+    [Fact]
+    public void ParseOrCurrent_normalizes_to_monday()
+    {
+        var week = Week.ParseOrCurrent("2026-10-29", new DateOnly(2026, 11, 4));
+
+        Assert.Equal(new DateOnly(2026, 10, 26), week.Monday);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("2026-13-01")]
+    public void ParseOrCurrent_falls_back_to_today(string? input)
+    {
+        var week = Week.ParseOrCurrent(input, new DateOnly(2026, 11, 4));
+
+        Assert.Equal(new DateOnly(2026, 11, 2), week.Monday);
+    }
 }
