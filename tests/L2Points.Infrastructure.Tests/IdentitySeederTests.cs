@@ -1,0 +1,91 @@
+using L2Points.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace L2Points.Infrastructure.Tests;
+
+public class IdentitySeederTests
+{
+    private static AdminOptions FullAdmin() => new() { UserName = "admin", Password = "Admin1234", Nick = "Boss" };
+
+    private static async Task SeedAsync(ServiceProvider provider)
+    {
+        using var scope = provider.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IdentitySeeder>().SeedAsync();
+    }
+
+    [Fact]
+    public async Task Seed_creates_roles_and_admin_when_none_exists()
+    {
+        await using var provider = TestServices.Create(FullAdmin());
+
+        await SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        Assert.True(await roleManager.RoleExistsAsync(Roles.Admin));
+        Assert.True(await roleManager.RoleExistsAsync(Roles.Player));
+
+        var user = await userManager.FindByNameAsync("admin");
+        Assert.NotNull(user);
+        Assert.Equal("Boss", user.Nick);
+        Assert.True(user.IsActive);
+        Assert.True(await userManager.IsInRoleAsync(user, Roles.Admin));
+        Assert.True(await userManager.IsInRoleAsync(user, Roles.Player));
+    }
+
+    [Fact]
+    public async Task Seed_is_idempotent()
+    {
+        await using var provider = TestServices.Create(FullAdmin());
+
+        await SeedAsync(provider);
+        await SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        Assert.Equal(1, await userManager.Users.CountAsync());
+    }
+
+    [Fact]
+    public async Task Seed_throws_when_no_admin_and_config_missing()
+    {
+        await using var provider = TestServices.Create(new AdminOptions());
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => SeedAsync(provider));
+
+        Assert.Contains("Admin__UserName", ex.Message);
+    }
+
+    [Fact]
+    public async Task Seed_does_not_need_config_when_admin_exists()
+    {
+        using var connection = new SqliteConnection("DataSource=:memory:");
+        connection.Open();
+
+        await using (var first = TestServices.Create(FullAdmin(), connection))
+        {
+            await SeedAsync(first);
+        }
+
+        await using var second = TestServices.Create(new AdminOptions(), connection);
+        await SeedAsync(second);
+    }
+
+    [Fact]
+    public async Task Seed_throws_with_identity_errors_when_password_invalid()
+    {
+        var admin = FullAdmin();
+        admin.Password = "short";
+        await using var provider = TestServices.Create(admin);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => SeedAsync(provider));
+
+        var describer = new IdentityErrorDescriber();
+        Assert.Contains(describer.PasswordTooShort(8).Description, ex.Message);
+    }
+}
