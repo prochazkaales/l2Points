@@ -1,0 +1,107 @@
+using L2Points.Domain.Activities;
+using L2Points.Domain.Stats;
+using L2Points.Domain.Time;
+using L2Points.Infrastructure.Persistence;
+using L2Points.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
+
+namespace L2Points.Infrastructure.Tests;
+
+public class OverviewServiceTests
+{
+    private static readonly DateOnly Mon = new(2026, 10, 26);
+    private static readonly DateOnly Tue = new(2026, 10, 27);
+    private static readonly DateOnly Sun = new(2026, 11, 1);
+    private static readonly DateOnly NextMon = new(2026, 11, 2);
+
+    private sealed record Arranged(ServiceProvider Provider, OverviewService Service, string A, string B, string D) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync() => Provider.DisposeAsync();
+    }
+
+    private static async Task<Arranged> ArrangeAsync()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
+        var provider = TestServices.Create(timeProvider: time);
+        await TestData.SeedCatalogAsync(provider);
+        var a = await TestData.CreatePlayerAsync(provider, "playerA", Mon);
+        var b = await TestData.CreatePlayerAsync(provider, "playerB", NextMon);
+        var d = await TestData.CreatePlayerAsync(provider, "playerD", Mon, deactivatedAt: Tue);
+        await TestData.AddAttendanceAsync(provider, a.Id, "QueenAnt", Mon);
+        await TestData.AddAttendanceAsync(provider, a.Id, "ChaoticCore", Tue, EventSlot.Evening);
+        await TestData.AddAttendanceAsync(provider, a.Id, "CastleSiege", Sun);
+        var service = new OverviewService(provider.GetRequiredService<IDbContextFactory<AppDbContext>>(), time);
+        return new Arranged(provider, service, a.Id, b.Id, d.Id);
+    }
+
+    [Fact]
+    public async Task Leaderboard_hides_inactive_by_default()
+    {
+        await using var x = await ArrangeAsync();
+
+        var rows = await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: false);
+
+        Assert.Equal([x.A, x.B], rows.Select(r => r.Player.UserId));
+        Assert.Equal(3, rows[0].Overall.Points);
+        Assert.Equal(new CategoryStat(3, 99), rows[0].Overall.Stats.Total);
+    }
+
+    [Fact]
+    public async Task Leaderboard_includes_inactive_on_request()
+    {
+        await using var x = await ArrangeAsync();
+
+        var rows = await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: true);
+
+        Assert.Equal(3, rows.Count);
+        Assert.Equal(25, rows.Single(r => r.Player.UserId == x.D).Overall.Stats.Total.Expected);
+    }
+
+    [Fact]
+    public async Task Leaderboard_on_empty_database()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
+        await using var provider = TestServices.Create(timeProvider: time);
+        await TestData.SeedCatalogAsync(provider);
+        var service = new OverviewService(provider.GetRequiredService<IDbContextFactory<AppDbContext>>(), time);
+        var week = Week.Containing(NextMon);
+
+        Assert.Empty(await service.GetLeaderboardAsync(week, includeInactive: true));
+
+        await TestData.CreatePlayerAsync(provider, "lonely", Mon);
+        var row = Assert.Single(await service.GetLeaderboardAsync(week, includeInactive: false));
+        Assert.Equal(0, row.Overall.Points);
+        Assert.Equal(0, row.Overall.Stats.Total.Percent);
+    }
+
+    [Fact]
+    public async Task WeekOverview_lists_players_and_events()
+    {
+        await using var x = await ArrangeAsync();
+
+        var overview = await x.Service.GetWeekOverviewAsync(Week.Containing(Mon));
+
+        Assert.Equal(Week.Containing(Mon), overview.Week);
+        Assert.Equal(3, overview.Players[0].Week.Points);
+        Assert.Equal([x.A, x.B], overview.Players.Select(r => r.Player.UserId));
+        Assert.Equal(
+            [("QueenAnt", Mon, EventSlot.None), ("ChaoticCore", Tue, EventSlot.Evening), ("CastleSiege", Sun, EventSlot.None)],
+            overview.Events.Select(e => (e.Activity.Code, e.Date, e.Slot)));
+        Assert.All(overview.Events, e => Assert.Equal([x.A], e.Attendees.Select(p => p.UserId)));
+    }
+
+    [Fact]
+    public async Task WeekOverview_includes_inactive_with_attendance()
+    {
+        await using var x = await ArrangeAsync();
+        await TestData.AddAttendanceAsync(x.Provider, x.D, "QueenAnt", Mon);
+
+        var first = await x.Service.GetWeekOverviewAsync(Week.Containing(Mon));
+        var second = await x.Service.GetWeekOverviewAsync(Week.Containing(NextMon));
+
+        Assert.Contains(first.Players, r => r.Player.UserId == x.D);
+        Assert.DoesNotContain(second.Players, r => r.Player.UserId == x.D);
+    }
+}

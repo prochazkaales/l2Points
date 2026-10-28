@@ -1,3 +1,5 @@
+using L2Points.Domain.Activities;
+using L2Points.Domain.Attendances;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -31,6 +33,23 @@ internal static class TestData
         var result = await users.CreateAsync(user, "Passw0rd!x");
         Assert.True(result.Succeeded, string.Join(", ", result.Errors.Select(e => e.Description)));
         return user;
+    }
+
+    /// <summary>Inserts an attendance row directly, bypassing service rules (e.g. for deactivated players).</summary>
+    public static async Task AddAttendanceAsync(ServiceProvider provider, string userId, string activityCode, DateOnly date, EventSlot slot = EventSlot.None)
+    {
+        var activityId = await ActivityIdAsync(provider, activityCode);
+        await using var db = provider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext();
+        db.Attendances.Add(new Attendance
+        {
+            UserId = userId,
+            ActivityId = activityId,
+            Date = date,
+            Slot = slot,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedByUserId = userId,
+        });
+        await db.SaveChangesAsync();
     }
 
     public static async Task<int> ActivityIdAsync(ServiceProvider provider, string code)

@@ -36,6 +36,7 @@ public class DependencyInjectionTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<ReferenceDataSeeder>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<AttendanceService>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<PlayerStatsService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<OverviewService>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>());
     }
 }

@@ -83,4 +83,43 @@ public class PlayerStatsServiceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => stats.GetWeekSummaryAsync("nope", Week.Containing(Monday)));
     }
+
+    private static async Task<(FakeTimeProvider Time, ServiceProvider Provider, string UserId)> ArrangeDetailAsync()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
+        var provider = TestServices.Create(timeProvider: time);
+        await TestData.SeedCatalogAsync(provider);
+        var a = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        await TestData.AddAttendanceAsync(provider, a.Id, "QueenAnt", Monday);
+        await TestData.AddAttendanceAsync(provider, a.Id, "ChaoticCore", Tuesday, EventSlot.Evening);
+        await TestData.AddAttendanceAsync(provider, a.Id, "CastleSiege", new DateOnly(2026, 11, 1));
+        return (time, provider, a.Id);
+    }
+
+    [Fact]
+    public async Task PlayerDetail_for_unknown_id_is_null()
+    {
+        var (time, provider, _) = await ArrangeDetailAsync();
+        await using var disposable = provider;
+        var (stats, _) = CreateServices(provider, time);
+
+        Assert.Null(await stats.GetPlayerDetailAsync("nope"));
+    }
+
+    [Fact]
+    public async Task PlayerDetail_contains_overall_week_and_history()
+    {
+        var (time, provider, userId) = await ArrangeDetailAsync();
+        await using var disposable = provider;
+        var (stats, _) = CreateServices(provider, time);
+
+        var detail = await stats.GetPlayerDetailAsync(userId);
+
+        Assert.NotNull(detail);
+        Assert.Equal(userId, detail.Player.UserId);
+        Assert.Equal(3, detail.Overall.Points);
+        Assert.Equal(new CategoryStat(0, 35), detail.CurrentWeek.Stats.Total);
+        Assert.Equal(2, detail.History.Count);
+        Assert.Equal(new DateOnly(2026, 11, 2), detail.History[0].Week.Monday);
+    }
 }

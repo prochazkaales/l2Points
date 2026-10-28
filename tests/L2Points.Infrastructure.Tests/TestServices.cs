@@ -47,6 +47,7 @@ internal static class TestServices
         services.AddScoped<ReferenceDataSeeder>();
         services.AddScoped<AttendanceService>();
         services.AddScoped<PlayerStatsService>();
+        services.AddScoped<OverviewService>();
 
         var provider = services.BuildServiceProvider();
 

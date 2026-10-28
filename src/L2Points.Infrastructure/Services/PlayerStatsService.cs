@@ -32,4 +32,35 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
         var period = PlayerPeriod.Resolve(trackingStart, user.ActiveFrom, user.DeactivatedAt, AppTime.TodayInPrague(time));
         return PlayerSummaryCalculator.Calculate(activities, attendances, window, period);
     }
+
+    /// <summary>Overall, current-week and weekly history statistics of a player, or null when the player does not exist.</summary>
+    public async Task<PlayerDetail?> GetPlayerDetailAsync(string userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+
+        var player = await db.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new PlayerInfo(u.Id, u.Nick, u.IsActive, u.ActiveFrom, u.DeactivatedAt))
+            .SingleOrDefaultAsync(ct);
+        if (player is null)
+            return null;
+
+        var activities = await db.LoadActivitiesAsync(ct);
+        var trackingStart = await db.GetTrackingStartAsync(ct);
+        var today = AppTime.TodayInPrague(time);
+        var week = Week.Containing(today);
+        var to = today > week.Sunday ? today : week.Sunday;
+        var entries = await db.Attendances
+            .AsNoTracking()
+            .Where(a => a.UserId == userId && a.Date >= trackingStart && a.Date <= to)
+            .Select(a => new AttendanceEntry(a.ActivityId, a.Date, a.Slot))
+            .ToListAsync(ct);
+
+        var row = LeaderboardCalculator
+            .Build([player], activities, entries.Select(e => new UserAttendance(userId, e)).ToList(), week, trackingStart, today)
+            .Single();
+        var history = PlayerHistoryCalculator.Build(player, activities, entries, trackingStart, today);
+        return new PlayerDetail(player, row.Overall, row.Week, history);
+    }
 }

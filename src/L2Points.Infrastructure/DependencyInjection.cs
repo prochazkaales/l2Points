@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<ReferenceDataSeeder>();
         services.AddScoped<AttendanceService>();
         services.AddScoped<PlayerStatsService>();
+        services.AddScoped<OverviewService>();
 
         return services;
     }
