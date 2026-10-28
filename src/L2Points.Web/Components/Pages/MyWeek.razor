@@ -1,6 +1,206 @@
 @page "/"
+@using L2Points.Domain.Attendances
+@using L2Points.Domain.Stats
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Attendance
+@inject AttendanceService Attendance
+@inject PlayerStatsService PlayerStats
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<AppUser> UserManager
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject TimeProvider Time
+@inject ILogger<MyWeek> Logger
+@implements IDisposable
 
 <PageTitle>Můj týden – L2Points</PageTitle>
 
 <MudText Typo="Typo.h4" GutterBottom="true">Můj týden</MudText>
-<MudAlert Severity="Severity.Info">Připravujeme – část 3</MudAlert>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error">Týden se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+}
+else if (_grid is null || _summary is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    <div class="mb-3">
+        <WeekNavigator Week="_grid.Week" Today="_today" WeekChanged="OnWeekChanged" />
+    </div>
+    <div class="mb-4">
+        <WeekSummaryCard Summary="_summary" Title="Souhrn týdne" />
+    </div>
+    <WeekGridView Grid="_grid" Today="_today" OnToggle="OnToggleAsync" />
+}
+
+@code {
+    private readonly CancellationTokenSource _disposed = new();
+    // Saves run one at a time so quick successive clicks reach the database in click order.
+    private readonly SemaphoreSlim _saveLock = new(1, 1);
+
+    private WeekGrid? _grid;
+    private PlayerSummary? _summary;
+    private DateOnly _today;
+    private string? _userId;
+    private bool _isAdmin;
+    private bool _error;
+    private Week? _loadedWeek;
+    // Discards the result of a load that was overtaken by a newer navigation.
+    private int _loadVersion;
+
+    [SupplyParameterFromQuery(Name = "week")]
+    public string? WeekParameter { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _today = AppTime.TodayInPrague(Time);
+        var week = Week.ParseOrCurrent(WeekParameter, _today);
+        if (_loadedWeek == week && _grid is not null)
+        {
+            return;
+        }
+
+        // Identity comes only from the authenticated principal, never from the URL.
+        if (_userId is null)
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _userId = UserManager.GetUserId(state.User);
+            _isAdmin = state.User.IsInRole(Roles.Admin);
+        }
+
+        if (_userId is null)
+        {
+            return;
+        }
+
+        var version = ++_loadVersion;
+        try
+        {
+            var grid = await Attendance.GetWeekGridAsync(_userId, week, _isAdmin, _disposed.Token);
+            var summary = await PlayerStats.GetWeekSummaryAsync(_userId, week, _disposed.Token);
+            if (version != _loadVersion)
+            {
+                return;
+            }
+
+            _grid = grid;
+            _summary = summary;
+            _loadedWeek = week;
+            _error = false;
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading week {Week} failed", week.Monday);
+            if (version == _loadVersion)
+            {
+                _error = true;
+            }
+        }
+    }
+
+    private void OnWeekChanged(Week week)
+    {
+        var current = Week.Containing(_today);
+        Navigation.NavigateTo(week == current ? "/" : $"/?week={week.Monday:yyyy-MM-dd}");
+    }
+
+    private async Task OnToggleAsync(WeekGridCellToggle toggle)
+    {
+        var week = _loadedWeek;
+        var userId = _userId;
+        if (week is null || userId is null)
+        {
+            return;
+        }
+
+        // Optimistic update: show the new state right away and revert it if the save fails.
+        SetCell(week.Value, toggle, toggle.Attended);
+
+        var result = AttendanceChangeResult.Ok;
+        var failed = false;
+        await _saveLock.WaitAsync();
+        try
+        {
+            result = await Attendance.SetAttendanceAsync(
+                userId, _isAdmin, userId, toggle.ActivityId, toggle.Date, toggle.Slot, toggle.Attended);
+        }
+        catch (Exception ex)
+        {
+            failed = true;
+            Logger.LogError(ex, "Saving attendance failed");
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
+
+        if (failed)
+        {
+            SetCell(week.Value, toggle, !toggle.Attended);
+            Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+            return;
+        }
+
+        if (result != AttendanceChangeResult.Ok)
+        {
+            SetCell(week.Value, toggle, !toggle.Attended);
+            Snackbar.Add(MessageFor(result), Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            var summary = await PlayerStats.GetWeekSummaryAsync(userId, week.Value);
+            if (_loadedWeek == week)
+            {
+                _summary = summary;
+            }
+        }
+        catch (Exception ex)
+        {
+            // The attendance is saved; a stale summary is refreshed on the next load.
+            Logger.LogError(ex, "Refreshing the week summary failed");
+        }
+    }
+
+    private void SetCell(Week week, WeekGridCellToggle toggle, bool isChecked)
+    {
+        if (_grid is null || _loadedWeek != week)
+        {
+            return;
+        }
+
+        var rows = _grid.Rows
+            .Select(row => row.Activity.Id != toggle.ActivityId
+                ? row
+                : row with
+                {
+                    Cells = row.Cells
+                        .Select(c => c.Date == toggle.Date && c.Slot == toggle.Slot ? c with { IsChecked = isChecked } : c)
+                        .ToList(),
+                })
+            .ToList();
+        _grid = _grid with { Rows = rows };
+    }
+
+    private static string MessageFor(AttendanceChangeResult result) => result switch
+    {
+        AttendanceChangeResult.Forbidden => "Tuto účast nemůžeš měnit.",
+        AttendanceChangeResult.OutsideEditWindow => "Tento den už nejde upravit.",
+        _ => "Tato událost v rozpisu neexistuje.",
+    };
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

@@ -1,0 +1,26 @@
+@using L2Points.Domain.Time
+@using L2Points.Web.Formatting
+
+<div class="l2p-week-nav">
+    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" aria-label="Předchozí týden"
+                   OnClick="() => WeekChanged.InvokeAsync(Week.Previous())" />
+    <MudText Typo="Typo.h6" Class="l2p-week-nav-label">@DisplayFormat.WeekLabel(Week)</MudText>
+    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" aria-label="Další týden"
+                   OnClick="() => WeekChanged.InvokeAsync(Week.Next())" />
+    <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" Class="ml-2"
+               Disabled="@IsCurrentWeek"
+               OnClick="() => WeekChanged.InvokeAsync(Week.Containing(Today))">Tento týden</MudButton>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Week Week { get; set; }
+
+    [Parameter, EditorRequired]
+    public DateOnly Today { get; set; }
+
+    [Parameter]
+    public EventCallback<Week> WeekChanged { get; set; }
+
+    private bool IsCurrentWeek => Week == Week.Containing(Today);
+}

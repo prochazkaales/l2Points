@@ -1,0 +1,130 @@
+@using L2Points.Domain.Activities
+@using L2Points.Domain.Attendances
+@using L2Points.Domain.Time
+@using L2Points.Web.Formatting
+
+<div class="l2p-grid-scroll">
+    <table class="l2p-grid">
+        <thead>
+            <tr>
+                <th class="l2p-grid-boss" scope="col">Boss</th>
+                @foreach (var day in Days)
+                {
+                    <th scope="col" class="l2p-grid-day @DayClass(day)">
+                        <span>@DisplayFormat.DayHeader(day)</span>
+                        @if (IsLocked(day))
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="l2p-grid-lock"
+                                     Title="Den je zamčený" />
+                        }
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var group in Groups)
+            {
+                <tr class="l2p-grid-group">
+                    <th class="l2p-grid-boss" scope="rowgroup">@group.Title</th>
+                    <th colspan="@Days.Count"></th>
+                </tr>
+                @foreach (var row in group.Rows)
+                {
+                    <tr>
+                        <th class="l2p-grid-boss" scope="row">@row.Activity.Name</th>
+                        @foreach (var day in Days)
+                        {
+                            <td class="l2p-grid-cell @DayClass(day)">
+                                @foreach (var cell in row.Cells.Where(c => c.Date == day))
+                                {
+                                    @RenderCell(row.Activity, cell)
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private static readonly (ActivityCategory Category, string Title)[] GroupOrder =
+    [
+        (ActivityCategory.NormalEpic, "Normal epicy"),
+        (ActivityCategory.ChaoticEpic, "Chaotic epicy"),
+        (ActivityCategory.CastleSiege, "Castle Siege"),
+    ];
+
+    [Parameter, EditorRequired]
+    public WeekGrid Grid { get; set; } = default!;
+
+    /// <summary>All checkboxes are disabled and no lock icons are shown.</summary>
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>Current day in Prague; its column is highlighted. Optional.</summary>
+    [Parameter]
+    public DateOnly? Today { get; set; }
+
+    [Parameter]
+    public EventCallback<WeekGridCellToggle> OnToggle { get; set; }
+
+    private IReadOnlyList<DateOnly> Days => Grid.Week.Days.ToList();
+
+    private IEnumerable<(string Title, IEnumerable<WeekGridRow> Rows)> Groups =>
+        GroupOrder
+            .Select(g => (g.Title, Rows: Grid.Rows.Where(r => r.Activity.Category == g.Category).ToList().AsEnumerable()))
+            .Where(g => g.Rows.Any());
+
+    private string DayClass(DateOnly day) => day == Today ? "l2p-grid-today" : "";
+
+    /// <summary>A day is locked when it has cells but none of them can be edited.</summary>
+    private bool IsLocked(DateOnly day)
+    {
+        if (ReadOnly)
+        {
+            return false;
+        }
+
+        var cells = Grid.Rows.SelectMany(r => r.Cells).Where(c => c.Date == day).ToList();
+        return cells.Count > 0 && cells.All(c => !c.IsEditable);
+    }
+
+    private static string? CellLabel(WeekGridCell cell)
+    {
+        if (cell.Slot == EventSlot.None)
+        {
+            return null;
+        }
+
+        var prefix = cell.Slot == EventSlot.Evening ? "V" : "R";
+        return cell.TimeUtc is { } time
+            ? $"{prefix} {AppTime.ToPragueTime(cell.Date, time):HH:mm}"
+            : prefix;
+    }
+
+    private RenderFragment RenderCell(Activity activity, WeekGridCell cell) => __builder =>
+    {
+        var label = CellLabel(cell);
+        var ariaLabel = $"{activity.Name}, {DisplayFormat.DayHeader(cell.Date)}" + (label is null ? "" : $", {label}");
+        var disabled = ReadOnly || !cell.IsEditable;
+
+        <div class="l2p-grid-check">
+            @if (!cell.IsScheduled)
+            {
+                <MudTooltip Text="Mimo rozpis">
+                    <MudCheckBox T="bool" Value="@cell.IsChecked" Label="@label" AriaLabel="@ariaLabel" Disabled="@disabled"
+                                 Color="Color.Primary" Dense="true"
+                                 ValueChanged="@(v => OnToggle.InvokeAsync(new WeekGridCellToggle(activity.Id, cell.Date, cell.Slot, v)))" />
+                </MudTooltip>
+            }
+            else
+            {
+                <MudCheckBox T="bool" Value="@cell.IsChecked" Label="@label" AriaLabel="@ariaLabel" Disabled="@disabled"
+                             Color="Color.Primary" Dense="true"
+                             ValueChanged="@(v => OnToggle.InvokeAsync(new WeekGridCellToggle(activity.Id, cell.Date, cell.Slot, v)))" />
+            }
+        </div>
+    };
+}

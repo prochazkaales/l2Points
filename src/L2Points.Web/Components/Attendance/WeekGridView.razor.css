@@ -1,0 +1,105 @@
+/* The wrapper scrolls horizontally on narrow screens; the first column stays pinned. */
+.l2p-grid-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: var(--mud-default-borderradius);
+    background: var(--mud-palette-surface);
+}
+
+.l2p-grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-primary);
+}
+
+.l2p-grid th,
+.l2p-grid td {
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+}
+
+.l2p-grid thead th {
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-grid-day,
+.l2p-grid-cell {
+    min-width: 5.75rem;
+    text-align: center;
+}
+
+.l2p-grid .l2p-grid-boss {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 8.5rem;
+    text-align: left;
+    font-weight: 500;
+    white-space: nowrap;
+    border-right: 1px solid var(--mud-palette-lines-default);
+}
+
+.l2p-grid-group th {
+    padding-top: 0.6rem;
+    padding-bottom: 0.2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--mud-palette-primary);
+    background: color-mix(in srgb, var(--mud-palette-primary) 7%, var(--mud-palette-surface));
+}
+
+.l2p-grid tbody tr:last-child th,
+.l2p-grid tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.l2p-grid .l2p-grid-today,
+.l2p-grid thead th.l2p-grid-today {
+    background: color-mix(in srgb, var(--mud-palette-primary) 12%, var(--mud-palette-surface));
+}
+
+.l2p-grid thead th.l2p-grid-today {
+    color: var(--mud-palette-primary);
+    box-shadow: inset 0 -2px 0 var(--mud-palette-primary);
+}
+
+.l2p-grid-check {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.l2p-grid-check ::deep .mud-checkbox {
+    margin: 0;
+}
+
+.l2p-grid-check ::deep .mud-checkbox .mud-typography {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.l2p-grid-lock {
+    vertical-align: middle;
+    margin-left: 0.15rem;
+    opacity: 0.7;
+}
+
+@media (max-width: 599.98px) {
+    .l2p-grid .l2p-grid-boss {
+        min-width: 6.25rem;
+        max-width: 6.75rem;
+        white-space: normal;
+        padding-left: 0.5rem;
+        padding-right: 0.35rem;
+        line-height: 1.2;
+    }
+}
