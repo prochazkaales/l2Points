@@ -68,7 +68,7 @@ Detail a výjimky viz spec, tady jen orientace.
 
 ## Doména a persistence
 
-- Kde je logika: `src/L2Points.Domain` – `Time` (`AppTime`, `Week`, `DateRange`), `Activities` (entity, `DefaultCatalog`), `Attendances` (`Attendance`, `EditWindow`), `Schedule` (rozpis), `Stats` (body a procenta), `Settings`. Čisté statické kalkulátory bez I/O, čas dostávají parametrem nebo přes `TimeProvider`. Domain nezná `AppUser`: FK `Attendance.UserId` → `AspNetUsers` je nakonfigurovaná v Infrastructure (`HasOne<AppUser>()`).
+- Kde je logika: `src/L2Points.Domain` – `Time` (`AppTime`, `Week`, `DateRange`), `Activities` (entity, `DefaultCatalog`), `Attendances` (`Attendance`, `EditWindow`, `AttendanceRules`, `WeekGridBuilder`), `Schedule` (rozpis), `Stats` (body a procenta), `Settings`. Čisté statické kalkulátory bez I/O, čas dostávají parametrem nebo přes `TimeProvider`. Domain nezná `AppUser`: FK `Attendance.UserId` → `AspNetUsers` je nakonfigurovaná v Infrastructure (`HasOne<AppUser>()`).
 - `EventSlot` (`None`, `Evening`, `Morning`) je součástí klíče účasti. Aktivity bez slotů (normal epic, CS) používají `None`, chaotic `Evening`/`Morning`. Ukládá se jako `int`, hodnoty enumů neměnit.
 - Všechna `DateTime` v DB jsou UTC a čtou se s `DateTimeKind.Utc` (`UtcDateTimeConverter` registrovaný přes `ConfigureConventions`). Kalendářní dny jsou `DateOnly`, časy spawnů `TimeOnly` v UTC.
 - Seed katalogu běží za běhu (`ReferenceDataSeeder` po migraci a `IdentitySeeder`), ne přes `HasData`. Přidá jen chybějící aktivity (podle `Code`) a chybějící nastavení, existující hodnoty (body, očekávané počty, rozpis) nikdy nepřepisuje, protože je edituje admin.

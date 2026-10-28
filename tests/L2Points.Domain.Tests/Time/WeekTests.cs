@@ -51,6 +51,8 @@ public class WeekTests
     [InlineData("")]
     [InlineData("abc")]
     [InlineData("2026-13-01")]
+    [InlineData("9999-12-31")]
+    [InlineData("0001-01-01")]
     public void ParseOrCurrent_falls_back_to_today(string? input)
     {
         var week = Week.ParseOrCurrent(input, new DateOnly(2026, 11, 4));

@@ -11,9 +11,16 @@ public readonly record struct Week(DateOnly Monday)
         return new Week(date.AddDays(-daysSinceMonday));
     }
 
-    /// <summary>Week containing the <c>yyyy-MM-dd</c> date, or the week containing <paramref name="today"/> when it cannot be parsed.</summary>
+    private const int MinYear = 2000;
+    private const int MaxYear = 2100;
+
+    /// <summary>
+    /// Week containing the <c>yyyy-MM-dd</c> date, or the week containing <paramref name="today"/> when it cannot be parsed
+    /// or its year is outside 2000..2100 (guards against date overflow in <see cref="Sunday"/> and <see cref="Next"/>).
+    /// </summary>
     public static Week ParseOrCurrent(string? isoDate, DateOnly today) =>
         DateOnly.TryParseExact(isoDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+        && date.Year is >= MinYear and <= MaxYear
             ? Containing(date)
             : Containing(today);
 
