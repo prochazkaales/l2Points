@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "l2points-web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/L2Points.Web", "--launch-profile", "http"],
+      "port": 5167
+    }
+  ]
+}
