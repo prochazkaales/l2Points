@@ -1,0 +1,30 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?MSSQL_SA_PASSWORD must be set in .env}
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -b || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: Server=db;Database=L2Points;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True
+      Admin__UserName: ${ADMIN_USERNAME:?ADMIN_USERNAME must be set in .env}
+      Admin__Password: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
+      Admin__Nick: ${ADMIN_NICK:?ADMIN_NICK must be set in .env}
+
+volumes:
+  mssql-data:

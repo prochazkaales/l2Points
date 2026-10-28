@@ -6,6 +6,10 @@
 # dotenv files
 .env
 
+# Local tooling
+.superpowers/
+.claude/settings.local.json
+
 # User-specific files
 *.rsuser
 *.suo

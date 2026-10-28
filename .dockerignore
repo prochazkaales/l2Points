@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git
+.gitignore
+.vs
+.claude
+.superpowers
+docs
+tests
+.env
+out/
