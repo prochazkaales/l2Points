@@ -12,9 +12,9 @@ public readonly record struct DateRange
         To = to;
     }
 
-    public DateOnly From { get; init; }
+    public DateOnly From { get; }
 
-    public DateOnly To { get; init; }
+    public DateOnly To { get; }
 
     public int DayCount => To.DayNumber - From.DayNumber + 1;
 

@@ -13,6 +13,7 @@ public static class CatalogQueries
             .AsNoTracking()
             .Include(a => a.Spawns)
             .Include(a => a.SlotPoints)
+            .AsSplitQuery()
             .OrderBy(a => a.SortOrder)
             .ThenBy(a => a.Id)
             .ToListAsync(ct);

@@ -76,6 +76,8 @@ Detail a výjimky viz spec, tady jen orientace.
 - Přidání nové aktivity: přidat ji do `DefaultCatalog.CreateActivities()` s unikátním `Code` (max 32) a novým `SortOrder`; při dalším startu ji seed doplní i do existující DB. Nový `ScheduleType` vyžaduje úpravu `ScheduleCalculator` a testů. Změna už existující aktivity v katalogu se do seedované DB nepromítne, ta se mění přes admin UI.
 - Globální začátek evidence je v `AppSettings` (`TrackingStartDate`, `yyyy-MM-dd`), čte se přes `CatalogQueries.GetTrackingStartAsync`; katalog přes `CatalogQueries.LoadActivitiesAsync`.
 - `IdentitySeeder` nastavuje adminovi `ActiveFrom` na pondělí aktuálního týdne v Europe/Prague.
+- Datum výskytu = UTC datum spawnu. Shoduje se s datem v Europe/Prague jen dokud je spawn `TimeUtc` < 22:00 UTC (letní čas). Aktuální katalog má spawny v rozmezí 01:30–20:00 UTC; admin editace rozpisu (část 6) musí validovat `TimeUtc < 22:00`.
+- Aktivitu vyřazuj deaktivací (`IsActive = false`), nikdy ji nemaž: seeder při startu znovu vytvoří chybějící kódy z katalogu a FK z účastí je `Restrict`.
 
 ## Workflow
 
