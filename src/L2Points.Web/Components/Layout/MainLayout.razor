@@ -1,9 +1,102 @@
 ﻿@inherits LayoutComponentBase
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<AppUser> UserManager
+@inject IJSRuntime JS
 
-@Body
+<MudThemeProvider @ref="_themeProvider" Theme="AppTheme.Theme" @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       Class="d-md-none" aria-label="Menu" OnClick="ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="l2p-brand">L2Points</MudText>
+        <MudSpacer />
+        @if (!string.IsNullOrEmpty(_nick))
+        {
+            <MudText Typo="Typo.subtitle1" Class="mr-2">@_nick</MudText>
+        }
+        <MudTooltip Text="@(_isDarkMode ? "Světlý režim" : "Tmavý režim")">
+            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit" aria-label="Přepnout téma" OnClick="ToggleThemeAsync" />
+        </MudTooltip>
+        <form method="post" action="logout" class="l2p-logout-form">
+            <AntiforgeryToken />
+            <MudTooltip Text="Odhlásit se">
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
+                               ButtonType="ButtonType.Submit" aria-label="Odhlásit se" />
+            </MudTooltip>
+        </form>
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" Variant="DrawerVariant.Responsive" ClipMode="DrawerClipMode.Always"
+               Breakpoint="Breakpoint.Md">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    Došlo k neočekávané chybě.
+    <a href="." class="reload">Načíst znovu</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private MudThemeProvider? _themeProvider;
+    private bool _drawerOpen = true;
+    // Dark is the default until the stored or system preference is known (after the first interactive render).
+    private bool _isDarkMode = true;
+    private string? _nick;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // The user name claim holds the login, so the display nick is read from the database.
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            var user = await UserManager.GetUserAsync(state.User);
+            _nick = user?.Nick;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            var stored = await JS.InvokeAsync<string?>("l2pTheme.get");
+            if (stored is "dark" or "light")
+            {
+                _isDarkMode = stored == "dark";
+            }
+            else if (_themeProvider is not null)
+            {
+                _isDarkMode = await _themeProvider.GetSystemDarkModeAsync();
+            }
+
+            StateHasChanged();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, nothing to update.
+        }
+    }
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private async Task ToggleThemeAsync()
+    {
+        _isDarkMode = !_isDarkMode;
+        await JS.InvokeVoidAsync("l2pTheme.set", _isDarkMode ? "dark" : "light");
+    }
+}
