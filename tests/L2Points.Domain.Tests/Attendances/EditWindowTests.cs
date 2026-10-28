@@ -1,6 +1,6 @@
-using L2Points.Domain.Attendance;
+using L2Points.Domain.Attendances;
 
-namespace L2Points.Domain.Tests.Attendance;
+namespace L2Points.Domain.Tests.Attendances;
 
 public class EditWindowTests
 {

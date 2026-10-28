@@ -1,4 +1,4 @@
-namespace L2Points.Domain.Attendance;
+namespace L2Points.Domain.Attendances;
 
 /// <summary>Rule limiting which dates a player may edit for their own attendance. Admins are not limited.</summary>
 public static class EditWindow

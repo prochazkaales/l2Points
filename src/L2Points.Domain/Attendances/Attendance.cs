@@ -1,6 +1,6 @@
 using L2Points.Domain.Activities;
 
-namespace L2Points.Domain.Attendance;
+namespace L2Points.Domain.Attendances;
 
 /// <summary>One user's recorded participation in an activity on a date (and slot, for slotted activities).</summary>
 public class Attendance
