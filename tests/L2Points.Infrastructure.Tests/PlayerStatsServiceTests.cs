@@ -122,4 +122,54 @@ public class PlayerStatsServiceTests
         Assert.Equal(2, detail.History.Count);
         Assert.Equal(new DateOnly(2026, 11, 2), detail.History[0].Week.Monday);
     }
+
+    [Fact]
+    public async Task PlayerDetail_contains_jewels()
+    {
+        var (time, provider, userId) = await ArrangeDetailAsync();
+        await using var disposable = provider;
+        var (stats, _) = CreateServices(provider, time);
+        var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        int zaken;
+        await using (var db = factory.CreateDbContext())
+            zaken = await db.JewelTypes.Where(t => t.Code == "ZakenEarring").Select(t => t.Id).SingleAsync();
+
+        var before = await stats.GetPlayerDetailAsync(userId);
+        Assert.NotNull(before);
+        Assert.Empty(before.Jewels);
+
+        Assert.Equal(JewelChangeResult.Ok, await new JewelService(factory).AssignAsync(userId, zaken));
+
+        var detail = await stats.GetPlayerDetailAsync(userId);
+        Assert.NotNull(detail);
+        var piece = Assert.Single(detail.Jewels);
+        Assert.Equal(("ZakenEarring", 1), (piece.Type.Code, piece.Count));
+    }
+
+    [Fact]
+    public async Task PlayerDetail_for_empty_id_is_null()
+    {
+        var (time, provider, _) = await ArrangeDetailAsync();
+        await using var disposable = provider;
+        var (stats, _) = CreateServices(provider, time);
+
+        Assert.Null(await stats.GetPlayerDetailAsync(""));
+    }
+
+    [Fact]
+    public async Task PlayerDetail_before_tracking_start()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-10-20T10:00:00Z"));
+        await using var provider = TestServices.Create(timeProvider: time);
+        await TestData.SeedCatalogAsync(provider);
+        var player = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        var (stats, _) = CreateServices(provider, time);
+
+        var detail = await stats.GetPlayerDetailAsync(player.Id);
+
+        Assert.NotNull(detail);
+        Assert.Equal(0, detail.Overall.Points);
+        Assert.Null(detail.Overall.Stats.Total.Percent);
+        Assert.Empty(detail.History);
+    }
 }

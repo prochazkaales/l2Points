@@ -41,7 +41,7 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
         var player = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new PlayerInfo(u.Id, u.Nick, u.IsActive, u.ActiveFrom, u.DeactivatedAt))
+            .SelectPlayerInfo()
             .SingleOrDefaultAsync(ct);
         if (player is null)
             return null;
@@ -50,7 +50,7 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
         var trackingStart = await db.GetTrackingStartAsync(ct);
         var today = AppTime.TodayInPrague(time);
         var week = Week.Containing(today);
-        var to = today > week.Sunday ? today : week.Sunday;
+        var to = StatsWindows.LoadUntil(today, week);
         var entries = await db.Attendances
             .AsNoTracking()
             .Where(a => a.UserId == userId && a.Date >= trackingStart && a.Date <= to)
@@ -61,6 +61,7 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
             .Build([player], activities, entries.Select(e => new UserAttendance(userId, e)).ToList(), week, trackingStart, today)
             .Single();
         var history = PlayerHistoryCalculator.Build(player, activities, entries, trackingStart, today);
-        return new PlayerDetail(player, row.Overall, row.Week, history);
+        var jewels = await db.LoadJewelsByPlayerAsync(ct);
+        return new PlayerDetail(player, row.Overall, row.Week, history, jewels.Of(userId));
     }
 }

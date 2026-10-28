@@ -206,7 +206,7 @@ else
         _error = false;
         try
         {
-            var rows = await Overview.GetLeaderboardAsync(week, _includeInactive, _disposed.Token);
+            var rows = (await Overview.GetLeaderboardAsync(week, _includeInactive, _disposed.Token)).Rows;
             if (version == _version)
             {
                 _rows = rows;

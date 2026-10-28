@@ -1,6 +1,5 @@
 using L2Points.Domain.Stats;
 using L2Points.Domain.Time;
-using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,14 +12,14 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
     /// Leaderboard ordered by overall points. Overall stats cover tracking start to today; the week columns cover <paramref name="week"/>.
     /// Inactive players are only included on request.
     /// </summary>
-    public async Task<IReadOnlyList<LeaderboardRow>> GetLeaderboardAsync(Week week, bool includeInactive, CancellationToken ct = default)
+    public async Task<LeaderboardResult> GetLeaderboardAsync(Week week, bool includeInactive, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
         var players = await db.Users
             .AsNoTracking()
             .Where(u => includeInactive || u.IsActive)
-            .Select(ToPlayerInfo)
+            .SelectPlayerInfo()
             .ToListAsync(ct);
 
         var activities = await db.LoadActivitiesAsync(ct);
@@ -28,7 +27,9 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
         var today = AppTime.TodayInPrague(time);
         var attendances = await LoadAttendancesAsync(db, trackingStart, today, week, includeInactive ? null : players, ct);
 
-        return LeaderboardCalculator.Build(players, activities, attendances, week, trackingStart, today);
+        var rows = LeaderboardCalculator.Build(players, activities, attendances, week, trackingStart, today);
+        var jewels = await db.LoadJewelsByPlayerAsync(ct);
+        return new LeaderboardResult(rows, jewels);
     }
 
     /// <summary>
@@ -54,7 +55,7 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
         var players = await db.Users
             .AsNoTracking()
             .Where(u => u.IsActive || attendedThisWeek.Contains(u.Id))
-            .Select(ToPlayerInfo)
+            .SelectPlayerInfo()
             .ToListAsync(ct);
 
         var rows = LeaderboardCalculator.Build(players, activities, attendances, week, trackingStart, today)
@@ -64,17 +65,15 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
             .ToList();
 
         var events = WeekEventsCalculator.Build(players, activities, attendances, week);
-        return new WeekOverview(week, rows, events);
+        var jewels = await db.LoadJewelsByPlayerAsync(ct);
+        return new WeekOverview(week, rows, events, jewels);
     }
-
-    private static readonly System.Linq.Expressions.Expression<Func<AppUser, PlayerInfo>> ToPlayerInfo =
-        u => new PlayerInfo(u.Id, u.Nick, u.IsActive, u.ActiveFrom, u.DeactivatedAt);
 
     /// <summary>Attendances from tracking start to the later of today and the end of the week (one query).</summary>
     private static async Task<List<UserAttendance>> LoadAttendancesAsync(
         AppDbContext db, DateOnly trackingStart, DateOnly today, Week week, IReadOnlyList<PlayerInfo>? onlyPlayers, CancellationToken ct)
     {
-        var to = today > week.Sunday ? today : week.Sunday;
+        var to = StatsWindows.LoadUntil(today, week);
         var query = db.Attendances
             .AsNoTracking()
             .Where(a => a.Date >= trackingStart && a.Date <= to);

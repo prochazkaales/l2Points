@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<AttendanceService>();
         services.AddScoped<PlayerStatsService>();
         services.AddScoped<OverviewService>();
+        services.AddScoped<JewelService>();
 
         return services;
     }

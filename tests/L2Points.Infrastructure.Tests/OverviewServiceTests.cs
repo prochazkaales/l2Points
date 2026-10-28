@@ -16,7 +16,7 @@ public class OverviewServiceTests
     private static readonly DateOnly Sun = new(2026, 11, 1);
     private static readonly DateOnly NextMon = new(2026, 11, 2);
 
-    private sealed record Arranged(ServiceProvider Provider, OverviewService Service, string A, string B, string D) : IAsyncDisposable
+    private sealed record Arranged(ServiceProvider Provider, OverviewService Service, JewelService Jewels, string A, string B, string D) : IAsyncDisposable
     {
         public ValueTask DisposeAsync() => Provider.DisposeAsync();
     }
@@ -32,8 +32,14 @@ public class OverviewServiceTests
         await TestData.AddAttendanceAsync(provider, a.Id, "QueenAnt", Mon);
         await TestData.AddAttendanceAsync(provider, a.Id, "ChaoticCore", Tue, EventSlot.Evening);
         await TestData.AddAttendanceAsync(provider, a.Id, "CastleSiege", Sun);
-        var service = new OverviewService(provider.GetRequiredService<IDbContextFactory<AppDbContext>>(), time);
-        return new Arranged(provider, service, a.Id, b.Id, d.Id);
+        var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        var jewels = new JewelService(factory);
+        await using (var db = factory.CreateDbContext())
+        {
+            var antharas = await db.JewelTypes.Where(t => t.Code == "AntharasEarring").Select(t => t.Id).SingleAsync();
+            Assert.Equal(JewelChangeResult.Ok, await jewels.AssignAsync(a.Id, antharas));
+        }
+        return new Arranged(provider, new OverviewService(factory, time), jewels, a.Id, b.Id, d.Id);
     }
 
     [Fact]
@@ -41,7 +47,7 @@ public class OverviewServiceTests
     {
         await using var x = await ArrangeAsync();
 
-        var rows = await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: false);
+        var rows = (await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: false)).Rows;
 
         Assert.Equal([x.A, x.B], rows.Select(r => r.Player.UserId));
         Assert.Equal(3, rows[0].Overall.Points);
@@ -53,7 +59,7 @@ public class OverviewServiceTests
     {
         await using var x = await ArrangeAsync();
 
-        var rows = await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: true);
+        var rows = (await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: true)).Rows;
 
         Assert.Equal(3, rows.Count);
         Assert.Equal(25, rows.Single(r => r.Player.UserId == x.D).Overall.Stats.Total.Expected);
@@ -68,12 +74,59 @@ public class OverviewServiceTests
         var service = new OverviewService(provider.GetRequiredService<IDbContextFactory<AppDbContext>>(), time);
         var week = Week.Containing(NextMon);
 
-        Assert.Empty(await service.GetLeaderboardAsync(week, includeInactive: true));
+        Assert.Empty((await service.GetLeaderboardAsync(week, includeInactive: true)).Rows);
 
         await TestData.CreatePlayerAsync(provider, "lonely", Mon);
-        var row = Assert.Single(await service.GetLeaderboardAsync(week, includeInactive: false));
+        var row = Assert.Single((await service.GetLeaderboardAsync(week, includeInactive: false)).Rows);
         Assert.Equal(0, row.Overall.Points);
         Assert.Equal(0, row.Overall.Stats.Total.Percent);
+    }
+
+    [Fact]
+    public async Task Leaderboard_returns_jewels_of_players()
+    {
+        await using var x = await ArrangeAsync();
+
+        var result = await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: false);
+
+        var piece = Assert.Single(result.Jewels.Of(x.A));
+        Assert.Equal(("AntharasEarring", 1), (piece.Type.Code, piece.Count));
+        Assert.Empty(result.Jewels.Of(x.B));
+    }
+
+    [Fact]
+    public async Task Leaderboard_week_before_tracking_start_is_empty()
+    {
+        await using var x = await ArrangeAsync();
+
+        var rows = (await x.Service.GetLeaderboardAsync(new Week(new DateOnly(2026, 10, 19)), includeInactive: false)).Rows;
+
+        Assert.Equal(0, rows[0].Week.Points);
+        Assert.Null(rows[0].Week.Stats.Total.Percent);
+        Assert.Equal(3, rows[0].Overall.Points);
+    }
+
+    [Fact]
+    public async Task Leaderboard_future_week_is_empty()
+    {
+        await using var x = await ArrangeAsync();
+
+        var rows = (await x.Service.GetLeaderboardAsync(new Week(new DateOnly(2026, 11, 16)), includeInactive: false)).Rows;
+
+        Assert.Equal(0, rows[0].Week.Points);
+        Assert.Null(rows[0].Week.Stats.Total.Percent);
+        Assert.Equal(3, rows[0].Overall.Points);
+    }
+
+    [Fact]
+    public async Task WeekOverview_returns_jewels()
+    {
+        await using var x = await ArrangeAsync();
+
+        var overview = await x.Service.GetWeekOverviewAsync(Week.Containing(Mon));
+
+        Assert.Single(overview.Jewels.Of(x.A));
+        Assert.Empty(overview.Jewels.Of(x.B));
     }
 
     [Fact]
