@@ -20,4 +20,13 @@ public class StatsWindowsTests
     {
         Assert.Null(StatsWindows.Overall(TrackingStart, new DateOnly(2026, 10, 20)));
     }
+
+    [Fact]
+    public void LoadUntil_is_later_of_today_and_week_end()
+    {
+        var today = new DateOnly(2026, 11, 4);
+
+        Assert.Equal(today, StatsWindows.LoadUntil(today, Week.Containing(new DateOnly(2026, 10, 26))));
+        Assert.Equal(new DateOnly(2026, 11, 15), StatsWindows.LoadUntil(today, Week.Containing(new DateOnly(2026, 11, 9))));
+    }
 }
