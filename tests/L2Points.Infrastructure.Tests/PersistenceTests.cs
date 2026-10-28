@@ -1,5 +1,6 @@
 using L2Points.Domain.Activities;
 using L2Points.Domain.Attendances;
+using L2Points.Domain.Jewels;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -164,5 +165,54 @@ public class PersistenceTests
 
         await using var verify = NewContext(provider);
         Assert.Equal(new DateOnly(2027, 1, 4), await verify.GetTrackingStartAsync());
+    }
+
+    private static async Task AddJewelsAsync(ServiceProvider provider, string userId, params string[] typeCodes)
+    {
+        await using var db = NewContext(provider);
+        foreach (var code in typeCodes)
+        {
+            var typeId = await db.JewelTypes.Where(t => t.Code == code).Select(t => t.Id).SingleAsync();
+            db.UserJewels.Add(new UserJewel { UserId = userId, JewelTypeId = typeId });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task UserJewels_deleted_with_user()
+    {
+        await using var provider = TestServices.Create();
+        await SeedCatalogAsync(provider);
+        var userId = await CreateUserAsync(provider, "player");
+        await AddJewelsAsync(provider, userId, "QueenAntRing", "BaiumRing");
+
+        using (var scope = provider.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var user = await userManager.FindByIdAsync(userId);
+            Assert.True((await userManager.DeleteAsync(user!)).Succeeded);
+        }
+
+        await using var verify = NewContext(provider);
+        Assert.Equal(0, await verify.UserJewels.CountAsync());
+        Assert.Equal(8, await verify.JewelTypes.CountAsync());
+    }
+
+    [Fact]
+    public async Task LoadJewelsByPlayerAsync_groups_holdings()
+    {
+        await using var provider = TestServices.Create();
+        await SeedCatalogAsync(provider);
+        var userId = await CreateUserAsync(provider, "player");
+        await AddJewelsAsync(provider, userId, "QueenAntRing", "ValakasNecklace", "QueenAntRing");
+
+        await using var db = NewContext(provider);
+        var jewels = await db.LoadJewelsByPlayerAsync();
+
+        Assert.Equal(
+            [("QueenAntRing", 2), ("ValakasNecklace", 1)],
+            jewels.Of(userId).Select(j => (j.Type.Code, j.Count)));
+        Assert.Empty(jewels.Of("unknown"));
     }
 }

@@ -1,5 +1,6 @@
 using L2Points.Domain.Activities;
 using L2Points.Domain.Attendances;
+using L2Points.Domain.Jewels;
 using L2Points.Domain.Settings;
 using L2Points.Infrastructure.Identity;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -20,6 +21,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<ActivitySlotPoints> ActivitySlotPoints => Set<ActivitySlotPoints>();
 
     public DbSet<Attendance> Attendances => Set<Attendance>();
+
+    public DbSet<JewelType> JewelTypes => Set<JewelType>();
+
+    public DbSet<UserJewel> UserJewels => Set<UserJewel>();
 
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 

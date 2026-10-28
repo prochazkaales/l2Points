@@ -26,6 +26,7 @@ public class ReferenceDataSeederTests
         await using var db = NewContext(provider);
         Assert.Equal(14, await db.Activities.CountAsync());
         Assert.Equal(40, await db.ActivitySpawns.CountAsync());
+        Assert.Equal(8, await db.JewelTypes.CountAsync());
         var setting = await db.AppSettings.SingleAsync();
         Assert.Equal(AppSettingKeys.TrackingStartDate, setting.Key);
         Assert.Equal("2026-10-26", setting.Value);
@@ -42,6 +43,7 @@ public class ReferenceDataSeederTests
         await using var db = NewContext(provider);
         Assert.Equal(14, await db.Activities.CountAsync());
         Assert.Equal(40, await db.ActivitySpawns.CountAsync());
+        Assert.Equal(8, await db.JewelTypes.CountAsync());
         Assert.Equal(1, await db.AppSettings.CountAsync());
     }
 
@@ -89,5 +91,26 @@ public class ReferenceDataSeederTests
         Assert.Equal(1, await verify.Activities.CountAsync(a => a.Code == "CastleSiege"));
         Assert.Equal(7, (await verify.Activities.SingleAsync(a => a.Code == "Core")).Points);
         Assert.Equal(40, await verify.ActivitySpawns.CountAsync());
+    }
+
+    [Fact]
+    public async Task Seed_adds_missing_jewel_types_without_overwriting()
+    {
+        await using var provider = TestServices.Create();
+        await SeedAsync(provider);
+
+        await using (var db = NewContext(provider))
+        {
+            (await db.JewelTypes.SingleAsync(t => t.Code == "BaiumRing")).Name = "Baium ring";
+            db.JewelTypes.Remove(await db.JewelTypes.SingleAsync(t => t.Code == "ValakasNecklace"));
+            await db.SaveChangesAsync();
+        }
+
+        await SeedAsync(provider);
+
+        await using var verify = NewContext(provider);
+        Assert.Equal(8, await verify.JewelTypes.CountAsync());
+        Assert.Equal(1, await verify.JewelTypes.CountAsync(t => t.Code == "ValakasNecklace"));
+        Assert.Equal("Baium ring", (await verify.JewelTypes.SingleAsync(t => t.Code == "BaiumRing")).Name);
     }
 }

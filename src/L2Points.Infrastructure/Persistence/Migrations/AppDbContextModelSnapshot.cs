@@ -161,6 +161,65 @@ namespace L2Points.Infrastructure.Persistence.Migrations
                     b.ToTable("Attendances");
                 });
 
+            modelBuilder.Entity("L2Points.Domain.Jewels.JewelType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("JewelTypes");
+                });
+
+            modelBuilder.Entity("L2Points.Domain.Jewels.UserJewel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("JewelTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JewelTypeId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserJewels");
+                });
+
             modelBuilder.Entity("L2Points.Domain.Settings.AppSetting", b =>
                 {
                     b.Property<string>("Key")
@@ -437,6 +496,21 @@ namespace L2Points.Infrastructure.Persistence.Migrations
                     b.HasOne("L2Points.Domain.Activities.Activity", null)
                         .WithMany()
                         .HasForeignKey("ActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("L2Points.Infrastructure.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("L2Points.Domain.Jewels.UserJewel", b =>
+                {
+                    b.HasOne("L2Points.Domain.Jewels.JewelType", null)
+                        .WithMany()
+                        .HasForeignKey("JewelTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
