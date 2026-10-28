@@ -1,0 +1,44 @@
+@using L2Points.Domain.Stats
+@using L2Points.Web.Formatting
+
+@* Table cells (MudTd) with the points and the five participation percentages of one player and period. *@
+@if (ShowPoints)
+{
+    <MudTd Class="@Css("l2p-stat-points")">@Points</MudTd>
+}
+<MudTd Class="@Css("l2p-stat-pct")">@Pct(Stats.Total)</MudTd>
+<MudTd Class="@Css("l2p-stat-pct")">@Pct(Stats[StatCategory.Normal])</MudTd>
+<MudTd Class="@Css("l2p-stat-pct")">@Pct(Stats[StatCategory.Evening])</MudTd>
+<MudTd Class="@Css("l2p-stat-pct")">@Pct(Stats[StatCategory.Morning])</MudTd>
+<MudTd Class="@Css("l2p-stat-pct")">@Pct(Stats[StatCategory.CastleSiege])</MudTd>
+
+@code {
+    [Parameter, EditorRequired]
+    public ParticipationStats Stats { get; set; } = ParticipationStats.Empty;
+
+    [Parameter]
+    public int Points { get; set; }
+
+    [Parameter]
+    public bool ShowPoints { get; set; } = true;
+
+    /// <summary>Extra CSS class applied to every cell (used to hide a whole column set on narrow screens).</summary>
+    [Parameter]
+    public string? CellClass { get; set; }
+
+    private string Css(string own) => CellClass is null ? own : $"{own} {CellClass}";
+
+    private static RenderFragment Pct(CategoryStat stat) => builder =>
+    {
+        builder.OpenComponent<MudTooltip>(0);
+        builder.AddAttribute(1, nameof(MudTooltip.Text), $"{stat.Attended} / {stat.Expected}");
+        builder.AddAttribute(2, nameof(MudTooltip.ChildContent), (RenderFragment)(inner =>
+        {
+            inner.OpenElement(0, "span");
+            inner.AddAttribute(1, "class", stat.Percent is null ? "l2p-stat-empty" : "l2p-stat-value");
+            inner.AddContent(2, DisplayFormat.Percent(stat.Percent));
+            inner.CloseElement();
+        }));
+        builder.CloseComponent();
+    };
+}

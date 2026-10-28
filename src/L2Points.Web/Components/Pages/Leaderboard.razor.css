@@ -1,0 +1,99 @@
+.l2p-lb-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 1.5rem;
+}
+
+/* Cells are rendered by MudBlazor components, so reach them via ::deep. */
+.l2p-lb ::deep th,
+.l2p-lb ::deep td {
+    white-space: nowrap;
+}
+
+.l2p-lb ::deep .l2p-lb-groups th {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--mud-palette-primary);
+}
+
+.l2p-lb ::deep th.l2p-lb-col,
+.l2p-lb ::deep td.l2p-stat-points,
+.l2p-lb ::deep td.l2p-stat-pct {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.l2p-lb ::deep td.l2p-stat-points {
+    font-weight: 700;
+}
+
+.l2p-lb ::deep .l2p-stat-empty {
+    color: var(--mud-palette-text-disabled);
+}
+
+/* The two column sets are visually separated. */
+.l2p-lb ::deep .l2p-lb-group-start,
+.l2p-lb ::deep td.l2p-stat-points,
+.l2p-lb ::deep th.l2p-lb-group {
+    border-left: 1px solid var(--mud-palette-lines-default);
+}
+
+/* Player column stays pinned to the left while the table scrolls horizontally. */
+.l2p-lb ::deep .l2p-lb-nick {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--l2p-row-bg, var(--mud-palette-surface));
+    border-right: 1px solid var(--mud-palette-lines-default);
+}
+
+.l2p-lb ::deep tr.l2p-lb-me {
+    --l2p-row-bg: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
+    background: var(--l2p-row-bg);
+}
+
+.l2p-lb ::deep tr.l2p-lb-me td.l2p-lb-nick {
+    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+    font-weight: 600;
+}
+
+/* Dimmed via colour (not opacity) so the pinned cell stays opaque. */
+.l2p-lb ::deep tr.l2p-lb-inactive td {
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-lb ::deep .l2p-lb-chip {
+    margin: 0 0 0 0.5rem;
+    height: 1.25rem;
+}
+
+/* Below md only one column set is shown; the toggle above the table picks which. */
+@media (max-width: 959.98px) {
+    .l2p-lb-show-overall ::deep .l2p-lb-week,
+    .l2p-lb-show-week ::deep .l2p-lb-overall {
+        display: none;
+    }
+
+    /* The group label would be centred over columns that are scrolled out of view, so keep it at the start. */
+    .l2p-lb ::deep th.l2p-lb-group {
+        border-left: none;
+        text-align: left;
+    }
+
+    /* Long nicks wrap and the "inactive" chip drops below the nick. */
+    .l2p-lb ::deep .l2p-lb-nick {
+        max-width: 8rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .l2p-lb ::deep .l2p-lb-chip {
+        display: flex;
+        width: fit-content;
+        margin: 0.1rem 0 0;
+    }
+}

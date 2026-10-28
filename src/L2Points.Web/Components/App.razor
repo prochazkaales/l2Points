@@ -27,7 +27,10 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
+    // Prerendering is off: pages load their data once, over the circuit, instead of twice.
+    private static readonly IComponentRenderMode InteractiveNoPrerender = new InteractiveServerRenderMode(prerender: false);
+
     // Account pages ([ExcludeFromInteractiveRouting]) are rendered statically because they set cookies.
     private IComponentRenderMode? PageRenderMode =>
-        HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+        HttpContext.AcceptsInteractiveRouting() ? InteractiveNoPrerender : null;
 }

@@ -1,6 +1,229 @@
 @page "/leaderboard"
+@using L2Points.Domain.Stats
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Attendance
+@using L2Points.Web.Components.Stats
+@using L2Points.Web.Formatting
+@inject OverviewService Overview
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<AppUser> UserManager
+@inject NavigationManager Navigation
+@inject TimeProvider Time
+@inject ILogger<Leaderboard> Logger
+@implements IDisposable
 
 <PageTitle>Přehled – L2Points</PageTitle>
 
 <MudText Typo="Typo.h4" GutterBottom="true">Přehled</MudText>
-<MudAlert Severity="Severity.Info">Připravujeme – část 4</MudAlert>
+
+<div class="l2p-lb-controls mb-3">
+    <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
+    <MudSwitch T="bool" Value="_includeInactive" ValueChanged="OnInactiveChanged" Color="Color.Primary"
+               Label="Zobrazit neaktivní" />
+</div>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Přehled se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadAsync">Zkusit znovu</MudButton>
+}
+else if (_rows is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else if (_rows.Count == 0)
+{
+    <MudAlert Severity="Severity.Normal">Zatím tu nikdo není.</MudAlert>
+}
+else
+{
+    <div class="d-md-none mb-3">
+        <MudToggleGroup T="string" @bind-Value="_view" SelectionMode="SelectionMode.SingleSelection"
+                        Color="Color.Primary" Outlined="true" CheckMark="false" Size="Size.Small">
+            <MudToggleItem Value="@ViewOverall">Celkově</MudToggleItem>
+            <MudToggleItem Value="@ViewWeek">Týden</MudToggleItem>
+        </MudToggleGroup>
+    </div>
+
+    <div class="@($"l2p-lb l2p-lb-show-{_view}")">
+    <MudTable T="LeaderboardRow" Items="_rows" Dense="true" Elevation="0" Outlined="true"
+              Breakpoint="Breakpoint.None" CustomHeader="true" RowClassFunc="RowClass">
+        <HeaderContent>
+            <MudTHeadRow Class="l2p-lb-groups">
+                <MudTh rowspan="2" Class="l2p-lb-nick">Hráč</MudTh>
+                <MudTh colspan="6" Class="l2p-lb-group l2p-lb-overall">Celkově</MudTh>
+                <MudTh colspan="6" Class="l2p-lb-group l2p-lb-week">Týden @DisplayFormat.WeekLabel(_week)</MudTh>
+            </MudTHeadRow>
+            <MudTHeadRow>
+                @foreach (var column in Columns)
+                {
+                    <MudTh Class="@HeaderClass("l2p-lb-overall", column)">
+                        <MudTableSortLabel T="LeaderboardRow" SortBy="@(new Func<LeaderboardRow, object>(r => column.Key(r.Overall)))"
+                                           InitialDirection="@(column.IsFirst ? SortDirection.Descending : SortDirection.None)">
+                            @column.Label
+                        </MudTableSortLabel>
+                    </MudTh>
+                }
+                @foreach (var column in Columns)
+                {
+                    <MudTh Class="@HeaderClass("l2p-lb-week", column)">
+                        <MudTableSortLabel T="LeaderboardRow" SortBy="@(new Func<LeaderboardRow, object>(r => column.Key(r.Week)))">
+                            @column.Label
+                        </MudTableSortLabel>
+                    </MudTh>
+                }
+            </MudTHeadRow>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd Class="l2p-lb-nick">
+                <MudLink Href="@($"/players/{context.Player.UserId}")" Underline="Underline.Hover"
+                         Color="@(context.Player.IsActive ? Color.Primary : Color.Inherit)">@context.Player.Nick</MudLink>
+                @if (!context.Player.IsActive)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="l2p-lb-chip">neaktivní</MudChip>
+                }
+            </MudTd>
+            <StatCells Stats="context.Overall.Stats" Points="context.Overall.Points" CellClass="l2p-lb-overall" />
+            <StatCells Stats="context.Week.Stats" Points="context.Week.Points" CellClass="l2p-lb-week" />
+        </RowTemplate>
+    </MudTable>
+    </div>
+}
+
+@code {
+    private const string ViewOverall = "overall";
+    private const string ViewWeek = "week";
+
+    private sealed record Column(string Label, Func<PlayerSummary, object> Key, bool IsFirst = false);
+
+    // Missing percentages sort below 0 %.
+    private static object PercentKey(CategoryStat stat) => stat.Percent ?? -1.0;
+
+    private static readonly Column[] Columns =
+    [
+        new("Body", s => s.Points, IsFirst: true),
+        new("Celkem", s => PercentKey(s.Stats.Total)),
+        new(DisplayFormat.CategoryLabel(StatCategory.Normal), s => PercentKey(s.Stats[StatCategory.Normal])),
+        new(DisplayFormat.CategoryLabel(StatCategory.Evening), s => PercentKey(s.Stats[StatCategory.Evening])),
+        new(DisplayFormat.CategoryLabel(StatCategory.Morning), s => PercentKey(s.Stats[StatCategory.Morning])),
+        new(DisplayFormat.CategoryLabel(StatCategory.CastleSiege), s => PercentKey(s.Stats[StatCategory.CastleSiege])),
+    ];
+
+    private readonly CancellationTokenSource _disposed = new();
+
+    private IReadOnlyList<LeaderboardRow>? _rows;
+    private DateOnly _today;
+    private Week _week;
+    private bool _includeInactive;
+    private bool _loadedOnce;
+    private string? _userId;
+    private bool _error;
+    private string _view = ViewOverall;
+    // Only the result of the latest request is applied.
+    private int _version;
+
+    [SupplyParameterFromQuery(Name = "week")]
+    public string? WeekParameter { get; set; }
+
+    [SupplyParameterFromQuery(Name = "inactive")]
+    public string? InactiveParameter { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _today = AppTime.TodayInPrague(Time);
+        var week = Week.ParseOrCurrent(WeekParameter, _today);
+        var includeInactive = InactiveParameter == "1";
+        var changed = !_loadedOnce || week != _week || includeInactive != _includeInactive;
+        _week = week;
+        _includeInactive = includeInactive;
+
+        if (_userId is null)
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _userId = UserManager.GetUserId(state.User);
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        _loadedOnce = true;
+        _rows = null;
+        await LoadAsync();
+    }
+
+    private static string HeaderClass(string set, Column column) =>
+        column.IsFirst ? $"{set} l2p-lb-col l2p-lb-group-start" : $"{set} l2p-lb-col";
+
+    private string RowClass(LeaderboardRow row, int index)
+    {
+        var classes = new List<string>(2);
+        if (row.Player.UserId == _userId)
+        {
+            classes.Add("l2p-lb-me");
+        }
+
+        if (!row.Player.IsActive)
+        {
+            classes.Add("l2p-lb-inactive");
+        }
+
+        return string.Join(' ', classes);
+    }
+
+    private void OnWeekChanged(Week week) => NavigateTo(week, _includeInactive);
+
+    private void OnInactiveChanged(bool value) => NavigateTo(_week, value);
+
+    private void NavigateTo(Week week, bool includeInactive)
+    {
+        var query = new List<string>(2);
+        if (week != Week.Containing(_today))
+        {
+            query.Add($"week={week.Monday:yyyy-MM-dd}");
+        }
+
+        if (includeInactive)
+        {
+            query.Add("inactive=1");
+        }
+
+        Navigation.NavigateTo(query.Count == 0 ? "/leaderboard" : $"/leaderboard?{string.Join('&', query)}");
+    }
+
+    private async Task LoadAsync()
+    {
+        var version = ++_version;
+        var week = _week;
+        _error = false;
+        try
+        {
+            var rows = await Overview.GetLeaderboardAsync(week, _includeInactive, _disposed.Token);
+            if (version == _version)
+            {
+                _rows = rows;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading the leaderboard of week {Week} failed", week.Monday);
+            if (version == _version)
+            {
+                _rows = null;
+                _error = true;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}
