@@ -8,12 +8,17 @@ public class JewelImageTests
     public void Every_default_jewel_has_an_image_file()
     {
         var root = FindRepoRoot();
-        var wwwroot = Path.Combine(root, "src", "L2Points.Web", "wwwroot");
+        var imageDir = Path.Combine(root, "src", "L2Points.Web", "wwwroot", "images", "jewels");
+
+        // File.Exists is case-insensitive on Windows; compare names ordinally, as the Linux container does.
+        var fileNames = Directory.GetFiles(imageDir).Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal);
 
         foreach (var type in DefaultJewels.CreateJewelTypes())
         {
-            var path = Path.Combine(wwwroot, type.ImagePath);
-            Assert.True(File.Exists(path), $"Missing icon for {type.Code}: {path}");
+            Assert.Equal("images/jewels", Path.GetDirectoryName(type.ImagePath)?.Replace('\\', '/'));
+            var fileName = Path.GetFileName(type.ImagePath);
+            Assert.True(fileNames.Contains(fileName),
+                $"Missing icon for {type.Code}: {fileName} (case-sensitive) in {imageDir}");
         }
     }
 

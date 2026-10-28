@@ -19,7 +19,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
   - Šperky (část 5): `Domain/Jewels` (`JewelType`, `UserJewel`, `DefaultJewels` – výchozí katalog, `JewelCalculator` – seskupení). Hráč může mít víc kusů i stejného typu, bez data; odebrání odebere jeden kus. `Components/Jewels` (`JewelIcon`, `JewelIcons`) vykreslí ikonu s počtem. Stránky `/jewels` (galerie: kdo co drží) a `/admin/jewels` (jen role Admin: výběr hráče v `?player=`, přidat/odebrat kus; odkaz z `/admin`). Ikony jsou ve `wwwroot/images/jewels/{Code}.png` (z l2j.ru). Nový typ šperku = přidat do `DefaultJewels` + soubor ikony, `JewelImageTests` to hlídá.
 - `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
 - `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
-- `tests/L2Points.Web.Tests` – xUnit, čistá logika webu bez UI (`Formatting/DisplayFormat`, `PlayerUrl`).
+- `tests/L2Points.Web.Tests` – xUnit, čistá logika webu bez UI (`Formatting/DisplayFormat`, `PlayerUrl`, `JewelImageTests` – každý seedovaný šperk má ikonu).
 
 ## Příkazy
 
@@ -73,16 +73,17 @@ Detail a výjimky viz spec, tady jen orientace.
 
 ## Doména a persistence
 
-- Kde je logika: `src/L2Points.Domain` – `Time` (`AppTime`, `Week`, `DateRange`), `Activities` (entity, `DefaultCatalog`), `Attendances` (`Attendance`, `EditWindow`, `AttendanceRules`, `WeekGridBuilder`), `Schedule` (rozpis), `Stats` (body a procenta), `Settings`. Čisté statické kalkulátory bez I/O, čas dostávají parametrem nebo přes `TimeProvider`. Domain nezná `AppUser`: FK `Attendance.UserId` → `AspNetUsers` je nakonfigurovaná v Infrastructure (`HasOne<AppUser>()`).
+- Kde je logika: `src/L2Points.Domain` – `Time` (`AppTime`, `Week`, `DateRange`), `Activities` (entity, `DefaultCatalog`), `Attendances` (`Attendance`, `EditWindow`, `AttendanceRules`, `WeekGridBuilder`), `Schedule` (rozpis), `Stats` (body a procenta), `Jewels` (typy šperků, `DefaultJewels`, `JewelCalculator`), `Settings`. Čisté statické kalkulátory bez I/O, čas dostávají parametrem nebo přes `TimeProvider`. Domain nezná `AppUser`: FK `Attendance.UserId` → `AspNetUsers` je nakonfigurovaná v Infrastructure (`HasOne<AppUser>()`), stejně `UserJewel.UserId` → `AspNetUsers` (cascade); `UserJewel.JewelTypeId` → `JewelTypes` je `Restrict`.
 - `EventSlot` (`None`, `Evening`, `Morning`) je součástí klíče účasti. Aktivity bez slotů (normal epic, CS) používají `None`, chaotic `Evening`/`Morning`. Ukládá se jako `int`, hodnoty enumů neměnit.
 - Všechna `DateTime` v DB jsou UTC a čtou se s `DateTimeKind.Utc` (`UtcDateTimeConverter` registrovaný přes `ConfigureConventions`). Kalendářní dny jsou `DateOnly`, časy spawnů `TimeOnly` v UTC.
-- Seed katalogu běží za běhu (`ReferenceDataSeeder` po migraci a `IdentitySeeder`), ne přes `HasData`. Přidá jen chybějící aktivity (podle `Code`) a chybějící nastavení, existující hodnoty (body, očekávané počty, rozpis) nikdy nepřepisuje, protože je edituje admin.
+- Seed katalogu běží za běhu (`ReferenceDataSeeder` po migraci a `IdentitySeeder`), ne přes `HasData`. Přidá jen chybějící aktivity (podle `Code`), typy šperků (podle `Code`) a nastavení, existující hodnoty (body, očekávané počty, rozpis) nikdy nepřepisuje, protože je edituje admin.
 - Body vs. procenta: body = součet bodových hodnot účastí podle aktuálních hodnot aktivity (případně override v `ActivitySlotPoints`), bez stropu. Procenta = započtené účasti ÷ očekávané výskyty, u aktivity za týden nejvýš do očekávaného počtu. Počítá se v `Stats`, ne v DB ani UI.
 - Přidání nové aktivity: přidat ji do `DefaultCatalog.CreateActivities()` s unikátním `Code` (max 32) a novým `SortOrder`; při dalším startu ji seed doplní i do existující DB. Nový `ScheduleType` vyžaduje úpravu `ScheduleCalculator` a testů. Změna už existující aktivity v katalogu se do seedované DB nepromítne, ta se mění přes admin UI.
 - Globální začátek evidence je v `AppSettings` (`TrackingStartDate`, `yyyy-MM-dd`), čte se přes `CatalogQueries.GetTrackingStartAsync`; katalog přes `CatalogQueries.LoadActivitiesAsync`.
 - `IdentitySeeder` nastavuje adminovi `ActiveFrom` na pondělí aktuálního týdne v Europe/Prague.
 - Datum výskytu = UTC datum spawnu. Shoduje se s datem v Europe/Prague jen dokud je spawn `TimeUtc` < 22:00 UTC (letní čas). Aktuální katalog má spawny v rozmezí 01:30–20:00 UTC; admin editace rozpisu (část 6) musí validovat `TimeUtc < 22:00`.
 - Aktivitu vyřazuj deaktivací (`IsActive = false`), nikdy ji nemaž: seeder při startu znovu vytvoří chybějící kódy z katalogu a FK z účastí je `Restrict`.
+- Typy šperků se také nikdy nemažou (FK `Restrict`, seeder chybějící kódy obnoví). Nový typ: přidat do `DefaultJewels.CreateJewelTypes()` a ikonu `wwwroot/images/jewels/{Code}.png` (hlídá `JewelImageTests`, názvy souborů rozlišují velikost písmen).
 
 ## Workflow
 

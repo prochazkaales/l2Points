@@ -45,7 +45,7 @@ else
             {
                 var count = CountOf(type);
                 <div class="l2p-admin-jewel-row">
-                    <JewelIcon Type="type" Size="32" />
+                    <JewelIcon Type="type" Size="32" Decorative="true" />
                     <MudText Typo="Typo.body1" Class="l2p-admin-jewel-name">@type.Name</MudText>
                     <MudText Typo="Typo.body1" Class="l2p-admin-jewel-count">@DisplayFormat.Pieces(count)</MudText>
                     <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small" title="Odebrat kus"
@@ -96,22 +96,24 @@ else
             : $"/admin/jewels?player={Uri.EscapeDataString(userId)}");
 
     private Task AssignAsync(string userId, int jewelTypeId) =>
-        ChangeAsync(() => JewelData.AssignAsync(userId, jewelTypeId, _disposed.Token));
+        ChangeAsync(ct => JewelData.AssignAsync(userId, jewelTypeId, ct));
 
     private Task RemoveAsync(string userId, int jewelTypeId) =>
-        ChangeAsync(() => JewelData.RemoveOneAsync(userId, jewelTypeId, _disposed.Token));
+        ChangeAsync(ct => JewelData.RemoveOneAsync(userId, jewelTypeId, ct));
 
-    private async Task ChangeAsync(Func<Task<JewelChangeResult>> change)
+    private async Task ChangeAsync(Func<CancellationToken, Task<JewelChangeResult>> change)
     {
         if (_saving)
         {
             return;
         }
 
+        // Captured up front: reading Token from a disposed source throws.
+        var ct = _disposed.Token;
         _saving = true;
         try
         {
-            var result = await change();
+            var result = await change(ct);
             switch (result)
             {
                 case JewelChangeResult.Ok:
@@ -127,9 +129,10 @@ else
                     break;
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // The component was disposed while saving.
+            _saving = false;
             return;
         }
         catch (Exception ex)
@@ -141,9 +144,11 @@ else
         // The server is the source of truth; reload after every change, successful or not.
         try
         {
-            _assignments = await JewelData.GetAssignmentsAsync(_disposed.Token);
+            _assignments = await JewelData.GetAssignmentsAsync(ct);
+            // The selected player may be gone after the reload; an unknown id selects nothing.
+            OnParametersSet();
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             return;
         }

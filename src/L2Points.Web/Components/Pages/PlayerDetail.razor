@@ -61,7 +61,7 @@ else
             @foreach (var jewel in _detail.Jewels)
             {
                 <MudChip T="string" Variant="Variant.Outlined" Size="Size.Medium" Class="l2p-pd-jewel-chip">
-                    <JewelIcon Type="jewel.Type" Count="1" Size="24" />
+                    <JewelIcon Type="jewel.Type" Count="1" Size="24" Decorative="true" />
                     <span>@jewel.Type.Name</span>
                     @if (jewel.Count > 1)
                     {
