@@ -20,7 +20,7 @@
 {
     <MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
     <MudAlert Severity="Severity.Error" Class="mb-3">Detail hráče se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
-    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadDetailAsync">Zkusit znovu</MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ReloadAsync">Zkusit znovu</MudButton>
 }
 else if (!_detailLoaded)
 {
@@ -133,23 +133,36 @@ else
             _loadedId = Id;
             _detail = null;
             _detailLoaded = false;
-            _grid = null;
+            ResetGrid();
             _loadedGridWeek = week;
-            await LoadDetailAsync();
-            // Nothing to show a grid for when the player does not exist.
+            await ReloadAsync();
+        }
+        else if (weekChanged)
+        {
+            _loadedGridWeek = week;
+            ResetGrid();
             if (_detail is not null)
             {
                 await LoadGridAsync();
             }
         }
-        else if (weekChanged)
+    }
+
+    // Drops the shown grid and invalidates any grid load still in flight (e.g. for the previous player or week).
+    private void ResetGrid()
+    {
+        _gridVersion++;
+        _grid = null;
+        _gridError = false;
+    }
+
+    // Loads the detail and then, only for an existing player, the grid. Also used by the retry button.
+    private async Task ReloadAsync()
+    {
+        await LoadDetailAsync();
+        if (_detail is not null)
         {
-            _loadedGridWeek = week;
-            _grid = null;
-            if (_detail is not null)
-            {
-                await LoadGridAsync();
-            }
+            await LoadGridAsync();
         }
     }
 
