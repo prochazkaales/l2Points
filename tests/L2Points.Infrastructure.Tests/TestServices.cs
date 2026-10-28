@@ -1,6 +1,7 @@
 using L2Points.Infrastructure;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
+using L2Points.Infrastructure.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +45,8 @@ internal static class TestServices
         services.AddSingleton<IOptions<AdminOptions>>(Options.Create(admin ?? new AdminOptions()));
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<ReferenceDataSeeder>();
+        services.AddScoped<AttendanceService>();
+        services.AddScoped<PlayerStatsService>();
 
         var provider = services.BuildServiceProvider();
 

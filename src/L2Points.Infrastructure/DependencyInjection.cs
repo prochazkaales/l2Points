@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
+using L2Points.Infrastructure.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,8 @@ public static class DependencyInjection
         services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.SectionName));
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<ReferenceDataSeeder>();
+        services.AddScoped<AttendanceService>();
+        services.AddScoped<PlayerStatsService>();
 
         return services;
     }

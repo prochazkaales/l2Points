@@ -1,5 +1,6 @@
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
+using L2Points.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +34,8 @@ public class DependencyInjectionTests
         using var scope = provider.CreateScope();
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IdentitySeeder>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<ReferenceDataSeeder>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<AttendanceService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<PlayerStatsService>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>());
     }
 }

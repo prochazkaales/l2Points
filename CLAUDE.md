@@ -11,8 +11,8 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 `L2Points.slnx`, .NET 10 (`global.json`: SDK 10.0.204, rollForward latestMinor), společné nastavení v `Directory.Build.props` (Nullable, ImplicitUsings).
 
 - `src/L2Points.Domain` – entity, enumy a čistá logika, bez závislosti na EF Core, UI i `AppUser` (viz sekce Doména a persistence).
-- `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `Configurations/`, `ReferenceDataSeeder`, `CatalogQueries`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`), DI přes `AddInfrastructure`.
-- `src/L2Points.Web` – Blazor Web App (MudBlazor 9.x), `Program.cs`, stránky, layout, aplikační služby. Účtové stránky (`Components/Account`: `/login`, `/profile`) jsou statické SSR.
+- `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `Configurations/`, `ReferenceDataSeeder`, `CatalogQueries`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`), aplikační služby (`Services/`: `AttendanceService` – týdenní mřížka a změna účasti s kontrolou pravidel úprav na serveru, `PlayerStatsService` – body a procenta hráče za týden), DI přes `AddInfrastructure`.
+- `src/L2Points.Web` – Blazor Web App (MudBlazor 9.x), `Program.cs`, stránky, layout; aplikační služby jen volá. Účtové stránky (`Components/Account`: `/login`, `/profile`) jsou statické SSR.
 - `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
 - `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
 
