@@ -7,7 +7,7 @@ public static class LeaderboardCalculator
 {
     /// <summary>
     /// One row per given player (filtering out inactive players is the caller's job), ordered by overall
-    /// points descending and then by nick ignoring case.
+    /// points descending and then by nick ignoring case and finally by user id (fully deterministic).
     /// </summary>
     public static IReadOnlyList<LeaderboardRow> Build(
         IReadOnlyList<PlayerInfo> players,
@@ -35,6 +35,7 @@ public static class LeaderboardCalculator
             })
             .OrderByDescending(r => r.Overall.Points)
             .ThenBy(r => r.Player.Nick, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(r => r.Player.UserId, StringComparer.Ordinal)
             .ToList();
     }
 }

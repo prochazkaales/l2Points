@@ -80,6 +80,17 @@ public class LeaderboardCalculatorTests
     }
 
     [Fact]
+    public void Equal_points_and_nick_ignoring_case_ordered_by_user_id()
+    {
+        var activities = StatsTestCatalog.Create();
+        PlayerInfo[] players = [Player("U2", "bob"), Player("U1", "Bob")];
+
+        var rows = LeaderboardCalculator.Build(players, activities, [], CurrentWeek, TrackingStart, Today);
+
+        Assert.Equal(["U1", "U2"], rows.Select(r => r.Player.UserId));
+    }
+
+    [Fact]
     public void Before_tracking_start_everything_empty()
     {
         var activities = StatsTestCatalog.Create();
