@@ -1,0 +1,115 @@
+@page "/admin/settings"
+@attribute [Authorize(Roles = Roles.Admin)]
+@using L2Points.Domain.Activities
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Formatting
+@inject CatalogAdminService CatalogAdmin
+@inject ISnackbar Snackbar
+@inject ILogger<AdminSettings> Logger
+@implements IDisposable
+
+<PageTitle>Nastavení – Admin – L2Points</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Nastavení</MudText>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Nastavení se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadAsync">Zkusit znovu</MudButton>
+}
+else if (!_loaded)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-3">
+        Změna platí zpětně pro všechny statistiky. Účasti před začátkem evidence se nepočítají.
+    </MudAlert>
+
+    <div class="l2p-as-form">
+        <MudDatePicker @bind-Date="_date" Label="Začátek evidence" Variant="Variant.Outlined"
+                       DateFormat="d. M. yyyy" Disabled="_saving" Class="mb-3" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_saving || _date is null)"
+                   OnClick="SaveAsync">Uložit</MudButton>
+    </div>
+}
+
+@code {
+    private readonly CancellationTokenSource _disposed = new();
+
+    private bool _loaded;
+    private DateTime? _date;
+    private bool _error;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        try
+        {
+            var start = await CatalogAdmin.GetTrackingStartAsync(_disposed.Token);
+            _date = start.ToDateTime(TimeOnly.MinValue);
+            _loaded = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading tracking start failed");
+            _loaded = false;
+            _error = true;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _date is not { } date)
+        {
+            return;
+        }
+
+        // Captured up front: reading Token from a disposed source throws.
+        var ct = _disposed.Token;
+        _saving = true;
+        try
+        {
+            var outcome = await CatalogAdmin.SetTrackingStartAsync(DateOnly.FromDateTime(date), ct);
+            Snackbar.Add(outcome == CatalogChangeResult.InvalidValue
+                    ? "Datum musí být mezi lety 2000 a 2100."
+                    : DisplayFormat.CatalogMessage(outcome),
+                outcome == CatalogChangeResult.Ok ? Severity.Success : Severity.Warning);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The component was disposed while saving.
+            _saving = false;
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Saving tracking start failed");
+            Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+        }
+
+        // The server is the source of truth; show what is stored, whether the save worked or not.
+        try
+        {
+            await LoadAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

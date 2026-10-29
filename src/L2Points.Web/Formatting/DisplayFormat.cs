@@ -60,5 +60,41 @@ public static class DisplayFormat
         _ => $"{count} kusů",
     };
 
+    /// <summary>Czech description of when an activity happens, e.g. "Týdně v sobotu 20:00 UTC".</summary>
+    public static string ScheduleLabel(Activity a) => a.ScheduleType switch
+    {
+        ScheduleType.Flexible => $"Flexibilní, {a.ExpectedPerWeek}× týdně",
+        ScheduleType.Weekly => a.TimeUtc is { } time
+            ? $"Týdně {DayWithPreposition(a.WeeklyDay)} {time.ToString("HH:mm", CultureInfo.InvariantCulture)} UTC"
+            : $"Týdně {DayWithPreposition(a.WeeklyDay)}",
+        ScheduleType.Biweekly => $"Ob týden {DayWithPreposition(a.WeeklyDay)}",
+        ScheduleType.Slotted => $"Rozpis: {a.Spawns.Count} spawnů týdně",
+        _ => a.ScheduleType.ToString(),
+    };
+
+    /// <summary>Czech message for the outcome of an admin catalog change.</summary>
+    public static string CatalogMessage(CatalogChangeResult r) => r switch
+    {
+        CatalogChangeResult.Ok => "Uloženo.",
+        CatalogChangeResult.UnknownActivity => "Aktivita už neexistuje.",
+        CatalogChangeResult.InvalidValue => "Neplatná hodnota.",
+        CatalogChangeResult.InvalidSpawnTime => "Čas spawnu musí být před 22:00 UTC.",
+        CatalogChangeResult.DuplicateSpawn => "Pro tento den a slot už spawn existuje.",
+        CatalogChangeResult.AnchorNotOnWeeklyDay => "Datum musí padnout na správný den v týdnu.",
+        _ => "Uložení se nepovedlo, zkus to znovu.",
+    };
+
+    private static string DayWithPreposition(DayOfWeek? day) => day switch
+    {
+        DayOfWeek.Monday => "v pondělí",
+        DayOfWeek.Tuesday => "v úterý",
+        DayOfWeek.Wednesday => "ve středu",
+        DayOfWeek.Thursday => "ve čtvrtek",
+        DayOfWeek.Friday => "v pátek",
+        DayOfWeek.Saturday => "v sobotu",
+        DayOfWeek.Sunday => "v neděli",
+        _ => "",
+    };
+
     private static string ShortDate(DateOnly d) => $"{d.Day}. {d.Month}.";
 }

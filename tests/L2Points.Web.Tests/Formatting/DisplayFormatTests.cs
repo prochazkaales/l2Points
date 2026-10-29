@@ -1,3 +1,4 @@
+using L2Points.Domain.Activities;
 using L2Points.Domain.Time;
 using L2Points.Web.Formatting;
 
@@ -50,4 +51,27 @@ public class DisplayFormatTests
     [InlineData(22, "22 kusů")]
     public void Pieces_czech_plural(int count, string expected) =>
         Assert.Equal(expected, DisplayFormat.Pieces(count));
+
+    [Fact]
+    public void Schedule_label_per_type()
+    {
+        var catalog = DefaultCatalog.CreateActivities().ToDictionary(a => a.Code);
+
+        Assert.Equal("Flexibilní, 6× týdně", DisplayFormat.ScheduleLabel(catalog["QueenAnt"]));
+        Assert.Equal("Týdně v sobotu 20:00 UTC", DisplayFormat.ScheduleLabel(catalog["Baium"]));
+        Assert.Equal("Týdně v neděli 18:00 UTC", DisplayFormat.ScheduleLabel(catalog["CastleSiege"]));
+        Assert.Equal("Ob týden v neděli", DisplayFormat.ScheduleLabel(catalog["Antharas"]));
+        Assert.Equal("Rozpis: 6 spawnů týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticZaken"]));
+    }
+
+    [Fact]
+    public void Catalog_message_covers_all_results()
+    {
+        foreach (var result in Enum.GetValues<CatalogChangeResult>())
+        {
+            Assert.False(string.IsNullOrWhiteSpace(DisplayFormat.CatalogMessage(result)), result.ToString());
+        }
+
+        Assert.Contains("22:00", DisplayFormat.CatalogMessage(CatalogChangeResult.InvalidSpawnTime));
+    }
 }

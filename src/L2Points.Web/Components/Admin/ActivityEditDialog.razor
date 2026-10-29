@@ -1,0 +1,85 @@
+@using L2Points.Domain.Activities
+@* Edits points, slot point overrides (slotted), expected count (flexible) and the active flag of one activity.
+   Returns the settings on save; the caller passes them to CatalogAdminService, which validates again. *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Activity.Name</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudNumericField T="int?" @bind-Value="_points" Label="Body" Variant="Variant.Outlined" Class="mb-3"
+                             Min="0" Max="CatalogRules.MaxPoints" Required="true" RequiredError="Zadej body."
+                             HideSpinButtons="true" />
+            @if (Activity.ScheduleType == ScheduleType.Slotted)
+            {
+                <MudNumericField T="int?" @bind-Value="_eveningPoints" Label="Večerní – body" Variant="Variant.Outlined"
+                                 Class="mb-3" Min="0" Max="CatalogRules.MaxPoints" Clearable="true"
+                                 HelperText="Prázdné = stejné jako základní body." HideSpinButtons="true" />
+                <MudNumericField T="int?" @bind-Value="_morningPoints" Label="Ranní – body" Variant="Variant.Outlined"
+                                 Class="mb-3" Min="0" Max="CatalogRules.MaxPoints" Clearable="true"
+                                 HelperText="Prázdné = stejné jako základní body." HideSpinButtons="true" />
+            }
+            @if (Activity.ScheduleType == ScheduleType.Flexible)
+            {
+                <MudNumericField T="int?" @bind-Value="_expectedPerWeek" Label="Očekáváno týdně" Variant="Variant.Outlined"
+                                 Class="mb-3" Min="CatalogRules.MinExpectedPerWeek" Max="CatalogRules.MaxExpectedPerWeek"
+                                 Required="true" RequiredError="Zadej očekávaný počet." HideSpinButtons="true" />
+            }
+            <MudSwitch T="bool" @bind-Value="_isActive" Label="Aktivní" Color="Color.Primary" />
+            @if (!_isActive)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Warning">
+                    Neaktivní aktivita zmizí z mřížky a z očekávaných výskytů, existující účasti dál nesou body.
+                </MudText>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Zrušit</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync">Uložit</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm _form = default!;
+    private int? _points;
+    private int? _eveningPoints;
+    private int? _morningPoints;
+    private int? _expectedPerWeek;
+    private bool _isActive;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Activity Activity { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        _points = Activity.Points;
+        _eveningPoints = Activity.SlotPoints.FirstOrDefault(s => s.Slot == EventSlot.Evening)?.Points;
+        _morningPoints = Activity.SlotPoints.FirstOrDefault(s => s.Slot == EventSlot.Morning)?.Points;
+        _expectedPerWeek = Activity.ExpectedPerWeek;
+        _isActive = Activity.IsActive;
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid || _points is not { } points)
+        {
+            return;
+        }
+
+        var slotted = Activity.ScheduleType == ScheduleType.Slotted;
+        var flexible = Activity.ScheduleType == ScheduleType.Flexible;
+        MudDialog.Close(DialogResult.Ok(new ActivitySettings(
+            points,
+            slotted ? _eveningPoints : null,
+            slotted ? _morningPoints : null,
+            flexible ? _expectedPerWeek : null,
+            _isActive)));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

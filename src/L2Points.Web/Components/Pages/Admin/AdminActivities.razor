@@ -1,0 +1,201 @@
+@page "/admin/activities"
+@attribute [Authorize(Roles = Roles.Admin)]
+@using L2Points.Domain.Activities
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Admin
+@using L2Points.Web.Formatting
+@inject CatalogAdminService CatalogAdmin
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<AdminActivities> Logger
+@implements IDisposable
+
+<PageTitle>Aktivity a body – Admin – L2Points</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Aktivity a body</MudText>
+<MudText Typo="Typo.body2" Class="mb-3">Změna bodů platí zpětně i pro už zapsané účasti.</MudText>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Aktivity se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadAsync">Zkusit znovu</MudButton>
+}
+else if (_activities is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    @foreach (var (category, title) in Groups)
+    {
+        var items = _activities.Where(a => a.Category == category).ToList();
+        if (items.Count == 0)
+        {
+            continue;
+        }
+
+        <MudText Typo="Typo.h6" Class="mt-4 mb-2">@title</MudText>
+        <div class="l2p-aa">
+            <MudTable T="Activity" Items="items" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
+                <HeaderContent>
+                    <MudTh Class="l2p-nick-cell">Název</MudTh>
+                    <MudTh>Rozpis</MudTh>
+                    <MudTh>Body</MudTh>
+                    @if (category == ActivityCategory.ChaoticEpic)
+                    {
+                        <MudTh>Večerní</MudTh>
+                        <MudTh>Ranní</MudTh>
+                    }
+                    @if (category == ActivityCategory.NormalEpic)
+                    {
+                        <MudTh>Očekáváno/týden</MudTh>
+                    }
+                    <MudTh>Aktivní</MudTh>
+                    <MudTh>Upravit</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    @{
+                        var activity = context;
+                    }
+                    <MudTd Class="l2p-nick-cell">@activity.Name</MudTd>
+                    <MudTd>@DisplayFormat.ScheduleLabel(activity)</MudTd>
+                    <MudTd>@activity.Points</MudTd>
+                    @if (category == ActivityCategory.ChaoticEpic)
+                    {
+                        <MudTd>@SlotPointsText(activity, EventSlot.Evening)</MudTd>
+                        <MudTd>@SlotPointsText(activity, EventSlot.Morning)</MudTd>
+                    }
+                    @if (category == ActivityCategory.NormalEpic)
+                    {
+                        <MudTd>@(activity.ScheduleType == ScheduleType.Flexible ? activity.ExpectedPerWeek?.ToString() : "")</MudTd>
+                    }
+                    <MudTd>
+                        @if (activity.IsActive)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">aktivní</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" title="Upravit"
+                                       aria-label="@($"Upravit: {activity.Name}")" Disabled="_saving"
+                                       OnClick="@(() => EditAsync(activity))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </div>
+    }
+}
+
+@code {
+    private static readonly (ActivityCategory Category, string Title)[] Groups =
+    [
+        (ActivityCategory.NormalEpic, "Normal epicy"),
+        (ActivityCategory.ChaoticEpic, "Chaotic epicy"),
+        (ActivityCategory.CastleSiege, "Castle Siege"),
+    ];
+
+    private static readonly DialogOptions EditOptions = new()
+    {
+        MaxWidth = MaxWidth.ExtraSmall,
+        FullWidth = true,
+        CloseOnEscapeKey = true,
+    };
+
+    private readonly CancellationTokenSource _disposed = new();
+
+    private IReadOnlyList<Activity>? _activities;
+    private bool _error;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    // Empty means no override: the slot gives the base points of the activity.
+    private static string SlotPointsText(Activity activity, EventSlot slot) =>
+        activity.SlotPoints.FirstOrDefault(s => s.Slot == slot)?.Points.ToString() ?? "";
+
+    private async Task EditAsync(Activity activity)
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<ActivityEditDialog> { { d => d.Activity, activity } };
+        var dialog = await DialogService.ShowAsync<ActivityEditDialog>(parameters, EditOptions);
+        var result = await dialog.Result;
+        if (result is not { Canceled: false, Data: ActivitySettings settings })
+        {
+            return;
+        }
+
+        // Captured up front: reading Token from a disposed source throws.
+        var ct = _disposed.Token;
+        _saving = true;
+        try
+        {
+            var outcome = await CatalogAdmin.UpdateActivityAsync(activity.Id, settings, ct);
+            Snackbar.Add(DisplayFormat.CatalogMessage(outcome),
+                outcome == CatalogChangeResult.Ok ? Severity.Success : Severity.Warning);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The component was disposed while saving.
+            _saving = false;
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Saving activity {ActivityId} failed", activity.Id);
+            Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+        }
+
+        // The server is the source of truth; reload after every change, successful or not.
+        try
+        {
+            _activities = await CatalogAdmin.GetActivitiesAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Reloading activities failed");
+            _activities = null;
+            _error = true;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        try
+        {
+            _activities = await CatalogAdmin.GetActivitiesAsync(_disposed.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading activities failed");
+            _activities = null;
+            _error = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}
