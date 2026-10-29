@@ -24,6 +24,7 @@ public class AppThemeTokensTests
             ("TextPrimary", palette.TextPrimary, "--l2p-text"),
             ("TextSecondary", palette.TextSecondary, "--l2p-text-2"),
             ("TextDisabled", palette.TextDisabled, "--l2p-text-disabled"),
+            ("ActionDisabled", palette.ActionDisabled, "--l2p-text-disabled"),
             ("Info", palette.Info, "--l2p-info"),
             ("Success", palette.Success, "--l2p-success"),
             ("Warning", palette.Warning, "--l2p-warning"),

@@ -21,7 +21,8 @@
 
 
 #components-reconnect-modal {
-    background-color: var(--l2p-surface-solid);
+    /* MudBlazor forces its own palette background on this element with !important. */
+    background-color: var(--l2p-surface-solid) !important;
     color: var(--l2p-text);
     width: 20rem;
     margin: 20vh auto;
