@@ -1,5 +1,4 @@
 @page "/leaderboard"
-@using System.Globalization
 @using L2Points.Domain.Jewels
 @using L2Points.Domain.Stats
 @using L2Points.Domain.Time
@@ -39,42 +38,34 @@ else if (_rows.Count == 0)
 }
 else
 {
+    @* While reloading, the current numbers stay on screen; only a thin progress line shows. *@
+    <div class="l2p-lb-week-loading mb-1">
+        @if (_loading == LoadScope.All)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
+        }
+    </div>
+
     <div class="l2p-kpis mb-4">
-        <MudPaper Outlined="true" Class="l2p-kpi">
-            <MudText Typo="Typo.caption" Class="l2p-kpi-label">Účast party</MudText>
-            <div class="l2p-kpi-value">@DisplayFormat.Percent(_summary.PartyAttendance.Percent)</div>
-            <MudText Typo="Typo.caption" Class="l2p-kpi-note">celkově</MudText>
-        </MudPaper>
-        <MudPaper Outlined="true" Class="l2p-kpi">
-            <MudText Typo="Typo.caption" Class="l2p-kpi-label">Body party</MudText>
-            <div class="l2p-kpi-value">@DisplayFormat.Points(_summary.WeekPoints)</div>
-            <MudText Typo="Typo.caption" Class="l2p-kpi-note">@PartyPointsNote</MudText>
-        </MudPaper>
-        <MudPaper Outlined="true" Class="l2p-kpi">
-            <MudText Typo="Typo.caption" Class="l2p-kpi-label">Hráč týdne</MudText>
-            @if (_summary.PlayersOfWeek.Count > 0)
-            {
-                var best = _summary.PlayersOfWeek[0];
-                <div class="l2p-kpi-value l2p-kpi-player" title="@string.Join(", ", _summary.PlayersOfWeek.Select(p => p.Nick))">
-                    <MudLink Href="@DisplayFormat.PlayerUrl(best.UserId, _week)" Underline="Underline.Hover" Color="Color.Primary">@best.Nick</MudLink>
-                    @if (_summary.PlayersOfWeek.Count > 1)
-                    {
-                        <span class="l2p-kpi-more">+@(_summary.PlayersOfWeek.Count - 1)</span>
-                    }
-                </div>
-                <MudText Typo="Typo.caption" Class="l2p-kpi-note">@DisplayFormat.PointsCount(_summary.PlayersOfWeekPoints) · @WeekCaption</MudText>
-            }
-            else
-            {
-                <div class="l2p-kpi-value">–</div>
-                <MudText Typo="Typo.caption" Class="l2p-kpi-note">zatím nikdo · @WeekCaption</MudText>
-            }
-        </MudPaper>
-        <MudPaper Outlined="true" Class="l2p-kpi">
-            <MudText Typo="Typo.caption" Class="l2p-kpi-label">Tvoje pořadí</MudText>
-            <div class="l2p-kpi-value">@(_summary.Me is { } me ? $"{me.Rank}." : "–")</div>
-            <MudText Typo="Typo.caption" Class="l2p-kpi-note">@StandingNote</MudText>
-        </MudPaper>
+        <KpiCard Label="Účast party" Note="celkově">@DisplayFormat.Percent(_summary.PartyAttendance.Percent)</KpiCard>
+        <KpiCard Label="Body party" Note="@PartyPointsNote">@DisplayFormat.Points(_summary.WeekPoints)</KpiCard>
+        @if (_summary.PlayersOfWeek.Count > 0)
+        {
+            var best = _summary.PlayersOfWeek[0];
+            <KpiCard Label="Hráč týdne" ValueTitle="@string.Join(", ", _summary.PlayersOfWeek.Select(p => p.Nick))"
+                     Note="@($"{DisplayFormat.PointsCount(_summary.PlayersOfWeekPoints)} · {WeekCaption}")">
+                <MudLink Href="@DisplayFormat.PlayerUrl(best.UserId, _week)" Underline="Underline.Hover" Color="Color.Primary">@best.Nick</MudLink>
+                @if (_summary.PlayersOfWeek.Count > 1)
+                {
+                    <span class="l2p-kpi-more">+@(_summary.PlayersOfWeek.Count - 1)</span>
+                }
+            </KpiCard>
+        }
+        else
+        {
+            <KpiCard Label="Hráč týdne" Note="@($"zatím nikdo · {WeekCaption}")">–</KpiCard>
+        }
+        <KpiCard Label="Tvoje pořadí" Note="@StandingNote">@(_summary.Me is { } me ? $"{me.Rank}." : "–")</KpiCard>
     </div>
 
     @if (_summary.Podium.Count > 0)
@@ -98,75 +89,30 @@ else
         </div>
     }
 
-    <MudPaper Outlined="true" Class="l2p-lb-section mb-4">
-        <div class="l2p-lb-section-head">
-            <MudText Typo="Typo.subtitle2" Class="l2p-lb-section-title">Celkově</MudText>
+    <MudPaper Outlined="true" Class="mb-4">
+        <div class="l2p-section-head">
+            <MudText Typo="Typo.subtitle2" Class="l2p-section-title">Celkově</MudText>
         </div>
-        <div class="l2p-lb">
-            <MudTable T="LeaderboardRow" Items="_rows" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" RowClassFunc="RowClass">
-                <HeaderContent>
-                    <MudTh Class="l2p-lb-rank"></MudTh>
-                    <MudTh Class="l2p-nick-cell">Hráč</MudTh>
-                    @SortHeader(Columns[0], s => s.Overall, SortDirection.Descending)
-                    <MudTh Class="l2p-lb-bar-cell"></MudTh>
-                    @foreach (var column in Columns.Skip(1))
-                    {
-                        @SortHeader(column, s => s.Overall, SortDirection.None)
-                    }
-                </HeaderContent>
-                <RowTemplate>
-                    @RankCell(_summary.Ranks[context.Player.UserId])
-                    <PlayerNickCell Player="context.Player" Jewels="_jewels.Of(context.Player.UserId)" />
-                    <MudTd Class="l2p-stat-points">@DisplayFormat.Points(context.Overall.Points)</MudTd>
-                    <MudTd Class="l2p-lb-bar-cell">
-                        <div class="l2p-lb-bar"><span style="@BarStyle(context.Overall.Points)"></span></div>
-                    </MudTd>
-                    <StatCells Stats="context.Overall.Stats" ShowPoints="false" Toned="true" />
-                </RowTemplate>
-            </MudTable>
-        </div>
+        <RankingTable Rows="_rows" Ranks="_summary.Ranks" Jewels="_jewels" UserId="@_userId" ShowBar="true" />
     </MudPaper>
 
-    <MudPaper Outlined="true" Class="l2p-lb-section">
-        <div class="l2p-lb-section-head">
-            <MudText Typo="Typo.subtitle2" Class="l2p-lb-section-title">Týden</MudText>
+    <MudPaper Outlined="true">
+        <div class="l2p-section-head">
+            <MudText Typo="Typo.subtitle2" Class="l2p-section-title">Týden</MudText>
             <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
         </div>
-        <div class="l2p-lb">
-            <MudTable T="LeaderboardRow" Items="_weekRows" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" RowClassFunc="RowClass">
-                <HeaderContent>
-                    <MudTh Class="l2p-lb-rank"></MudTh>
-                    <MudTh Class="l2p-nick-cell">Hráč</MudTh>
-                    @foreach (var column in Columns)
-                    {
-                        @SortHeader(column, s => s.Week, column.IsFirst ? SortDirection.Descending : SortDirection.None)
-                    }
-                </HeaderContent>
-                <RowTemplate>
-                    @RankCell(_weekRanks[context.Player.UserId])
-                    <PlayerNickCell Player="context.Player" Jewels="_jewels.Of(context.Player.UserId)" Week="_week" />
-                    <StatCells Stats="context.Week.Stats" Points="context.Week.Points" Toned="true" />
-                </RowTemplate>
-            </MudTable>
+        <div class="l2p-lb-week-loading">
+            @if (_loading == LoadScope.Week)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
+            }
         </div>
+        <RankingTable Rows="_weekRows" Ranks="_weekRanks" Jewels="_jewels" UserId="@_userId" Weekly="true" NickWeek="_week" />
     </MudPaper>
 }
 
 @code {
-    private sealed record Column(string Label, Func<PlayerSummary, object> Key, bool IsFirst = false);
-
-    // Missing percentages sort below 0 %.
-    private static object PercentKey(CategoryStat stat) => stat.Percent ?? -1.0;
-
-    private static readonly Column[] Columns =
-    [
-        new("Body", s => s.Points, IsFirst: true),
-        new("Celkem", s => PercentKey(s.Stats.Total)),
-        new(DisplayFormat.CategoryLabel(StatCategory.Normal), s => PercentKey(s.Stats[StatCategory.Normal])),
-        new(DisplayFormat.CategoryLabel(StatCategory.Evening), s => PercentKey(s.Stats[StatCategory.Evening])),
-        new(DisplayFormat.CategoryLabel(StatCategory.Morning), s => PercentKey(s.Stats[StatCategory.Morning])),
-        new(DisplayFormat.CategoryLabel(StatCategory.CastleSiege), s => PercentKey(s.Stats[StatCategory.CastleSiege])),
-    ];
+    private enum LoadScope { None, Week, All }
 
     private readonly CancellationTokenSource _disposed = new();
 
@@ -183,6 +129,7 @@ else
     private bool _loadedOnce;
     private string? _userId;
     private bool _error;
+    private LoadScope _loading;
     // Only the result of the latest request is applied.
     private int _version;
 
@@ -197,7 +144,9 @@ else
         _today = AppTime.TodayInPrague(Time);
         var week = Week.ParseOrCurrent(WeekParameter, _today);
         var includeInactive = InactiveParameter == "1";
-        var changed = !_loadedOnce || week != _week || includeInactive != _includeInactive;
+        var scope = !_loadedOnce || includeInactive != _includeInactive ? LoadScope.All
+            : week != _week ? LoadScope.Week
+            : LoadScope.None;
         _week = week;
         _includeInactive = includeInactive;
 
@@ -207,13 +156,13 @@ else
             _userId = UserManager.GetUserId(state.User);
         }
 
-        if (!changed)
+        if (scope == LoadScope.None)
         {
             return;
         }
 
         _loadedOnce = true;
-        _rows = null;
+        _loading = scope;
         await LoadAsync();
     }
 
@@ -251,37 +200,8 @@ else
         }
     }
 
-    private int LeaderPoints => _rows is { Count: > 0 } rows ? rows[0].Overall.Points : 0;
-
-    private string BarStyle(int points) =>
-        LeaderPoints == 0 ? "width: 0%" : $"width: {(points * 100.0 / LeaderPoints).ToString("0.#", CultureInfo.InvariantCulture)}%";
-
     private static string ToneClass(double? percent) =>
         DisplayFormat.PercentTone(percent) is { } tone ? $"l2p-tone l2p-tone-{tone}" : "l2p-stat-empty";
-
-    private static RenderFragment SortHeader(Column column, Func<LeaderboardRow, PlayerSummary> period, SortDirection initial) => @<MudTh Class="@(column.IsFirst ? "l2p-lb-col l2p-lb-points-col" : "l2p-lb-col")">
-        <MudTableSortLabel T="LeaderboardRow" SortBy="@(new Func<LeaderboardRow, object>(r => column.Key(period(r))))" InitialDirection="@initial">
-            @column.Label
-        </MudTableSortLabel>
-    </MudTh>;
-
-    private static RenderFragment RankCell(int rank) => @<MudTd Class="l2p-lb-rank"><span class="@($"l2p-place-{rank}")">@(rank).</span></MudTd>;
-
-    private string RowClass(LeaderboardRow row, int index)
-    {
-        var classes = new List<string>(2);
-        if (row.Player.UserId == _userId)
-        {
-            classes.Add("l2p-lb-me");
-        }
-
-        if (!row.Player.IsActive)
-        {
-            classes.Add("l2p-lb-inactive");
-        }
-
-        return string.Join(' ', classes);
-    }
 
     private void OnWeekChanged(Week week) => NavigateTo(week, _includeInactive);
 
@@ -319,6 +239,7 @@ else
                 _summary = LeaderboardSummaryCalculator.Calculate(result.Rows, _userId);
                 _weekRanks = LeaderboardSummaryCalculator.Ranks(result.Rows, r => r.Week.Points);
                 _weekRows = result.Rows.OrderByDescending(r => r.Week.Points).ToList();
+                _loading = LoadScope.None;
             }
         }
         catch (OperationCanceledException)
@@ -332,6 +253,7 @@ else
             {
                 _rows = null;
                 _error = true;
+                _loading = LoadScope.None;
             }
         }
     }

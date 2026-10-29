@@ -1,0 +1,24 @@
+@* One dashboard figure: a label, a big value and a short note. Place several inside a div.l2p-kpis grid. *@
+<MudPaper Outlined="true" Class="l2p-kpi">
+    <MudText Typo="Typo.caption" Class="l2p-kpi-label">@Label</MudText>
+    <div class="l2p-kpi-value" title="@ValueTitle">@ChildContent</div>
+    @if (!string.IsNullOrEmpty(Note))
+    {
+        <MudText Typo="Typo.caption" Class="l2p-kpi-note">@Note</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "";
+
+    /// <summary>The value; plain text or markup such as a link.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? ValueTitle { get; set; }
+
+    [Parameter]
+    public string? Note { get; set; }
+}

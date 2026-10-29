@@ -49,7 +49,7 @@ public class WeekEventsCalculatorTests
     }
 
     [Fact]
-    public void Ordered_by_date_sort_order_slot()
+    public void Ordered_by_date_then_time_with_untimed_first()
     {
         var activities = StatsTestCatalog.Create();
         var core = activities.ByCode("ChaoticCore");
@@ -69,10 +69,38 @@ public class WeekEventsCalculatorTests
             [
                 (queenAnt.Id, new DateOnly(2026, 10, 26), EventSlot.None),
                 (queenAnt.Id, day, EventSlot.None),
-                (core.Id, day, EventSlot.Evening),
                 (core.Id, day, EventSlot.Morning),
+                (core.Id, day, EventSlot.Evening),
             ],
             events.Select(e => (e.Activity.Id, e.Date, e.Slot)));
+    }
+
+    private static WeekEvent Event(DateOnly date) =>
+        new(StatsTestCatalog.Create().ByCode("QueenAnt"), date, EventSlot.None, null, []);
+
+    [Fact]
+    public void Default_day_is_today_within_the_week()
+    {
+        var day = WeekEventsCalculator.DefaultDay(TestWeek, new DateOnly(2026, 10, 28), [Event(new DateOnly(2026, 10, 26))]);
+
+        Assert.Equal(new DateOnly(2026, 10, 28), day);
+    }
+
+    [Fact]
+    public void Default_day_of_another_week_is_its_last_day_with_events()
+    {
+        var day = WeekEventsCalculator.DefaultDay(
+            TestWeek, new DateOnly(2026, 11, 10), [Event(new DateOnly(2026, 10, 26)), Event(new DateOnly(2026, 10, 29))]);
+
+        Assert.Equal(new DateOnly(2026, 10, 29), day);
+    }
+
+    [Fact]
+    public void Default_day_of_another_week_without_events_is_monday()
+    {
+        var day = WeekEventsCalculator.DefaultDay(TestWeek, new DateOnly(2026, 11, 10), []);
+
+        Assert.Equal(TestWeek.Monday, day);
     }
 
     [Fact]

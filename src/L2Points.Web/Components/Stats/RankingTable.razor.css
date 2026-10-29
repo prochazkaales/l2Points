@@ -1,0 +1,79 @@
+/* Cells are rendered by MudBlazor components, so reach them via ::deep. */
+.l2p-rank-table ::deep th,
+.l2p-rank-table ::deep td:not(.l2p-nick-cell) {
+    white-space: nowrap;
+}
+
+.l2p-rank-table ::deep th.l2p-rank-col,
+.l2p-rank-table ::deep td.l2p-stat-points,
+.l2p-rank-table ::deep td.l2p-stat-pct {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.l2p-rank-table ::deep td.l2p-stat-points {
+    font-weight: 700;
+}
+
+.l2p-rank-table ::deep .l2p-stat-empty {
+    color: var(--mud-palette-text-disabled);
+}
+
+.l2p-rank-table ::deep .l2p-rank-cell {
+    width: 2.5rem;
+    padding-right: 0;
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-rank-table ::deep .l2p-rank-cell span[class^="l2p-place-"] {
+    color: var(--l2p-place-color, inherit);
+}
+
+/* Points bar relative to the leader. */
+.l2p-rank-table ::deep .l2p-rank-bar-cell {
+    width: 30%;
+    min-width: 7rem;
+}
+
+.l2p-rank-table ::deep .l2p-rank-bar {
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--mud-palette-action-disabled-background);
+    overflow: hidden;
+}
+
+.l2p-rank-table ::deep .l2p-rank-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 0.25rem;
+    background: var(--mud-palette-primary);
+}
+
+.l2p-rank-table ::deep tr.l2p-rank-me {
+    --l2p-row-bg: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
+    background: var(--l2p-row-bg);
+}
+
+/* The marker sits on the place cell, which is the row's first cell. */
+.l2p-rank-table ::deep tr.l2p-rank-me td.l2p-rank-cell {
+    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+}
+
+.l2p-rank-table ::deep tr.l2p-rank-me td.l2p-nick-cell {
+    font-weight: 600;
+}
+
+/* Dimmed via colour (not opacity) so the pinned cell stays opaque. */
+.l2p-rank-table ::deep tr.l2p-rank-inactive td {
+    color: var(--mud-palette-text-secondary);
+}
+
+@media (max-width: 599.98px) {
+    /* The bar would push the percentages off screen; the points already say it. */
+    .l2p-rank-table ::deep .l2p-rank-bar-cell {
+        display: none;
+    }
+}

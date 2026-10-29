@@ -1,0 +1,115 @@
+@using System.Globalization
+@using L2Points.Domain.Jewels
+@using L2Points.Domain.Stats
+@using L2Points.Domain.Time
+@using L2Points.Web.Formatting
+
+@* Ranked table of players for one period (overall or the week): place, nick, points, optional points bar
+   and the five participation percentages as coloured badges. Every column is sortable; points start descending. *@
+<div class="l2p-rank-table">
+    <MudTable T="LeaderboardRow" Items="Rows" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" RowClassFunc="RowClass">
+        <HeaderContent>
+            <MudTh Class="l2p-rank-cell"></MudTh>
+            <MudTh Class="l2p-nick-cell">Hráč</MudTh>
+            @SortHeader(Columns[0])
+            @if (ShowBar)
+            {
+                <MudTh Class="l2p-rank-bar-cell"></MudTh>
+            }
+            @foreach (var column in Columns.Skip(1))
+            {
+                @SortHeader(column)
+            }
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd Class="l2p-rank-cell">
+                @if (Ranks.TryGetValue(context.Player.UserId, out var rank))
+                {
+                    <span class="@($"l2p-place-{rank}")">@(rank).</span>
+                }
+            </MudTd>
+            <PlayerNickCell Player="context.Player" Jewels="Jewels.Of(context.Player.UserId)" Week="NickWeek" />
+            <MudTd Class="l2p-stat-points">@DisplayFormat.Points(Period(context).Points)</MudTd>
+            @if (ShowBar)
+            {
+                <MudTd Class="l2p-rank-bar-cell">
+                    <div class="l2p-rank-bar"><span style="@BarStyle(Period(context).Points)"></span></div>
+                </MudTd>
+            }
+            <StatCells Stats="Period(context).Stats" ShowPoints="false" Toned="true" />
+        </RowTemplate>
+    </MudTable>
+</div>
+
+@code {
+    private sealed record Column(string Label, Func<PlayerSummary, object> Key);
+
+    // Missing percentages sort below 0 %.
+    private static object PercentKey(CategoryStat stat) => stat.Percent ?? -1.0;
+
+    private static readonly Column[] Columns =
+    [
+        new("Body", s => s.Points),
+        new("Celkem", s => PercentKey(s.Stats.Total)),
+        new(DisplayFormat.CategoryLabel(StatCategory.Normal), s => PercentKey(s.Stats[StatCategory.Normal])),
+        new(DisplayFormat.CategoryLabel(StatCategory.Evening), s => PercentKey(s.Stats[StatCategory.Evening])),
+        new(DisplayFormat.CategoryLabel(StatCategory.Morning), s => PercentKey(s.Stats[StatCategory.Morning])),
+        new(DisplayFormat.CategoryLabel(StatCategory.CastleSiege), s => PercentKey(s.Stats[StatCategory.CastleSiege])),
+    ];
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<LeaderboardRow> Rows { get; set; } = [];
+
+    /// <summary>Place of each player (shared on equal points), shown in the first column.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyDictionary<string, int> Ranks { get; set; } = new Dictionary<string, int>();
+
+    [Parameter]
+    public JewelsByPlayer Jewels { get; set; } = JewelsByPlayer.Empty;
+
+    /// <summary>The signed-in player; their row is highlighted.</summary>
+    [Parameter]
+    public string? UserId { get; set; }
+
+    /// <summary>Shows the week's numbers instead of the overall ones.</summary>
+    [Parameter]
+    public bool Weekly { get; set; }
+
+    /// <summary>Adds a bar of points relative to the leader of the period.</summary>
+    [Parameter]
+    public bool ShowBar { get; set; }
+
+    /// <summary>Week the nick links open in the player detail; null opens the current week.</summary>
+    [Parameter]
+    public Week? NickWeek { get; set; }
+
+    private PlayerSummary Period(LeaderboardRow row) => Weekly ? row.Week : row.Overall;
+
+    private int LeaderPoints => Rows.Count == 0 ? 0 : Rows.Max(r => Period(r).Points);
+
+    private string BarStyle(int points) =>
+        LeaderPoints == 0 ? "width: 0%" : $"width: {(points * 100.0 / LeaderPoints).ToString("0.#", CultureInfo.InvariantCulture)}%";
+
+    private RenderFragment SortHeader(Column column) => @<MudTh Class="l2p-rank-col">
+        <MudTableSortLabel T="LeaderboardRow" SortBy="@(new Func<LeaderboardRow, object>(r => column.Key(Period(r))))"
+                           InitialDirection="@(column == Columns[0] ? SortDirection.Descending : SortDirection.None)">
+            @column.Label
+        </MudTableSortLabel>
+    </MudTh>;
+
+    private string RowClass(LeaderboardRow row, int index)
+    {
+        var classes = new List<string>(2);
+        if (row.Player.UserId == UserId)
+        {
+            classes.Add("l2p-rank-me");
+        }
+
+        if (!row.Player.IsActive)
+        {
+            classes.Add("l2p-rank-inactive");
+        }
+
+        return string.Join(' ', classes);
+    }
+}

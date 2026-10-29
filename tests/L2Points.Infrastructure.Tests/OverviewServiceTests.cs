@@ -166,6 +166,20 @@ public class OverviewServiceTests
     }
 
     [Fact]
+    public async Task WeekOverview_returns_points_of_previous_week()
+    {
+        await using var x = await ArrangeAsync();
+        await TestData.AddAttendanceAsync(x.Provider, x.D, "QueenAnt", Mon);
+
+        var first = await x.Service.GetWeekOverviewAsync(Week.Containing(Mon));
+        var second = await x.Service.GetWeekOverviewAsync(Week.Containing(NextMon));
+
+        Assert.Null(first.PreviousWeekPoints);
+        // The inactive player counts in the previous week because they attended it.
+        Assert.Equal(4, second.PreviousWeekPoints);
+    }
+
+    [Fact]
     public async Task WeekOverview_includes_inactive_with_attendance()
     {
         await using var x = await ArrangeAsync();

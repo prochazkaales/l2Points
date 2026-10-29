@@ -12,6 +12,7 @@ public static class LeaderboardSummaryCalculator
     {
         var ranks = Ranks(rows, r => r.Overall.Points);
         var partyAttendance = rows.Aggregate(default(CategoryStat), (sum, r) => sum.Add(r.Overall.Stats.Total));
+        var weekAttendance = rows.Aggregate(default(CategoryStat), (sum, r) => sum.Add(r.Week.Stats.Total));
         var weekPoints = rows.Sum(r => r.Week.Points);
         var bestWeek = rows.Count == 0 ? 0 : rows.Max(r => r.Week.Points);
         var playersOfWeek = bestWeek > 0
@@ -19,7 +20,7 @@ public static class LeaderboardSummaryCalculator
             : [];
         var podium = rows.Where(r => r.Overall.Points > 0).Take(PodiumSize).ToList();
 
-        return new LeaderboardSummary(ranks, partyAttendance, weekPoints, playersOfWeek, bestWeek, podium, Standing(rows, ranks, userId));
+        return new LeaderboardSummary(ranks, partyAttendance, weekAttendance, weekPoints, playersOfWeek, bestWeek, podium, Standing(rows, ranks, userId));
     }
 
     /// <summary>Place of each player by the given points, shared on equal points (1, 2, 2, 4); the order of rows does not matter.</summary>
