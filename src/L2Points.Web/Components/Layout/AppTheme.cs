@@ -47,6 +47,7 @@ public static class AppTheme
             Divider = "#DDDAEE",
             Success = "#0B7A63",
             Warning = "#946300",
+            Info = "#0B5CAD",
             Error = "#C0392B",
         },
         PaletteDark = new PaletteDark
