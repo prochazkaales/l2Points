@@ -4,20 +4,24 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 
 - Spec (zdroj pravdy pro doménová pravidla): `docs/superpowers/specs/2026-10-28-l2points-design.md`
 - Roadmapa částí implementace: `docs/superpowers/plans/2026-10-28-00-roadmap.md`
-- Stav: hotové části 1 až 6 (kostra, doména a persistence, stránka Můj týden, přehledy: Přehled, Týden – všichni, Detail hráče, šperky: galerie a admin přiřazení, admin: hráči, oprava účasti, aktivity a body, rozpis, nastavení). Zbývá část 7 (Azure).
+- Stav: hotové části 1 až 7 (kostra, doména a persistence, stránka Můj týden, přehledy: Přehled, Týden – všichni, Detail hráče, šperky: galerie a admin přiřazení, admin: hráči, oprava účasti, aktivity a body, rozpis, nastavení, Azure: Bicep, `deploy.ps1`, CI/CD, health live/ready, šifrované Data Protection klíče). Rollout do Azure ještě čeká: první push na GitHub, první běh workflow a první zřízení v Azure zatím neproběhly.
 
 ## Struktura solution
 
 `L2Points.slnx`, .NET 10 (`global.json`: SDK 10.0.204, rollForward latestMinor), společné nastavení v `Directory.Build.props` (Nullable, ImplicitUsings).
 
 - `src/L2Points.Domain` – entity, enumy a čistá logika, bez závislosti na EF Core, UI i `AppUser` (viz sekce Doména a persistence).
-- `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `Configurations/`, `ReferenceDataSeeder`, `CatalogQueries`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`, `PasswordGenerator`, `PrincipalValidator` – platí přihlášení dál: uživatel existuje, je aktivní a sedí security stamp), aplikační služby (`Services/`: `AttendanceService` – týdenní mřížka a změna účasti s kontrolou pravidel úprav na serveru, `PlayerStatsService` – body a procenta hráče za týden, `JewelService` – galerie a přiřazení šperků, `CatalogAdminService` – admin úpravy aktivit, bodů, rozpisu, kotvy A/V a začátku evidence, `PlayerAdminService` – správa hráčů, každá operace ve vlastním DI scope kvůli `UserManager`), sdílené dotazy `Persistence/JewelQueries` a `PlayerQueries.SelectPlayerInfo`, DI přes `AddInfrastructure`.
+- `src/L2Points.Infrastructure` – EF Core + SQL Server (`Persistence/`: `AppDbContext`, `Configurations/`, `ReferenceDataSeeder`, `CatalogQueries`, `DatabaseInitializer`, `Migrations/`), ASP.NET Core Identity (`Identity/`: `AppUser`, `Roles`, `AdminOptions`, `AppSignInManager`, `IdentitySeeder`, `PasswordGenerator`, `PrincipalValidator` – platí přihlášení dál: uživatel existuje, je aktivní a sedí security stamp), aplikační služby (`Services/`: `AttendanceService` – týdenní mřížka a změna účasti s kontrolou pravidel úprav na serveru, `PlayerStatsService` – body a procenta hráče za týden, `JewelService` – galerie a přiřazení šperků, `CatalogAdminService` – admin úpravy aktivit, bodů, rozpisu, kotvy A/V a začátku evidence, `PlayerAdminService` – správa hráčů, každá operace ve vlastním DI scope kvůli `UserManager`), `Persistence/StartupLock` (aplikační zámek na SQL Serveru kolem migrací a seedu, aby souběžné instance nebyly v kolizi; na SQL Serveru nejdřív vytvoří prázdnou databázi, pokud chybí; na SQLite jen spustí akci), sdílené dotazy `Persistence/JewelQueries` a `PlayerQueries.SelectPlayerInfo`, DI přes `AddInfrastructure`.
 - `src/L2Points.Web` – Blazor Web App (MudBlazor 9.x), `Program.cs`, stránky, layout; aplikační služby jen volá. Účtové stránky (`Components/Account`: `/login`, `/profile`) jsou statické SSR. `Identity/IdentityRevalidatingAuthenticationStateProvider` každou minutu ověří přihlášení běžícího circuitu přes `PrincipalValidator` (smazaný nebo deaktivovaný účet neprojde, reset hesla, deaktivace i změna role rotují security stamp; hráč se tak do minuty odhlásí).
+  - `Hosting/ForwardedHeadersSetup` nastaví důvěru k proxy podle `ForwardedHeaders__TrustAllProxies`; `Program.cs` mapuje health endpointy a mimo Development varuje, když chybí `DataProtection__KeyVaultKeyUri`.
   - Znovupoužitelné komponenty jsou v `Components/Attendance`: `WeekGridView` (mřížka, jen zobrazení a události), `EditableWeekGrid` (načtení, ukládání a obnova mřížky ze serveru pro cílového hráče; používá ho i `/admin/attendance`), `WeekSummaryCard` (body a procenta), `WeekNavigator` (přepínání týdnů). Formátování textů pro UI a odkazy na detail hráče (`PlayerUrl`, id escapované) jsou ve `Formatting/DisplayFormat`.
   - Stránky přehledů (část 4): `/leaderboard` (Přehled – žebříček celkově a za týden, `?week=`, `?inactive=1`), `/week` (Týden – všichni: tabulka hráčů a události týdne, `?week=`), `/players/{Id}` (Detail hráče: souhrny, historie po týdnech, jen čtecí mřížka účasti vybraného týdne, `?week=`). Data berou jen přes `OverviewService` a `PlayerStatsService`, mřížku přes `AttendanceService`.
   - `Components/Stats/StatCells` vykreslí buňky tabulky (body + pět procent) pro jednoho hráče a období; poměr „započteno / očekáváno“ je v nativním `title` (ne `MudTooltip`, na dlouhých tabulkách by bylo desítky popoverů). Sloupec s nickem je přilepený vlevo kvůli vodorovnému scrollu na mobilu, nick s ikonami šperků vykresluje `Components/Stats/PlayerNickCell`; styl `.l2p-nick-cell` je globální v `wwwroot/app.css`, protože scoped CSS na `MudTd`/`MudTh` nedosáhne.
   - Šperky (část 5): `Domain/Jewels` (`JewelType`, `UserJewel`, `DefaultJewels` – výchozí katalog, `JewelCalculator` – seskupení). Hráč může mít víc kusů i stejného typu, bez data; odebrání odebere jeden kus. `Components/Jewels` (`JewelIcon`, `JewelIcons`) vykreslí ikonu s počtem. Stránky `/jewels` (galerie: kdo co drží) a `/admin/jewels` (jen role Admin: výběr hráče v `?player=`, přidat/odebrat kus; odkaz z `/admin`). Ikony jsou ve `wwwroot/images/jewels/{Code}.png` (z l2j.ru). Nový typ šperku = přidat do `DefaultJewels` + soubor ikony, `JewelImageTests` to hlídá.
   - Admin (část 6, všechny stránky jen role Admin, `[Authorize(Roles = Roles.Admin)]`): `/admin` (rozcestník), `/admin/players` (hráči: založení s vygenerovaným heslem zobrazeným jednou, úprava nicku a „aktivní od“, reset hesla, de/aktivace, role Admin – jen super admin, smazání s potvrzením), `/admin/attendance` (oprava účasti komukoli přes `EditableWeekGrid` s `ActorIsAdmin`), `/admin/activities` (body, přepsání bodů slotů, očekávané počty, aktivní), `/admin/schedule` (rozpis chaotic v UTC s časem v Praze, kotva Antharas/Valakas), `/admin/settings` (začátek evidence), `/admin/jewels` (část 5). Dialogy jsou v `Components/Admin`, zadávání času `Formatting/TimeInput` (`H:mm`/`HH:mm`). DB jen přes aplikační služby (`CatalogAdminService`, `PlayerAdminService`, `PlayerStatsService`, `AttendanceService` přes `EditableWeekGrid`, `JewelService`).
+- `infra/` – `main.bicep` (celá Azure infrastruktura v jednom souboru na úrovni resource group) a `deploy.ps1` (ruční zřízení a aktualizace, nikdy z CI). Podrobnosti a postupy v `docs/deployment.md`.
+- `.github/workflows/ci-cd.yml` – `build-test` na každý push a PR, na `main` navíc `image` (build, smoke test, push do `ghcr.io/prochazkaales/l2points`) a `deploy` (OIDC, `az containerapp update`; přeskočí se, dokud nejsou GitHub variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`).
+- `scripts/smoke-test.sh <image>` – smoke test image proti SQL Serveru přes `docker-compose.yml` (health, `/login`, ikony šperků, tzdata a ICU, žádné `fail`/`crit` v logu). `.gitattributes` drží `*.sh` s LF.
 - `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
 - `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
 - `tests/L2Points.Web.Tests` – xUnit, čistá logika webu bez UI (`Formatting/DisplayFormat`, `Formatting/TimeInput`, `PlayerUrl`, `JewelImageTests` – každý seedovaný šperk má ikonu).
@@ -38,20 +42,28 @@ dotnet ef migrations add <Name> -p src/L2Points.Infrastructure -s src/L2Points.W
 
 Migrace se aplikují automaticky při startu aplikace (`DatabaseInitializer`), ručně `database update` není potřeba.
 
-Docker (Docker na vývojovém stroji zatím není nainstalovaný, build image není ověřený):
+Docker (Docker na vývojovém stroji zatím není nainstalovaný, image proto poprvé sestaví a ověří CI):
 
 ```bash
 cp .env.example .env              # upravit hesla
-docker compose up --build         # web na http://localhost:8080, health na /health
+docker compose up --build         # web na http://localhost:8080, health na /health/ready
 ```
 
-Konfigurace: `ConnectionStrings__Default`, `Admin__UserName`, `Admin__Password`, `Admin__Nick`. Lokálně LocalDB `(localdb)\MSSQLLocalDB`, databáze `L2Points` (`src/L2Points.Web/appsettings.json`). Dev admin je v `src/L2Points.Web/appsettings.Development.json` (login `admin`, nick `Admin`).
+Health endpointy: `/health/live` (bez kontrol, liveness a startup probe), `/health/ready` (s kontrolou DB, readiness), `/health` je alias ready.
+
+Azure (ruční zřízení a aktualizace infrastruktury, spouští uživatel ve svém terminálu, celý postup v `docs/deployment.md`):
+
+```powershell
+pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id>
+```
+
+Konfigurace: `ConnectionStrings__Default`, `Admin__UserName`, `Admin__Password`, `Admin__Nick`. Lokálně LocalDB `(localdb)\MSSQLLocalDB`, databáze `L2Points` (`src/L2Points.Web/appsettings.json`). Dev admin je v `src/L2Points.Web/appsettings.Development.json` (login `admin`, nick `Admin`). Volitelné: `DataProtection__KeyVaultKeyUri` (URI klíče v Key Vaultu, kterým se šifrují Data Protection klíče v DB; bez něj jsou nešifrované a mimo Development se loguje varování, v Azure ho nastavuje `main.bicep`), `ForwardedHeaders__TrustAllProxies=true` (nutné vždy za reverzní proxy, jako je Azure ingress; bez něj se důvěřuje jen loopbacku a `X-Forwarded-*` se ignoruje).
 
 ## Konvence
 
 - Jazyk: UI česky; kód, komentáře, názvy proměnných a větví, commit messages anglicky. Komunikace s uživatelem česky.
 - Časy se zobrazují v Europe/Prague, rozpis serveru se ukládá v UTC a převádí se. Aktuální čas jen přes `TimeProvider` (nikdy `DateTime.Now`/`UtcNow`), aby šla logika testovat.
-- Účtové stránky (login, profil) jsou statické SSR kvůli cookie, ostatní stránky Interactive Server. Prerender je vypnutý (`InteractiveServerRenderMode(prerender: false)` v `App.razor`): stránky načítají data jen jednou přes circuit, ne dvakrát (prerender + interaktivní start), a nic se neblikne se starými daty. Výchozí autorizace je „přihlášený uživatel“, anonymní jsou jen login, chybová stránka (Error), `/health` a statické soubory.
+- Účtové stránky (login, profil) jsou statické SSR kvůli cookie, ostatní stránky Interactive Server. Prerender je vypnutý (`InteractiveServerRenderMode(prerender: false)` v `App.razor`): stránky načítají data jen jednou přes circuit, ne dvakrát (prerender + interaktivní start), a nic se neblikne se starými daty. Výchozí autorizace je „přihlášený uživatel“, anonymní jsou jen login, chybová stránka (Error), `/health*` a statické soubory.
 - UI stavět z MudBlazor komponent, podporovat dark/light a mobil.
 - Přístup k DB: interaktivní komponenty a aplikační služby používají `IDbContextFactory<AppDbContext>` (krátce žijící kontext na jednu operaci) nebo `OwningComponentBase`, nikdy `AppDbContext` injektovaný přímo do komponenty (v Blazor circuitu by žil celé spojení). Explicitní transakce jen přes `Database.CreateExecutionStrategy().ExecuteAsync(...)` kvůli `EnableRetryOnFailure`. `UserManager` v interaktivních komponentách je scoped na circuit, proto `PlayerAdminService` vytváří scope na každou operaci a stránky z circuitového `UserManager` berou jen `GetUserId` z principalu.
 - Testy běží na SQLite in-memory a neodhalí rozdíly proti SQL Serveru (collation – unikátní Nick je na SQL Serveru case-insensitive, typy). Unikátnost nicku proto `PlayerAdminService` validuje case-insensitive i v aplikačním kódu (porovnání v paměti, SQLite `upper()` neumí diakritiku).
@@ -94,5 +106,5 @@ Superpowers: spec → plán části → implementace. Každá část z roadmapy 
 
 ## Známé TODO / pozor
 
-- Data Protection klíče se ukládají do DB nešifrované (část 7, Azure: zvážit Key Vault / ochranu klíčů).
-- Dockerfile a docker-compose zatím nebyly spuštěny.
+- Dockerfile a docker-compose zatím nebyly spuštěny. Image má ověřit smoke test v CI (`scripts/smoke-test.sh`), který zatím neběžel; po prvním zeleném běhu tuto položku odstranit.
+- Rollout do Azure čeká (první push na GitHub, první běh CI, `deploy.ps1`, GitHub variables); do té doby jsou `infra/` a workflow neověřené proti reálnému Azure.

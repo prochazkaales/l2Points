@@ -4,7 +4,7 @@ Webová aplikace pro CP partu hrající Lineage II (L2Reborn – Eternal). Evidu
 
 Návrh a pravidla: [docs/superpowers/specs/2026-10-28-l2points-design.md](docs/superpowers/specs/2026-10-28-l2points-design.md), plán implementace: [docs/superpowers/plans/2026-10-28-00-roadmap.md](docs/superpowers/plans/2026-10-28-00-roadmap.md).
 
-Stav: hotová kostra (přihlášení, změna hesla, layout s přepínačem dark/light, placeholder stránky, `/health`). Funkce se doplňují po částech podle roadmapy.
+Stav: hotové části 1 až 7 (kostra, doména, Můj týden, přehledy, šperky, admin, nasazení do Azure). Nasazení do Azure je připravené v repu (`infra/`, `.github/workflows/`), první reálné zřízení a nasazení zatím neproběhlo.
 
 ## Požadavky
 
@@ -35,7 +35,19 @@ cp .env.example .env     # a upravit hesla
 docker compose up --build
 ```
 
-Aplikace poběží na http://localhost:8080 (health check na `/health`) a SQL Server v samostatném kontejneru. První admin se vytvoří z proměnných `ADMIN_USERNAME`, `ADMIN_PASSWORD` a `ADMIN_NICK` v `.env`. Docker konfigurace zatím nebyla ověřena spuštěním.
+Aplikace poběží na http://localhost:8080 a SQL Server v samostatném kontejneru. První admin se vytvoří z proměnných `ADMIN_USERNAME`, `ADMIN_PASSWORD` a `ADMIN_NICK` v `.env`. Image i compose ověřuje smoke test v CI (`scripts/smoke-test.sh`), ten ale zatím neběžel; lokálně Docker ověřený není.
+
+Health endpointy: `/health/live` (proces běží, bez kontrol), `/health/ready` (včetně databáze) a `/health` jako alias `/health/ready`.
+
+## Nasazení
+
+Produkce běží v Azure (Container Apps + Azure SQL, image v GHCR). Infrastrukturu zřizuje ručně `infra/deploy.ps1` (Bicep v `infra/main.bicep`), nové verze nasazuje GitHub Actions po pushi na `main`:
+
+```powershell
+pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id>
+```
+
+Celý postup (první zřízení, běžné nasazení, logy, obnova databáze ze zálohy, náklady, smazání prostředí) je v [docs/deployment.md](docs/deployment.md).
 
 ## Nová migrace
 
