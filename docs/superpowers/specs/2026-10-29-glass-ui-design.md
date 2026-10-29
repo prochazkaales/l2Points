@@ -33,14 +33,14 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 
 | Token | Dark | Light |
 |---|---|---|
-| Pozadí | `#0B0A1A` | `#EEF0FA` |
+| Pozadí | `#0B0A1A` | `#E8EAF6` |
 | Záře 1 (pravý dolní roh) | `rgba(124,92,250,.27)` | `rgba(124,92,250,.22)` |
 | Záře 2 (levý horní roh) | `rgba(199,125,255,.14)` | `rgba(96,165,250,.20)` |
 | Sklo – výplň | `rgba(255,255,255,.045)` | `rgba(255,255,255,.58)` |
-| Sklo – silnější (řádky, vnořené plochy) | `rgba(255,255,255,.06)` | `rgba(255,255,255,.70)` |
-| Sklo – hrana | `rgba(255,255,255,.09)` | `rgba(255,255,255,.85)` |
+| Sklo – silnější (řádky, vnořené plochy) | `rgba(255,255,255,.06)` | `rgba(109,74,224,.065)` (nádech primary, ne bělejší než karta, jinak dlaždice splývají) |
+| Sklo – hrana | `rgba(255,255,255,.09)` | `rgba(90,70,170,.16)` (bílá hrana na světlé stránce není vidět) |
 | Sklo – horní světlo (inset) | `rgba(255,255,255,.12)` | `rgba(255,255,255,.90)` |
-| Stín karty | `0 8px 32px rgba(0,0,0,.35)` | `0 10px 30px rgba(60,40,140,.10)` |
+| Stín karty | `0 8px 32px rgba(0,0,0,.35)` | `0 10px 30px rgba(60,40,140,.14)` |
 | Primary | `#8B6CFF` | `#6D4AE0` |
 | Primary jako text (`--l2p-primary-text`) | `#B9A6FF` | `#5B39CC` |
 | Primary 2 (konec přechodu) | `#C77DFF` | `#A855F7` |

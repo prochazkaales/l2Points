@@ -59,14 +59,16 @@
 
 :root[data-theme="light"] {
     color-scheme: light;
-    --l2p-bg: #EEF0FA;
+    --l2p-bg: #E8EAF6;
     --l2p-glow-1: rgba(124, 92, 250, 0.22);
     --l2p-glow-2: rgba(96, 165, 250, 0.20);
     --l2p-glass: rgba(255, 255, 255, 0.58);
-    --l2p-glass-strong: rgba(255, 255, 255, 0.70);
-    --l2p-glass-edge: rgba(255, 255, 255, 0.85);
+    /* Light theme: white-on-white nested surfaces and a white edge blend into the pale page, so the nested surface is
+       a faint primary tint (darker than the card, not whiter) and the edge a faint violet line. */
+    --l2p-glass-strong: rgba(109, 74, 224, 0.065);
+    --l2p-glass-edge: rgba(90, 70, 170, 0.16);
     --l2p-glass-hi: rgba(255, 255, 255, 0.90);
-    --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.10);
+    --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.14);
     --l2p-surface-solid: #F8F8FD;
     --l2p-primary: #6D4AE0;
     --l2p-primary-text: #5B39CC;

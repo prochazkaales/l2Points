@@ -34,7 +34,7 @@ public static class AppTheme
             Tertiary = "#0e7490",
             AppbarBackground = "#F8F8FD",
             AppbarText = "#1D1838",
-            Background = "#EEF0FA",
+            Background = "#E8EAF6",
             Surface = "#F8F8FD",
             DrawerBackground = "#F8F8FD",
             DrawerText = "#1D1838",
