@@ -17,7 +17,7 @@ internal static class TestData
         await scope.ServiceProvider.GetRequiredService<ReferenceDataSeeder>().SeedAsync();
     }
 
-    public static async Task<AppUser> CreatePlayerAsync(ServiceProvider provider, string name, DateOnly activeFrom, DateOnly? deactivatedAt = null)
+    public static async Task<AppUser> CreatePlayerAsync(ServiceProvider provider, string name, DateOnly? deactivatedAt = null)
     {
         using var scope = provider.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
@@ -25,7 +25,6 @@ internal static class TestData
         {
             UserName = name,
             Nick = name,
-            ActiveFrom = activeFrom,
             DeactivatedAt = deactivatedAt,
             IsActive = deactivatedAt is null,
             CreatedAt = DateTime.UtcNow,

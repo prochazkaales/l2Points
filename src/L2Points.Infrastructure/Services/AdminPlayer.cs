@@ -6,7 +6,6 @@ public sealed record AdminPlayer(
     string Login,
     string Nick,
     bool IsActive,
-    DateOnly ActiveFrom,
     DateOnly? DeactivatedAt,
     bool IsAdmin,
     bool IsSuperAdmin);

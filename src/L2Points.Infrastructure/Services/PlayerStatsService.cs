@@ -8,7 +8,7 @@ namespace L2Points.Infrastructure.Services;
 /// <summary>Points and participation of one player.</summary>
 public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
-    /// <summary>Summary of one week, with participation counted over the player's active period (up to today).</summary>
+    /// <summary>Summary of one week, with participation counted from tracking start up to today (or deactivation).</summary>
     public async Task<PlayerSummary> GetWeekSummaryAsync(string userId, Week week, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -16,7 +16,7 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
         var user = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new { u.ActiveFrom, u.DeactivatedAt })
+            .Select(u => new { u.DeactivatedAt })
             .SingleOrDefaultAsync(ct)
             ?? throw new InvalidOperationException($"User '{userId}' does not exist.");
 
@@ -29,7 +29,7 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
             .Select(a => new AttendanceEntry(a.ActivityId, a.Date, a.Slot))
             .ToListAsync(ct);
 
-        var period = PlayerPeriod.Resolve(trackingStart, user.ActiveFrom, user.DeactivatedAt, AppTime.TodayInPrague(time));
+        var period = PlayerPeriod.Resolve(trackingStart, user.DeactivatedAt, AppTime.TodayInPrague(time));
         return PlayerSummaryCalculator.Calculate(activities, attendances, window, period);
     }
 

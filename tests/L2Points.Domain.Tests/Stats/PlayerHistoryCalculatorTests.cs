@@ -13,7 +13,7 @@ public class PlayerHistoryCalculatorTests
     public void History_newest_first()
     {
         var activities = StatsTestCatalog.Create();
-        var player = new PlayerInfo("A", "A", true, TrackingStart, null);
+        var player = new PlayerInfo("A", "A", true, null);
         AttendanceEntry[] attendances =
         [
             new(activities.ByCode("QueenAnt").Id, new DateOnly(2026, 10, 26), EventSlot.None),
@@ -36,7 +36,7 @@ public class PlayerHistoryCalculatorTests
     public void History_of_deactivated_player()
     {
         var activities = StatsTestCatalog.Create();
-        var player = new PlayerInfo("D", "D", false, TrackingStart, new DateOnly(2026, 10, 27));
+        var player = new PlayerInfo("D", "D", false, new DateOnly(2026, 10, 27));
 
         var rows = PlayerHistoryCalculator.Build(player, activities, [], TrackingStart, Today);
 
@@ -49,7 +49,7 @@ public class PlayerHistoryCalculatorTests
     public void History_empty_before_tracking_start()
     {
         var activities = StatsTestCatalog.Create();
-        var player = new PlayerInfo("A", "A", true, TrackingStart, null);
+        var player = new PlayerInfo("A", "A", true, null);
 
         var rows = PlayerHistoryCalculator.Build(player, activities, [], TrackingStart, new DateOnly(2026, 10, 20));
 

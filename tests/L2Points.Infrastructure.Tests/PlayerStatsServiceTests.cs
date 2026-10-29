@@ -1,8 +1,10 @@
 using L2Points.Domain.Activities;
 using L2Points.Domain.Stats;
 using L2Points.Domain.Time;
+using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Infrastructure.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -26,7 +28,7 @@ public class PlayerStatsServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-10-28T10:00:00Z"));
         await using var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var player = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        var player = await TestData.CreatePlayerAsync(provider, "playerA");
         var (stats, attendance) = CreateServices(provider, time);
         var queenAnt = await TestData.ActivityIdAsync(provider, "QueenAnt");
         var chaoticCore = await TestData.ActivityIdAsync(provider, "ChaoticCore");
@@ -50,7 +52,7 @@ public class PlayerStatsServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
         await using var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var player = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        var player = await TestData.CreatePlayerAsync(provider, "playerA");
         await TestData.AddAttendanceAsync(provider, player.Id, "Baium", new DateOnly(2026, 10, 31));
         await TestData.AddAttendanceAsync(provider, player.Id, "CastleSiege", new DateOnly(2026, 11, 1));
         var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
@@ -68,7 +70,7 @@ public class PlayerStatsServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-10-28T10:00:00Z"));
         await using var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var player = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        var player = await TestData.CreatePlayerAsync(provider, "playerA");
         var (stats, _) = CreateServices(provider, time);
 
         var summary = await stats.GetWeekSummaryAsync(player.Id, new Week(new DateOnly(2026, 11, 2)));
@@ -83,12 +85,40 @@ public class PlayerStatsServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-10-28T10:00:00Z"));
         await using var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var player = await TestData.CreatePlayerAsync(provider, "playerA", Monday, deactivatedAt: Monday);
+        var player = await TestData.CreatePlayerAsync(provider, "playerA", deactivatedAt: Monday);
         var (stats, _) = CreateServices(provider, time);
 
         var summary = await stats.GetWeekSummaryAsync(player.Id, Week.Containing(Monday));
 
         Assert.Equal(13, summary.Stats.Total.Expected);
+    }
+
+    [Fact]
+    public async Task Player_created_mid_week_is_evaluated_from_tracking_start()
+    {
+        // Wednesday of the second tracked week; tracking started on Monday 2026-10-26.
+        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
+        await using var provider = TestServices.Create(timeProvider: time);
+        await TestData.SeedCatalogAsync(provider);
+        using (var scope = provider.CreateScope())
+        {
+            var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            Assert.True((await roles.CreateAsync(new IdentityRole(Roles.Player))).Succeeded);
+        }
+        var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        var admin = new PlayerAdminService(provider.GetRequiredService<IServiceScopeFactory>(), factory, time);
+        Assert.Equal(PlayerAdminStatus.Ok, (await admin.CreateAsync("newbie", "Newbie")).Status);
+        var userId = (await admin.GetPlayersAsync()).Single(p => p.Login == "newbie").UserId;
+        var (stats, _) = CreateServices(provider, time);
+
+        var detail = await stats.GetPlayerDetailAsync(userId);
+        var firstWeek = await stats.GetWeekSummaryAsync(userId, Week.Containing(Monday));
+
+        Assert.NotNull(detail);
+        // Same expectations as a player who has been there since tracking start, days before creation included.
+        Assert.Equal(new CategoryStat(0, 99), detail.Overall.Stats.Total);
+        Assert.Equal(new CategoryStat(0, 35), detail.CurrentWeek.Stats.Total);
+        Assert.Equal(new CategoryStat(0, 64), firstWeek.Stats.Total);
     }
 
     [Fact]
@@ -107,7 +137,7 @@ public class PlayerStatsServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
         var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var a = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        var a = await TestData.CreatePlayerAsync(provider, "playerA");
         await TestData.AddAttendanceAsync(provider, a.Id, "QueenAnt", Monday);
         await TestData.AddAttendanceAsync(provider, a.Id, "ChaoticCore", Tuesday, EventSlot.Evening);
         await TestData.AddAttendanceAsync(provider, a.Id, "CastleSiege", new DateOnly(2026, 11, 1));
@@ -180,7 +210,7 @@ public class PlayerStatsServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-10-20T10:00:00Z"));
         await using var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var player = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        var player = await TestData.CreatePlayerAsync(provider, "playerA");
         var (stats, _) = CreateServices(provider, time);
 
         var detail = await stats.GetPlayerDetailAsync(player.Id);

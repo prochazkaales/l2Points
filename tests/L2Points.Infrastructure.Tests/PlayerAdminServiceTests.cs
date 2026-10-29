@@ -67,7 +67,7 @@ public class PlayerAdminServiceTests
         /// <summary>An active admin without the SuperAdmin role.</summary>
         public async Task<AppUser> CreateRegularAdminAsync(string userName)
         {
-            var user = await TestData.CreatePlayerAsync(Provider, userName, Monday);
+            var user = await TestData.CreatePlayerAsync(Provider, userName);
             using var scope = Provider.CreateScope();
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             Assert.True((await users.AddToRolesAsync((await users.FindByIdAsync(user.Id))!, [Roles.Admin, Roles.Player])).Succeeded);
@@ -89,7 +89,7 @@ public class PlayerAdminServiceTests
             }
         }
 
-        var admin = await TestData.CreatePlayerAsync(provider, "admin", Monday);
+        var admin = await TestData.CreatePlayerAsync(provider, "admin");
         using (var scope = provider.CreateScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
@@ -109,7 +109,7 @@ public class PlayerAdminServiceTests
     {
         await using var arranged = await ArrangeAsync();
 
-        var result = await arranged.Service.CreateAsync("karel", "Karel", null);
+        var result = await arranged.Service.CreateAsync("karel", "Karel");
 
         Assert.Equal(PlayerAdminStatus.Ok, result.Status);
         Assert.False(string.IsNullOrEmpty(result.Password));
@@ -117,33 +117,31 @@ public class PlayerAdminServiceTests
         Assert.NotNull(user);
         Assert.True(await arranged.CheckPasswordAsync(user.Id, result.Password));
         Assert.Equal([Roles.Player], await arranged.RolesOfAsync(user));
-        Assert.Equal(Monday, user.ActiveFrom);
         Assert.True(user.IsActive);
     }
 
     [Fact]
-    public async Task Create_uses_given_active_from_and_trims()
+    public async Task Create_trims_login_and_nick()
     {
         await using var arranged = await ArrangeAsync();
 
-        var result = await arranged.Service.CreateAsync(" eva ", "  Eva ", new DateOnly(2026, 11, 2));
+        var result = await arranged.Service.CreateAsync(" eva ", "  Eva ");
 
         Assert.Equal(PlayerAdminStatus.Ok, result.Status);
         var user = await arranged.FindAsync("eva");
         Assert.NotNull(user);
         Assert.Equal("eva", user.UserName);
         Assert.Equal("Eva", user.Nick);
-        Assert.Equal(new DateOnly(2026, 11, 2), user.ActiveFrom);
     }
 
     [Fact]
     public async Task Create_rejects_duplicate_nick_case_insensitive()
     {
         await using var arranged = await ArrangeAsync();
-        await TestData.CreatePlayerAsync(arranged.Provider, "zofie", Monday);
+        await TestData.CreatePlayerAsync(arranged.Provider, "zofie");
         await arranged.SetNickAsync("zofie", "Žofie");
 
-        var result = await arranged.Service.CreateAsync("z2", "žOFIE", null);
+        var result = await arranged.Service.CreateAsync("z2", "žOFIE");
 
         Assert.Equal(PlayerAdminStatus.NickTaken, result.Status);
         Assert.Null(await arranged.FindAsync("z2"));
@@ -153,9 +151,9 @@ public class PlayerAdminServiceTests
     public async Task Create_rejects_duplicate_login()
     {
         await using var arranged = await ArrangeAsync();
-        await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        await TestData.CreatePlayerAsync(arranged.Provider, "bob");
 
-        var result = await arranged.Service.CreateAsync("BOB", "Bobek", null);
+        var result = await arranged.Service.CreateAsync("BOB", "Bobek");
 
         Assert.Equal(PlayerAdminStatus.LoginTaken, result.Status);
         Assert.Null(result.Password);
@@ -167,9 +165,9 @@ public class PlayerAdminServiceTests
         await using var arranged = await ArrangeAsync();
         var before = await arranged.UserCountAsync();
 
-        var blank = await arranged.Service.CreateAsync("ok1", "   ", null);
-        var tooLong = await arranged.Service.CreateAsync("ok2", new string('x', AppUser.NickMaxLength + 1), null);
-        var badLogin = await arranged.Service.CreateAsync("a b", "Nick", null);
+        var blank = await arranged.Service.CreateAsync("ok1", "   ");
+        var tooLong = await arranged.Service.CreateAsync("ok2", new string('x', AppUser.NickMaxLength + 1));
+        var badLogin = await arranged.Service.CreateAsync("a b", "Nick");
 
         Assert.Equal(PlayerAdminStatus.Invalid, blank.Status);
         Assert.Equal(PlayerAdminStatus.Invalid, tooLong.Status);
@@ -179,31 +177,30 @@ public class PlayerAdminServiceTests
     }
 
     [Fact]
-    public async Task Update_changes_nick_and_active_from()
+    public async Task Update_changes_nick()
     {
         await using var arranged = await ArrangeAsync();
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
-        await TestData.CreatePlayerAsync(arranged.Provider, "alice", Monday);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
+        await TestData.CreatePlayerAsync(arranged.Provider, "alice");
         await arranged.SetNickAsync("alice", "Alice");
 
-        var changed = await arranged.Service.UpdateAsync(bob.Id, "Bobík", new DateOnly(2026, 10, 19));
+        var changed = await arranged.Service.UpdateAsync(bob.Id, "Bobík");
         var stored = await arranged.FindByIdAsync(bob.Id);
         Assert.Equal(PlayerAdminStatus.Ok, changed.Status);
         Assert.Equal("Bobík", stored.Nick);
-        Assert.Equal(new DateOnly(2026, 10, 19), stored.ActiveFrom);
 
-        var sameNickOtherCase = await arranged.Service.UpdateAsync(bob.Id, "BOBÍK", new DateOnly(2026, 10, 19));
+        var sameNickOtherCase = await arranged.Service.UpdateAsync(bob.Id, "BOBÍK");
         Assert.Equal(PlayerAdminStatus.Ok, sameNickOtherCase.Status);
         Assert.Equal("BOBÍK", (await arranged.FindByIdAsync(bob.Id)).Nick);
 
-        var taken = await arranged.Service.UpdateAsync(bob.Id, "alice", Monday);
+        var taken = await arranged.Service.UpdateAsync(bob.Id, "alice");
         Assert.Equal(PlayerAdminStatus.NickTaken, taken.Status);
         Assert.Equal("BOBÍK", (await arranged.FindByIdAsync(bob.Id)).Nick);
 
-        var invalid = await arranged.Service.UpdateAsync(bob.Id, "  ", Monday);
+        var invalid = await arranged.Service.UpdateAsync(bob.Id, "  ");
         Assert.Equal(PlayerAdminStatus.Invalid, invalid.Status);
 
-        var unknown = await arranged.Service.UpdateAsync("missing", "Nick", Monday);
+        var unknown = await arranged.Service.UpdateAsync("missing", "Nick");
         Assert.Equal(PlayerAdminStatus.UnknownPlayer, unknown.Status);
     }
 
@@ -211,7 +208,7 @@ public class PlayerAdminServiceTests
     public async Task Reset_password_replaces_old_and_unlocks()
     {
         await using var arranged = await ArrangeAsync();
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
         string oldStamp;
         using (var scope = arranged.Provider.CreateScope())
         {
@@ -256,8 +253,8 @@ public class PlayerAdminServiceTests
     public async Task Get_players_lists_all_with_admin_flag()
     {
         await using var arranged = await ArrangeAsync();
-        await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
-        await TestData.CreatePlayerAsync(arranged.Provider, "carl", Monday, deactivatedAt: new DateOnly(2026, 10, 28));
+        await TestData.CreatePlayerAsync(arranged.Provider, "bob");
+        await TestData.CreatePlayerAsync(arranged.Provider, "carl", deactivatedAt: new DateOnly(2026, 10, 28));
         await arranged.SetNickAsync("admin", "Admin");
         await arranged.SetNickAsync("bob", "bob");
         await arranged.SetNickAsync("carl", "Carl");
@@ -269,14 +266,13 @@ public class PlayerAdminServiceTests
         var carl = players.Single(p => p.Login == "carl");
         Assert.False(carl.IsActive);
         Assert.Equal(new DateOnly(2026, 10, 28), carl.DeactivatedAt);
-        Assert.Equal(Monday, carl.ActiveFrom);
     }
 
     [Fact]
     public async Task Deactivate_sets_date_and_rotates_stamp()
     {
         await using var arranged = await ArrangeAsync();
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
         var oldStamp = await arranged.StampOfAsync(bob.Id);
 
         var result = await arranged.Service.SetActiveAsync(arranged.Admin.Id, bob.Id, false);
@@ -298,7 +294,7 @@ public class PlayerAdminServiceTests
     public async Task Reactivate_clears_deactivated_at()
     {
         await using var arranged = await ArrangeAsync();
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
         await arranged.Service.SetActiveAsync(arranged.Admin.Id, bob.Id, false);
 
         var result = await arranged.Service.SetActiveAsync(arranged.Admin.Id, bob.Id, true);
@@ -333,7 +329,7 @@ public class PlayerAdminServiceTests
     public async Task Set_admin_grants_and_revokes_role()
     {
         await using var arranged = await ArrangeAsync();
-        var created = await arranged.Service.CreateAsync("bob", "Bob", null);
+        var created = await arranged.Service.CreateAsync("bob", "Bob");
         var bob = (await arranged.FindAsync("bob"))!;
         Assert.Equal(PlayerAdminStatus.Ok, created.Status);
         var oldStamp = await arranged.StampOfAsync(bob.Id);
@@ -357,7 +353,7 @@ public class PlayerAdminServiceTests
     {
         await using var arranged = await ArrangeAsync();
         await TestData.SeedCatalogAsync(arranged.Provider);
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
         await TestData.AddAttendanceAsync(arranged.Provider, bob.Id, "QueenAnt", Monday);
         var factory = arranged.Provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
         int jewelTypes;
@@ -385,9 +381,9 @@ public class PlayerAdminServiceTests
     public async Task Inactive_or_non_admin_actor_is_rejected()
     {
         await using var arranged = await ArrangeAsync();
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
-        var alice = await TestData.CreatePlayerAsync(arranged.Provider, "alice", Monday);
-        var admin2 = await TestData.CreatePlayerAsync(arranged.Provider, "admin2", Monday, deactivatedAt: new DateOnly(2026, 10, 28));
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
+        var alice = await TestData.CreatePlayerAsync(arranged.Provider, "alice");
+        var admin2 = await TestData.CreatePlayerAsync(arranged.Provider, "admin2", deactivatedAt: new DateOnly(2026, 10, 28));
         using (var scope = arranged.Provider.CreateScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
@@ -424,8 +420,8 @@ public class PlayerAdminServiceTests
     public async Task Reset_password_rejects_inactive_or_non_admin_actor()
     {
         await using var arranged = await ArrangeAsync();
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
-        var alice = await TestData.CreatePlayerAsync(arranged.Provider, "alice", Monday);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
+        var alice = await TestData.CreatePlayerAsync(arranged.Provider, "alice");
 
         var result = await arranged.Service.ResetPasswordAsync(bob.Id, alice.Id);
 
@@ -440,7 +436,7 @@ public class PlayerAdminServiceTests
         await using var arranged = await ArrangeAsync();
         var admin2 = await arranged.CreateRegularAdminAsync("admin2");
         var admin3 = await arranged.CreateRegularAdminAsync("admin3");
-        var bob = await arranged.Service.CreateAsync("bob", "Bob", null);
+        var bob = await arranged.Service.CreateAsync("bob", "Bob");
         Assert.Equal(PlayerAdminStatus.Ok, bob.Status);
         var bobUser = (await arranged.FindAsync("bob"))!;
         var bobStamp = await arranged.StampOfAsync(bobUser.Id);
@@ -485,7 +481,7 @@ public class PlayerAdminServiceTests
         Assert.Equal([Roles.Admin, Roles.Player, Roles.SuperAdmin], (await arranged.RolesOfAsync(stored)).Order().ToArray());
         Assert.Equal(oldStamp, await arranged.StampOfAsync(superId));
 
-        var edit = await arranged.Service.UpdateAsync(superId, "Velitel", new DateOnly(2026, 10, 19));
+        var edit = await arranged.Service.UpdateAsync(superId, "Velitel");
 
         Assert.Equal(PlayerAdminStatus.Ok, edit.Status);
         Assert.Equal("Velitel", (await arranged.FindByIdAsync(superId)).Nick);
@@ -513,7 +509,7 @@ public class PlayerAdminServiceTests
         Assert.Equal(oldStamp, await arranged.StampOfAsync(admin3.Id));
 
         // Regular players stay manageable by any admin.
-        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob");
         Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.SetActiveAsync(admin2.Id, bob.Id, false)).Status);
         Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.ResetPasswordAsync(admin2.Id, bob.Id)).Status);
         Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.DeleteAsync(admin2.Id, bob.Id)).Status);
@@ -544,7 +540,7 @@ public class PlayerAdminServiceTests
     {
         await using var arranged = await ArrangeAsync();
         await arranged.CreateRegularAdminAsync("admin2");
-        await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        await TestData.CreatePlayerAsync(arranged.Provider, "bob");
 
         var players = await arranged.Service.GetPlayersAsync();
 

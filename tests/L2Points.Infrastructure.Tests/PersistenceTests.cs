@@ -28,7 +28,6 @@ public class PersistenceTests
         {
             UserName = name,
             Nick = name,
-            ActiveFrom = new DateOnly(2026, 10, 26),
             CreatedAt = new DateTime(2026, 10, 28, 10, 0, 0, DateTimeKind.Utc),
         };
         Assert.True((await userManager.CreateAsync(user, "Password1")).Succeeded);

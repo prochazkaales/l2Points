@@ -9,7 +9,7 @@ public class WeekEventsCalculatorTests
     private static readonly Week TestWeek = Week.Containing(new DateOnly(2026, 10, 26));
 
     private static PlayerInfo Player(string id, string nick) =>
-        new(id, nick, true, new DateOnly(2026, 10, 26), null);
+        new(id, nick, true, null);
 
     private static UserAttendance Attendance(string userId, Activity activity, DateOnly date, EventSlot slot = EventSlot.None) =>
         new(userId, new AttendanceEntry(activity.Id, date, slot));

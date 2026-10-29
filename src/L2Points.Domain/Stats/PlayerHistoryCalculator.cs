@@ -16,7 +16,7 @@ public static class PlayerHistoryCalculator
         if (today < trackingStart)
             return [];
 
-        var period = PlayerPeriod.Resolve(trackingStart, player.ActiveFrom, player.DeactivatedAt, today);
+        var period = PlayerPeriod.Resolve(trackingStart, player.DeactivatedAt, today);
         var first = Week.Containing(trackingStart);
         var rows = new List<WeekHistoryRow>();
         for (var week = Week.Containing(today); week.Monday >= first.Monday; week = week.Previous())

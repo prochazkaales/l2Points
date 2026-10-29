@@ -31,9 +31,9 @@ public class JewelServiceTests
     {
         var provider = TestServices.Create();
         await TestData.SeedCatalogAsync(provider);
-        var bob = await TestData.CreatePlayerAsync(provider, "bob", Monday);
-        var alice = await TestData.CreatePlayerAsync(provider, "Alice", Monday);
-        var carl = await TestData.CreatePlayerAsync(provider, "carl", Monday, deactivatedAt: Monday);
+        var bob = await TestData.CreatePlayerAsync(provider, "bob");
+        var alice = await TestData.CreatePlayerAsync(provider, "Alice");
+        var carl = await TestData.CreatePlayerAsync(provider, "carl", deactivatedAt: Monday);
         var service = new JewelService(provider.GetRequiredService<IDbContextFactory<AppDbContext>>());
         return new Arranged(provider, service, bob.Id, alice.Id, carl.Id);
     }

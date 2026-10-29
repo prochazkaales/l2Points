@@ -10,8 +10,8 @@ public class LeaderboardCalculatorTests
     private static readonly DateOnly Today = new(2026, 11, 4);
     private static readonly Week CurrentWeek = Week.Containing(Today);
 
-    private static PlayerInfo Player(string id, string nick, DateOnly? activeFrom = null, DateOnly? deactivatedAt = null) =>
-        new(id, nick, deactivatedAt is null, activeFrom ?? TrackingStart, deactivatedAt);
+    private static PlayerInfo Player(string id, string nick, DateOnly? deactivatedAt = null) =>
+        new(id, nick, deactivatedAt is null, deactivatedAt);
 
     private static List<UserAttendance> AttendancesOfA(IReadOnlyList<Activity> activities) =>
     [
@@ -49,13 +49,13 @@ public class LeaderboardCalculatorTests
     }
 
     [Fact]
-    public void Late_joiner_counts_from_active_from()
+    public void Every_player_counts_from_tracking_start()
     {
         var activities = StatsTestCatalog.Create();
 
-        var rows = LeaderboardCalculator.Build([Player("B", "B", new DateOnly(2026, 11, 2))], activities, [], CurrentWeek, TrackingStart, Today);
+        var rows = LeaderboardCalculator.Build([Player("B", "B")], activities, [], CurrentWeek, TrackingStart, Today);
 
-        Assert.Equal(new CategoryStat(0, 35), Assert.Single(rows).Overall.Stats.Total);
+        Assert.Equal(new CategoryStat(0, 99), Assert.Single(rows).Overall.Stats.Total);
     }
 
     [Fact]

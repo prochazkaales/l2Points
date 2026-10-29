@@ -1,4 +1,3 @@
-using L2Points.Domain.Time;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
@@ -58,7 +57,6 @@ public class IdentitySeeder(
                 UserName = options.UserName,
                 Nick = options.Nick,
                 IsActive = true,
-                ActiveFrom = Week.Containing(AppTime.TodayInPrague(timeProvider)).Monday,
                 CreatedAt = now.UtcDateTime,
             };
 
