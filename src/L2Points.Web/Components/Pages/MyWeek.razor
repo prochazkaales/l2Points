@@ -13,15 +13,15 @@
 
 <PageTitle>Můj týden – L2Points</PageTitle>
 
-<MudText Typo="Typo.h4" GutterBottom="true">Můj týden</MudText>
+<MudText Typo="Typo.h4" Class="mb-1">Můj týden</MudText>
 
 @if (_userId is not null)
 {
-    <div class="mb-3">
+    <div class="mb-2">
         <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
     </div>
 
-    <div class="mb-4">
+    <div class="mb-3">
         @if (_summaryError)
         {
             <MudAlert Severity="Severity.Error" Class="mb-3">Souhrn týdne se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>

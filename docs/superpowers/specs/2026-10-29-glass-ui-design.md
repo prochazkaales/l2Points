@@ -101,13 +101,14 @@ Všechny sekce, které dnes stojí na `MudPaper`/`MudTable`, dostanou sklo (tř�
 - `KpiCard`, `WeekSummaryCard`, `RankingTable`, karty na `/week`, `/jewels`, `/points`, `/players/{Id}`, admin stránky a dialogy (dialogy neprůhledné, viz výše).
 - `.l2p-section-head`: nadpis sekce bez kapitálek, váha 500, velikost ~1.25rem, barva textu (ne primary) – klidnější, jako v referenci.
 - Chipy a štítky (pásma procent, „neaktivní“, „admin“): obrys + barevný text místo plné výplně.
-- Přepínače (`MudToggleGroup` Karty/Mřížka na `/week`, `WeekNavigator`): segmentovaný přepínač na silnějším skle, zvolená položka plná primary. Přehled (`/leaderboard`) si nechává dvě sekce pod sebou (Celkově, Týden); přepínač Týden/Celkově z mockupu se nedělá (změna struktury stránky).
+- Přepínače (`MudToggleGroup` Karty/Mřížka na `/week`): segmentovaný přepínač na silnějším skle, zvolená položka plná primary. `WeekNavigator` je bez rámečku a pozadí (šipky, rozsah týdne a textové tlačítko „Tento týden“ přímo na stránce). Přehled (`/leaderboard`) si nechává dvě sekce pod sebou (Celkově, Týden); přepínač Týden/Celkově z mockupu se nedělá (změna struktury stránky).
 
 ### Můj týden – mřížka (`WeekGridView`), priorita
 
-- Celá mřížka je jedna glass karta; řádky bez blur.
-- Skupiny (Normal epicy, Chaotic epicy, Castle Siege): řádek skupiny má barevnou tečku kategorie a název ve větší váze 500, bez kapitálek a bez plošného podbarvení. U chaotic se slot v buňce značí malou tečkou barvy slotu před textem „V 21:00“ / „R 05:30“.
-- Dnešní den: celý sloupec jemně podbarvený primary (~10 %), v hlavičce pilulka „Dnes“ s plnou primary pod názvem dne. Hlavička dnů zůstává opakovaná u spodních skupin (mobil).
+- Dvě tabulky pod sebou, každá vlastní glass karta s nadpisem nad ní (barevné tečky kategorií, váha 600): nahoře „Chaotic epicy“, pod ní „Normal epicy a Castle Siege“ (Castle Siege je oddělený řádek s tečkou CS a čarou nad ním). Řádky bez blur. U chaotic se slot v buňce značí malou tečkou barvy slotu před textem „V 21:00“ / „R 05:30“.
+- Hlavička tabulky je výrazný pruh: podbarvení primary ~14 %, popisky v barvě textu a váze 600, pod ní čára primary; přilepená buňka „Boss“ má stejný odstín neprůhledně. Každá tabulka má vlastní hlavičku dnů.
+- Kompaktní řádky: buňka 2 px svisle, zaškrtávací pole s plochou 28 px (na mobilu 36 px), řádek bez událostí má stejnou výšku jako řádek s jedním polem.
+- Dnešní den: celý sloupec jemně podbarvený primary (~10 %), buňka dne v hlavičce plná primary s textem na primary (`aria-current="date"`, `title` „Dnes“).
 - Zamčené dny: sloupec tlumený (text tlumený), ikona zámku v hlavičce zůstává.
 - Stavy buňky (rozhodnutí návrhu):
   - zaškrtnuté a měnitelné: plná primary s fajfkou;

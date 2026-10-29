@@ -5,11 +5,9 @@
     gap: 0.25rem;
     width: fit-content;
     max-width: 100%;
-    padding: 0.15rem 0.5rem 0.15rem 0.25rem;
-    /* Segmented control look: a stronger glass track, like the MudToggleGroup switches. */
-    background: var(--l2p-glass-strong);
-    border: 1px solid var(--l2p-glass-edge);
-    border-radius: 12px;
+    /* No track of its own: arrows, label and the "Tento týden" button sit straight on the page. The left arrow is
+       pulled out by its padding so the chevron lines up with the page title. */
+    margin-left: -0.5rem;
 }
 
 /* The label is a MudText, so it does not carry this component's scope attribute; reach it via ::deep. */
@@ -28,6 +26,7 @@
     .l2p-week-nav {
         flex-wrap: nowrap;
         gap: 0;
+        margin-left: -0.25rem;
     }
 
     .l2p-week-nav ::deep .l2p-week-nav-label {

@@ -1,5 +1,21 @@
-/* The grid is one glass card (.l2p-glass from app.css); the wrapper scrolls horizontally on narrow screens and the
-   first column stays pinned. Rows have no blur of their own. */
+/* Two tables (chaotic, then normal + CS), each one glass card (.l2p-glass from app.css) with a title above it.
+   The card scrolls horizontally on narrow screens and the first column stays pinned. Rows have no blur of their own. */
+.l2p-grid-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.l2p-grid-title {
+    display: flex;
+    align-items: center;
+    margin: 0 0 0.4rem 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--l2p-text);
+}
+
 .l2p-grid-scroll {
     overflow-x: auto;
 }
@@ -15,22 +31,33 @@
 /* Cells are transparent so the glass shows through; only the pinned boss column is opaque (see below). */
 .l2p-grid th,
 .l2p-grid td {
-    padding: 0.25rem 0.5rem;
+    padding: 0.125rem 0.5rem;
     border-bottom: 1px solid var(--l2p-divider);
     background-color: transparent;
 }
 
+/* Header row: a tinted band with full-contrast semibold labels, so it reads as the table head at a glance. */
 .l2p-grid thead th {
-    font-weight: 500;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     text-align: center;
     white-space: nowrap;
-    color: var(--l2p-text-2);
-    border-bottom-color: var(--l2p-glass-edge);
+    color: var(--l2p-text);
+    background-color: var(--l2p-grid-head);
+    border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
+}
+
+.l2p-grid-scroll {
+    --l2p-grid-head: color-mix(in srgb, var(--l2p-primary) 14%, transparent);
+    --l2p-grid-head-solid: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
 }
 
 .l2p-grid-day,
 .l2p-grid-cell {
-    min-width: 5.75rem;
+    min-width: 5.5rem;
     text-align: center;
 }
 
@@ -41,50 +68,32 @@
     z-index: 1;
     min-width: 8.5rem;
     text-align: left;
-    font-weight: 500;
+    font-weight: 400;
     white-space: nowrap;
     color: var(--l2p-text);
     background-color: var(--l2p-surface-solid);
     border-right: 1px solid var(--l2p-divider);
 }
 
+/* Rows without any event this week (Antharas on an off week) keep the height of a row with one checkbox. */
+.l2p-grid tbody th {
+    height: 1.75rem;
+}
+
 .l2p-grid thead th.l2p-grid-boss {
-    color: var(--l2p-text-2);
-}
-
-/* Activity names are regular weight so the group titles stand out. */
-.l2p-grid tbody tr:not(.l2p-grid-group) th.l2p-grid-boss {
-    font-weight: 400;
-}
-
-/* Group rows: a category dot and a clearly stronger title, no fill. The group title is also a .l2p-grid-boss,
-   so the selector has to out-rank `.l2p-grid .l2p-grid-boss`. */
-.l2p-grid .l2p-grid-group th {
-    padding-top: 0.7rem;
-    padding-bottom: 0.25rem;
-    text-align: left;
-}
-
-.l2p-grid .l2p-grid-group th.l2p-grid-boss {
-    font-size: 1rem;
     font-weight: 600;
-    color: var(--l2p-text);
+    background-color: var(--l2p-grid-head-solid);
 }
 
-.l2p-grid .l2p-grid-group .l2p-grid-group-day {
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-align: center;
-    white-space: nowrap;
-    color: var(--l2p-text-2);
-}
-
-.l2p-grid-group .l2p-grid-group-day.l2p-grid-locked {
-    color: var(--l2p-muted);
+/* First row of a later category in the table (Castle Siege under the normal epics). */
+.l2p-grid tr.l2p-grid-split > th,
+.l2p-grid tr.l2p-grid-split > td {
+    border-top: 1px solid var(--l2p-glass-edge);
 }
 
 .l2p-grid-dot {
     display: inline-block;
+    flex: none;
     width: 8px;
     height: 8px;
     margin-right: 0.35rem;
@@ -110,45 +119,33 @@
     border-bottom: none;
 }
 
-/* Today: the whole column is tinted, the header gets a pill. The pinned column is never tinted. */
-.l2p-grid td.l2p-grid-today,
-.l2p-grid th.l2p-grid-today {
+/* Today: the whole column is tinted and its header is a solid primary cell. The pinned column is never tinted. */
+.l2p-grid td.l2p-grid-today {
     background-color: color-mix(in srgb, var(--l2p-primary) 10%, transparent);
 }
 
-.l2p-grid thead th.l2p-grid-today,
-.l2p-grid-group .l2p-grid-group-day.l2p-grid-today {
-    color: var(--l2p-primary-text);
+.l2p-grid thead th.l2p-grid-today {
+    color: var(--l2p-on-primary);
+    background-color: var(--l2p-primary);
 }
 
 .l2p-grid thead th.l2p-grid-locked {
     color: var(--l2p-muted);
 }
 
-.l2p-today-pill {
-    display: block;
-    width: fit-content;
-    margin: 0.15rem auto 0;
-    padding: 0 0.5rem;
-    border-radius: 999px;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    line-height: 1.1rem;
-    color: var(--l2p-on-primary);
-    background: var(--l2p-primary);
-}
-
 .l2p-grid ::deep .l2p-grid-lock {
-    vertical-align: middle;
+    width: 0.95rem;
+    height: 0.95rem;
     margin-left: 0.15rem;
+    vertical-align: -0.15rem;
     opacity: 0.8;
 }
 
 /* Hover (desktop, editable grid only): the whole row gets a primary tint, visible on glass in both themes, so a row
    can be followed across seven days. It is an image layer, so today's tint and the opaque pinned column stay. */
 @media (hover: hover) {
-    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid tbody tr:not(.l2p-grid-group):hover > th,
-    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid tbody tr:not(.l2p-grid-group):hover > td {
+    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid tbody tr:hover > th,
+    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid tbody tr:hover > td {
         background-image: linear-gradient(
             color-mix(in srgb, var(--l2p-primary) 8%, transparent),
             color-mix(in srgb, var(--l2p-primary) 8%, transparent));
@@ -171,7 +168,7 @@
 }
 
 .l2p-grid-check ::deep .mud-checkbox .mud-typography {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     white-space: nowrap;
     color: var(--l2p-text-2);
 }
@@ -200,9 +197,9 @@
    a solid primary box with a tick when checked. The icon button itself stays the hit area. */
 .l2p-grid-check ::deep .mud-checkbox .mud-icon-button {
     position: relative;
-    padding: 6px;
-    width: 32px;
-    height: 32px;
+    padding: 4px;
+    width: 28px;
+    height: 28px;
     background: transparent;
     color: var(--l2p-primary);
 }
@@ -297,7 +294,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem 1.25rem;
-    margin: 0.75rem 0 0;
+    margin: 0.6rem 0 0;
     padding: 0 0.25rem;
     list-style: none;
     font-size: 0.8125rem;
@@ -349,10 +346,10 @@
         line-height: 1.2;
     }
 
-    /* Touch target of at least 40x40 px around the 20px box. */
+    /* Touch target of 36x36 px around the 20px box. */
     .l2p-grid-check ::deep .mud-checkbox .mud-icon-button {
-        width: 40px;
-        height: 40px;
-        padding: 10px;
+        width: 36px;
+        height: 36px;
+        padding: 8px;
     }
 }

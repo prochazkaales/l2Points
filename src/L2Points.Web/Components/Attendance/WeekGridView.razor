@@ -3,76 +3,65 @@
 @using L2Points.Domain.Time
 @using L2Points.Web.Formatting
 
-<div class="@RootClass">
-    <table class="l2p-grid">
-        <thead>
-            <tr>
-                <th class="l2p-grid-boss" scope="col">Boss</th>
-                @foreach (var day in Days)
+<div class="l2p-grid-stack">
+    @foreach (var table in Tables)
+    {
+        <section class="l2p-grid-section">
+            <h2 class="l2p-grid-title">
+                @foreach (var key in table.DotKeys)
                 {
-                    <th scope="col" class="l2p-grid-day @DayClass(day)">
-                        <span>@DisplayFormat.DayHeader(day)</span>
-                        @if (IsLocked(day))
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="l2p-grid-lock"
-                                     Title="Den je zamčený" />
-                        }
-                        @if (day == Today)
-                        {
-                            <span class="l2p-today-pill">Dnes</span>
-                        }
-                    </th>
+                    <span class="@($"l2p-grid-dot l2p-grid-dot-{key}")" aria-hidden="true"></span>
                 }
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var (group, index) in Groups.Select((g, i) => (g, i)))
-            {
-                <tr class="l2p-grid-group">
-                    <th class="l2p-grid-boss" scope="rowgroup">
-                        @foreach (var key in group.DotKeys)
+                @table.Title
+            </h2>
+            <div class="@RootClass">
+                <table class="l2p-grid" aria-label="@table.Title">
+                    <thead>
+                        <tr>
+                            <th class="l2p-grid-boss" scope="col">Boss</th>
+                            @foreach (var day in Days)
+                            {
+                                <th scope="col" class="l2p-grid-day @DayClass(day)" aria-current="@(day == Today ? "date" : null)"
+                                    title="@(day == Today ? "Dnes" : null)">
+                                    @DisplayFormat.DayHeader(day)
+                                    @if (IsLocked(day))
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="l2p-grid-lock"
+                                                 Title="Den je zamčený" />
+                                    }
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (row, split) in table.Rows)
                         {
-                            <span class="@($"l2p-grid-dot l2p-grid-dot-{key}")" aria-hidden="true"></span>
-                        }
-                        @group.Title
-                    </th>
-                    @if (index == 0)
-                    {
-                        @* The dates are in the table header right above; empty cells (not one colspan) keep today's
-                           column tint unbroken. *@
-                        @foreach (var day in Days)
-                        {
-                            <td class="@(day == Today ? "l2p-grid-today" : null)"></td>
-                        }
-                    }
-                    else
-                    {
-                        @* Repeat the dates on lower groups: on small screens the table header is scrolled out of view. *@
-                        @foreach (var day in Days)
-                        {
-                            <th class="l2p-grid-group-day @DayClass(day)">@DisplayFormat.DayHeader(day)</th>
-                        }
-                    }
-                </tr>
-                @foreach (var row in group.Rows)
-                {
-                    var limitReached = AttendanceRules.IsWeeklyLimitReached(row.Activity, row.Cells.Count(c => c.IsChecked));
-                    <tr>
-                        <th class="l2p-grid-boss" scope="row">@row.Activity.Name</th>
-                        @foreach (var day in Days)
-                        {
-                            <td class="l2p-grid-cell @DayClass(day)">
-                                @foreach (var cell in row.Cells.Where(c => c.Date == day))
+                            var limitReached = AttendanceRules.IsWeeklyLimitReached(row.Activity, row.Cells.Count(c => c.IsChecked));
+                            <tr class="@(split ? "l2p-grid-split" : null)">
+                                <th class="l2p-grid-boss" scope="row">
+                                    @if (row.Activity.Category != table.Categories[0])
+                                    {
+                                        <span class="@($"l2p-grid-dot l2p-grid-dot-{DisplayFormat.EventKindKey(row.Activity.Category, EventSlot.None)}")"
+                                              aria-hidden="true"></span>
+                                    }
+                                    @row.Activity.Name
+                                </th>
+                                @foreach (var day in Days)
                                 {
-                                    @RenderCell(row.Activity, cell, limitReached)
+                                    <td class="l2p-grid-cell @DayClass(day)">
+                                        @foreach (var cell in row.Cells.Where(c => c.Date == day))
+                                        {
+                                            @RenderCell(row.Activity, cell, limitReached)
+                                        }
+                                    </td>
                                 }
-                            </td>
+                            </tr>
                         }
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
 </div>
 
 @if (ShowLegend)
@@ -88,11 +77,12 @@
 }
 
 @code {
-    private static readonly (ActivityCategory Category, string Title, string[] DotKeys)[] GroupOrder =
+    // Chaotic first: it has the most events in a week. Castle Siege shares the table with normal epics (one row,
+    // no slots); rows of a later category get its dot and a divider above the first one.
+    private static readonly (string Title, string[] DotKeys, ActivityCategory[] Categories)[] TableOrder =
     [
-        (ActivityCategory.NormalEpic, "Normal epicy", ["normal"]),
-        (ActivityCategory.ChaoticEpic, "Chaotic epicy", ["evening", "morning"]),
-        (ActivityCategory.CastleSiege, "Castle Siege", ["cs"]),
+        ("Chaotic epicy", ["evening", "morning"], [ActivityCategory.ChaoticEpic]),
+        ("Normal epicy a Castle Siege", ["normal", "cs"], [ActivityCategory.NormalEpic, ActivityCategory.CastleSiege]),
     ];
 
     [Parameter, EditorRequired]
@@ -115,10 +105,20 @@
 
     private IReadOnlyList<DateOnly> Days => Grid.Week.Days.ToList();
 
-    private IEnumerable<(string Title, string[] DotKeys, IEnumerable<WeekGridRow> Rows)> Groups =>
-        GroupOrder
-            .Select(g => (g.Title, g.DotKeys, Rows: Grid.Rows.Where(r => r.Activity.Category == g.Category).ToList().AsEnumerable()))
-            .Where(g => g.Rows.Any());
+    private IEnumerable<(string Title, string[] DotKeys, ActivityCategory[] Categories, List<(WeekGridRow Row, bool Split)> Rows)> Tables =>
+        TableOrder
+            .Select(t => (t.Title, t.DotKeys, t.Categories, Rows: TableRows(t.Categories)))
+            .Where(t => t.Rows.Count > 0);
+
+    /// <summary>Rows of the given categories in that order (catalog order within one); Split marks a category change.</summary>
+    private List<(WeekGridRow Row, bool Split)> TableRows(ActivityCategory[] categories)
+    {
+        var rows = Grid.Rows
+            .Where(r => categories.Contains(r.Activity.Category))
+            .OrderBy(r => Array.IndexOf(categories, r.Activity.Category))
+            .ToList();
+        return rows.Select((r, i) => (r, i > 0 && r.Activity.Category != rows[i - 1].Activity.Category)).ToList();
+    }
 
     private string RootClass => ReadOnly ? "l2p-grid-scroll l2p-glass l2p-grid-readonly" : "l2p-grid-scroll l2p-glass";
 

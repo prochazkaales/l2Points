@@ -3,7 +3,7 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .l2p-summary-points {
@@ -27,9 +27,9 @@
 .l2p-summary-tile {
     display: flex;
     flex-direction: column;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.75rem;
     border: 1px solid transparent;
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--l2p-glass-strong);
 }
 
@@ -68,7 +68,11 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    /* Full width but one line (label, percent, ratio), so the card stays short on a phone. */
     .l2p-summary-tile-total {
         grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: baseline;
+        gap: 0.75rem;
     }
 }
