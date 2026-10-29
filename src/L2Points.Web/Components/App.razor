@@ -5,16 +5,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    @* Sets data-theme before first paint so the stored (or OS) theme is used without a flash; same key as js/theme.js. *@
+    @* Defines l2pTheme.apply (the single copy of the theme bootstrap) and runs it before first paint, so the stored
+       (or OS) theme is used without a flash. js/theme.js reuses it after enhanced navigation, which drops data-theme. *@
     <script>
-        (function () {
+        window.l2pTheme = window.l2pTheme || {};
+        window.l2pTheme.apply = function () {
             var theme = null;
             try { theme = window.localStorage.getItem("l2p-theme"); } catch (e) { }
             if (theme !== "dark" && theme !== "light") {
                 theme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
             }
             document.documentElement.dataset.theme = theme;
-        })();
+            return theme;
+        };
+        window.l2pTheme.apply();
     </script>
     @* SVG switches to its dark variant via prefers-color-scheme; PNG/ICO are the light variant for older browsers. *@
     <link rel="icon" href="@Assets["favicon.svg"]" type="image/svg+xml" />
