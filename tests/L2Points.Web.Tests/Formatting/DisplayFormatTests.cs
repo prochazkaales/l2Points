@@ -18,6 +18,34 @@ public class DisplayFormatTests
     public void Percent_null_is_dash() => Assert.Equal("–", DisplayFormat.Percent(null));
 
     [Theory]
+    [InlineData(100.0, "high")]
+    [InlineData(79.5, "high")]
+    [InlineData(79.4, "mid")]
+    [InlineData(50.0, "mid")]
+    [InlineData(49.4, "low")]
+    [InlineData(0.0, "low")]
+    public void PercentTone_follows_the_shown_number(double value, string expected) =>
+        Assert.Equal(expected, DisplayFormat.PercentTone(value));
+
+    [Fact]
+    public void PercentTone_null_when_missing() => Assert.Null(DisplayFormat.PercentTone(null));
+
+    [Theory]
+    [InlineData(0, "0")]
+    [InlineData(950, "950")]
+    [InlineData(1420, "1 420")]
+    public void Points_group_thousands(int value, string expected) =>
+        Assert.Equal(expected, DisplayFormat.Points(value));
+
+    [Theory]
+    [InlineData(1, "1 bod")]
+    [InlineData(3, "3 body")]
+    [InlineData(0, "0 bodů")]
+    [InlineData(135, "135 bodů")]
+    public void PointsCount_czech(int count, string expected) =>
+        Assert.Equal(expected, DisplayFormat.PointsCount(count));
+
+    [Theory]
     [InlineData(2026, 10, 26, "Po 26. 10.")]
     [InlineData(2026, 11, 1, "Ne 1. 11.")]
     public void DayHeader_czech(int year, int month, int day, string expected) =>

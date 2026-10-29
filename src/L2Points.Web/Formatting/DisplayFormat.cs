@@ -9,12 +9,36 @@ namespace L2Points.Web.Formatting;
 public static class DisplayFormat
 {
     private static readonly string[] DayAbbreviations = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
+    private static readonly CultureInfo Czech = CultureInfo.GetCultureInfo("cs-CZ");
 
     /// <summary>Whole percent with a trailing " %", or an en dash when there is nothing to compare.</summary>
     public static string Percent(double? value) =>
         value is null
             ? "–"
             : $"{Math.Round(value.Value, MidpointRounding.AwayFromZero).ToString("0", CultureInfo.InvariantCulture)} %";
+
+    /// <summary>
+    /// Colour band of a participation percentage: "high" from 80 %, "mid" from 50 %, otherwise "low"; null when missing.
+    /// The rounded value decides, so the band matches the shown number.
+    /// </summary>
+    public static string? PercentTone(double? value) => (value is null ? (double?)null : Math.Round(value.Value, MidpointRounding.AwayFromZero)) switch
+    {
+        null => null,
+        >= 80 => "high",
+        >= 50 => "mid",
+        _ => "low",
+    };
+
+    /// <summary>Points with a thousands separator, e.g. "1 420".</summary>
+    public static string Points(int value) => value.ToString("#,0", Czech);
+
+    /// <summary>Czech count of points ("1 bod", "2 body", "5 bodů").</summary>
+    public static string PointsCount(int count) => count switch
+    {
+        1 => "1 bod",
+        >= 2 and <= 4 => $"{count} body",
+        _ => $"{Points(count)} bodů",
+    };
 
     /// <summary>Column header such as "Po 26. 10.".</summary>
     public static string DayHeader(DateOnly d) =>
