@@ -198,8 +198,12 @@
     background: var(--l2p-row-bg);
 }
 
-.l2p-lb ::deep tr.l2p-lb-me td.l2p-nick-cell {
+/* The marker sits on the rank cell, which is the row's first cell. */
+.l2p-lb ::deep tr.l2p-lb-me td.l2p-lb-rank {
     box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+}
+
+.l2p-lb ::deep tr.l2p-lb-me td.l2p-nick-cell {
     font-weight: 600;
 }
 
