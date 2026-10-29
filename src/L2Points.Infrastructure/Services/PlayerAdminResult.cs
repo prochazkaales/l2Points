@@ -11,6 +11,7 @@ public enum PlayerAdminStatus
     ActorNotAllowed,
     RequiresSuperAdmin,
     SuperAdminProtected,
+    AdminProtected,
 }
 
 /// <param name="Status">Outcome of the operation.</param>

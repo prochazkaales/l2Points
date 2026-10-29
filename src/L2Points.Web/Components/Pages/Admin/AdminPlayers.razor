@@ -48,8 +48,12 @@ else
                 @{
                     var player = context;
                     var isSelf = player.UserId == _actorId;
-                    // Other admins must not touch the super admin; the server enforces this too.
-                    var isProtected = player.IsSuperAdmin && !isSelf;
+                    // Nobody touches the super admin and only the super admin touches other admins; the server enforces this too.
+                    var protectedText = isSelf ? null
+                        : player.IsSuperAdmin ? SuperAdminProtectedText
+                        : player.IsAdmin && !ActorIsSuperAdmin ? AdminProtectedText
+                        : null;
+                    var isProtected = protectedText is not null;
                 }
                 <MudTd Class="l2p-nick-cell">
                     <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover">@player.Nick</MudLink>
@@ -81,13 +85,13 @@ else
                                    aria-label="@($"Upravit: {player.Nick}")" Disabled="_saving"
                                    OnClick="@(() => EditAsync(player))" />
                     <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small"
-                                   title="@(isSelf ? "Vlastní heslo změníš v profilu." : isProtected ? ProtectedText : "Reset hesla")"
+                                   title="@(isSelf ? "Vlastní heslo změníš v profilu." : isProtected ? protectedText : "Reset hesla")"
                                    aria-label="@($"Reset hesla: {player.Nick}")" Disabled="@(_saving || isSelf || isProtected)"
                                    OnClick="@(() => ResetPasswordAsync(player))" />
                     @if (player.IsActive)
                     {
                         <MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small"
-                                       title="@(isProtected ? ProtectedText : "Deaktivovat")"
+                                       title="@(isProtected ? protectedText : "Deaktivovat")"
                                        aria-label="@($"Deaktivovat: {player.Nick}")" Disabled="@(_saving || isSelf || isProtected)"
                                        OnClick="@(() => SetActiveAsync(player, false))" />
                     }
@@ -111,7 +115,7 @@ else
                                        OnClick="@(() => SetAdminAsync(player, true))" />
                     }
                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                   title="@(isProtected ? ProtectedText : "Smazat")"
+                                   title="@(isProtected ? protectedText : "Smazat")"
                                    aria-label="@($"Smazat: {player.Nick}")" Disabled="@(_saving || isSelf || isProtected)"
                                    OnClick="@(() => DeleteAsync(player))" />
                     <MudIconButton Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Small" title="Účast"
@@ -144,7 +148,8 @@ else
         CloseOnEscapeKey = false,
     };
 
-    private const string ProtectedText = "Super admina nelze měnit.";
+    private const string SuperAdminProtectedText = "Super admina nelze měnit.";
+    private const string AdminProtectedText = "Jiného admina může měnit jen super admin.";
 
     private readonly CancellationTokenSource _disposed = new();
 
@@ -335,7 +340,8 @@ else
         PlayerAdminStatus.UnknownPlayer => "Hráč už neexistuje.",
         PlayerAdminStatus.ActorNotAllowed => "Tuto akci už nemůžeš provést.",
         PlayerAdminStatus.RequiresSuperAdmin => "Admin práva může měnit jen super admin.",
-        PlayerAdminStatus.SuperAdminProtected => ProtectedText,
+        PlayerAdminStatus.SuperAdminProtected => SuperAdminProtectedText,
+        PlayerAdminStatus.AdminProtected => AdminProtectedText,
         _ => result.Message ?? "Uložení se nepovedlo, zkus to znovu.",
     };
 

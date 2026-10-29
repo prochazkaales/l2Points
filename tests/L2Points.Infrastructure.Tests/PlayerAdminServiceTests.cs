@@ -492,6 +492,54 @@ public class PlayerAdminServiceTests
     }
 
     [Fact]
+    public async Task Regular_admin_cannot_restrict_other_admins()
+    {
+        await using var arranged = await ArrangeAsync();
+        var admin2 = await arranged.CreateRegularAdminAsync("admin2");
+        var admin3 = await arranged.CreateRegularAdminAsync("admin3");
+        var oldStamp = await arranged.StampOfAsync(admin3.Id);
+
+        var deactivate = await arranged.Service.SetActiveAsync(admin2.Id, admin3.Id, false);
+        var delete = await arranged.Service.DeleteAsync(admin2.Id, admin3.Id);
+        var reset = await arranged.Service.ResetPasswordAsync(admin2.Id, admin3.Id);
+
+        Assert.Equal(PlayerAdminStatus.AdminProtected, deactivate.Status);
+        Assert.Equal(PlayerAdminStatus.AdminProtected, delete.Status);
+        Assert.Equal(PlayerAdminStatus.AdminProtected, reset.Status);
+        Assert.Null(reset.Password);
+        var stored = await arranged.FindByIdAsync(admin3.Id);
+        Assert.True(stored.IsActive);
+        Assert.True(await arranged.CheckPasswordAsync(admin3.Id, "Passw0rd!x"));
+        Assert.Equal(oldStamp, await arranged.StampOfAsync(admin3.Id));
+
+        // Regular players stay manageable by any admin.
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.SetActiveAsync(admin2.Id, bob.Id, false)).Status);
+        Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.ResetPasswordAsync(admin2.Id, bob.Id)).Status);
+        Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.DeleteAsync(admin2.Id, bob.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Super_admin_can_restrict_other_admins()
+    {
+        await using var arranged = await ArrangeAsync();
+        var admin2 = await arranged.CreateRegularAdminAsync("admin2");
+        var admin3 = await arranged.CreateRegularAdminAsync("admin3");
+        var superId = arranged.Admin.Id;
+
+        var reset = await arranged.Service.ResetPasswordAsync(superId, admin2.Id);
+        var deactivate = await arranged.Service.SetActiveAsync(superId, admin2.Id, false);
+        var delete = await arranged.Service.DeleteAsync(superId, admin3.Id);
+
+        Assert.Equal(PlayerAdminStatus.Ok, reset.Status);
+        Assert.NotNull(reset.Password);
+        Assert.Equal(PlayerAdminStatus.Ok, deactivate.Status);
+        Assert.False((await arranged.FindByIdAsync(admin2.Id)).IsActive);
+        Assert.Equal(PlayerAdminStatus.Ok, delete.Status);
+        Assert.Null(await arranged.FindAsync("admin3"));
+    }
+
+    [Fact]
     public async Task Get_players_flags_super_admin()
     {
         await using var arranged = await ArrangeAsync();
