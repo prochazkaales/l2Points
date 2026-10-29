@@ -68,6 +68,7 @@
     left: 0;
     z-index: 1;
     width: var(--l2p-grid-boss-width);
+    padding-left: 1rem;
     text-align: left;
     font-weight: 400;
     white-space: nowrap;
@@ -349,7 +350,7 @@
 
     .l2p-grid .l2p-grid-boss {
         white-space: normal;
-        padding-left: 0.5rem;
+        padding-left: 0.75rem;
         padding-right: 0.35rem;
         line-height: 1.2;
     }

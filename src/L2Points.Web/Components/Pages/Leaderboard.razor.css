@@ -24,7 +24,8 @@
     padding: 0.9rem 0.5rem;
     min-width: 0;
     text-align: center;
-    border-color: var(--l2p-place-color, var(--l2p-glass-edge));
+    border-color: var(--l2p-medal-color, var(--l2p-glass-edge));
+    background: color-mix(in srgb, var(--l2p-medal-color, transparent) 7%, var(--l2p-glass));
 }
 
 .l2p-podium ::deep .l2p-podium-1 {
@@ -47,7 +48,7 @@
 }
 
 .l2p-podium ::deep .l2p-podium-trophy {
-    color: var(--l2p-place-color, var(--mud-palette-text-secondary));
+    color: var(--l2p-medal-color, var(--l2p-text-2));
 }
 
 .l2p-podium ::deep .l2p-podium-nick {
@@ -78,8 +79,16 @@
 }
 
 /* Thin progress line in a section head while the week reloads; it keeps its height so nothing jumps. */
+/* The thin progress line lies over the top edge of the card, so it takes no height: a reserved strip above the
+   header band made the Týden table look different from the Celkově one. */
 .l2p-lb-week-loading {
-    height: 4px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 3;
+    pointer-events: none;
 }
 
 @media (max-width: 599.98px) {

@@ -29,7 +29,7 @@
 }
 
 .l2p-pd ::deep .l2p-stat-empty {
-    color: var(--mud-palette-text-disabled);
+    color: var(--l2p-muted);
 }
 
 /* Week column stays pinned to the left while the table scrolls horizontally. */

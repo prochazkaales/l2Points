@@ -103,14 +103,14 @@ else
             <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title"><MudIcon Icon="@Icons.Material.Outlined.DateRange" Size="Size.Small" />Týden</MudText>
             <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
         </div>
-        <MudPaper Outlined="true">
+        <MudPaper Outlined="true" Style="position: relative">
             <div class="l2p-lb-week-loading">
                 @if (_loading == LoadScope.Week)
                 {
                     <MudProgressLinear Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
                 }
             </div>
-            <RankingTable Rows="_weekRows" Ranks="_weekRanks" Jewels="_jewels" UserId="@_userId" Weekly="true" NickWeek="_week" />
+            <RankingTable Rows="_weekRows" Ranks="_weekRanks" Jewels="_jewels" UserId="@_userId" Weekly="true" ShowBar="true" NickWeek="_week" />
         </MudPaper>
     </section>
 }

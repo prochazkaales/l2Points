@@ -38,9 +38,9 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 | Záře 2 (levý horní roh) | `rgba(199,125,255,.14)` | `rgba(96,165,250,.20)` |
 | Sklo – výplň | `rgba(255,255,255,.045)` | `rgba(255,255,255,.58)` |
 | Sklo – silnější (řádky, vnořené plochy) | `rgba(255,255,255,.06)` | `rgba(109,74,224,.065)` (nádech primary, ne bělejší než karta, jinak dlaždice splývají) |
-| Sklo – hrana (i okraje čipů, dnů a dělicí čára přilepeného sloupce) | `rgba(185,166,255,.16)` | `rgba(90,70,170,.16)` (bílá hrana na světlé stránce není vidět; v tmavém stejný fialový odstín, aby čáry v obou režimech působily stejně) |
-| Sklo – horní světlo (inset) | `rgba(255,255,255,.12)` | `rgba(255,255,255,.90)` |
-| Stín karty | `0 8px 32px rgba(0,0,0,.35)` | `0 10px 30px rgba(60,40,140,.14)` |
+| Sklo – hrana (i okraje čipů, dnů a dělicí čára přilepeného sloupce) | `rgba(185,166,255,.11)` | `rgba(90,70,170,.16)` (bílá hrana na světlé stránce není vidět; v tmavém stejný fialový odstín, aby čáry v obou režimech působily stejně) |
+| Sklo – horní světlo (inset) | `rgba(255,255,255,.04)` | `rgba(255,255,255,.90)` |
+| Stín karty | `0 4px 20px rgba(0,0,0,.22)` | `0 10px 30px rgba(60,40,140,.14)` |
 | Primary | `#8B6CFF` | `#6D4AE0` |
 | Primary jako text (`--l2p-primary-text`) | `#B9A6FF` | `#5B39CC` |
 | Primary 2 (konec přechodu) | `#C77DFF` | `#A855F7` |
@@ -49,7 +49,7 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 | Text | `#F4F2FF` | `#1D1838` |
 | Text 2 | `#B9B5D6` | `#4F4A6E` |
 | Tlumený | `#A8A4CA` | `#625D84` |
-| Dělicí čára | `rgba(185,166,255,.08)` | `rgba(60,40,140,.08)` |
+| Dělicí čára | `rgba(185,166,255,.07)` | `rgba(60,40,140,.08)` |
 | Neprůhledný povrch (popovery, dialogy, sticky buňky) | `#16132A` | `#F8F8FD` |
 
 Barvy kategorií (tečka, pruh, obrys; nikdy velká plocha):
@@ -142,3 +142,12 @@ Body velkým tenkým číslem, pět dlaždic procent (Celkem, Normal, Večerní,
 - Přesné hodnoty v rozsahu ± (velikosti písma, odsazení, opacity), pokud drží kontrast a pravidlo dávkování.
 - Jak přesně v MudBlazoru vypnout elevaci a navázat třídy (theme `Shadows`, `Elevation="0"`, CSS override).
 - Pořadí práce a dělení na commity.
+
+## Doladění tabulek a medailí (po prvním nasazení vzhledu)
+
+- **Jednotný rytmus tabulek:** každá `MudTable` i vlastní mřížky (`.l2p-grid`, `.l2p-wk-grid`) mají buňky 0,35 rem × 0,75 rem, popisky hlavičky 0,8125 rem / 600, tělo 0,875 rem. První a poslední buňka řádku je odsazená 1 rem (na mobilu 0,75 rem), aby text nelepil na zaoblení karty. Číslo místa sousedí s nickem (bez mezery navíc).
+- **Tabulky žebříčku** (`RankingTable`: Celkově, Týden, Hráči) mají pevné rozvržení se stejnými šířkami sloupců (místo 3 rem, nick 12 rem, body 6 rem, pruh bodů 22 %, zbytek procenta) a ve všech je pruh bodů, takže sloupce v tabulkách pod sebou leží přesně pod sebou. Pod minimální šířkou (42 rem, na mobilu 34 rem) se karta posouvá do strany.
+- **Ukazatel načítání týdne** na Přehledu je tenká čára přes horní okraj karty (absolutně), nezabírá výšku. Rezervovaný pruh nad hlavičkou dělal z tabulky Týden jinou tabulku než Celkově.
+- **Medaile** (okraj a pohár na stupních vítězů) mají vlastní tokeny `--l2p-medal-1..3`: v tmavém režimu totéž co `--l2p-place-*` (`#F5C15C`, `#C9CBE0`, `#E0915A`), ve světlém jasnější (`#E0A31B`, `#9EA3C4`, `#D4813F`). Tmavé odstíny `--l2p-place-*` platí jen pro text (pořadí v tabulkách, 4,5:1). Karta stupně má ~7 % barvy medaile jako podbarvení.
+- **Tmavý režim:** hrana, horní světlo a stín jsou tišší (hodnoty v tabulce výše), aby karty nebyly obtažené; obrysová tlačítka mají hranu primary jen ze 45 %.
+- **Kontrast textu** jsme ověřili skriptem (barva textu proti složenému pozadí všech textových prvků) na stránkách Můj týden, Týden – všichni, Přehled, Body, Šperky a Admin – Hráči v obou režimech; bez výsledků pod 4,5:1 (3:1 u velkého textu). Pásma procent se při tom zesvětlila/ztmavila (`--l2p-tone-low` ve světlém `#912317`), prázdná hodnota „–“ používá `--l2p-muted` a dny bez událostí v `/week` také (ne barvu „disabled“).

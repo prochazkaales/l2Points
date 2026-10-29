@@ -28,11 +28,12 @@
     --l2p-glow-2: rgba(199, 125, 255, 0.14);
     --l2p-glass: rgba(255, 255, 255, 0.045);
     --l2p-glass-strong: rgba(255, 255, 255, 0.06);
-    /* Edges and lines are a light violet in the dark theme too, the same hue as the light theme's lines, so cards,
-       tables, chips and pinned-column dividers all read as one set of lines. */
-    --l2p-glass-edge: rgba(185, 166, 255, 0.16);
-    --l2p-glass-hi: rgba(255, 255, 255, 0.12);
-    --l2p-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    /* Edges and lines are a light violet in the dark theme too (the hue of the light theme's lines) but much fainter:
+       a hairline that separates the cards from the page without outlining every element. The top light and the
+       shadow are kept quiet for the same reason; a dark shadow on a dark page only smudges the glow. */
+    --l2p-glass-edge: rgba(185, 166, 255, 0.11);
+    --l2p-glass-hi: rgba(255, 255, 255, 0.04);
+    --l2p-glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
     --l2p-surface-solid: #16132A;
     /* Opaque header band of the attendance grid tables (opaque because the boss column is pinned). */
     --l2p-table-head: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
@@ -44,7 +45,7 @@
     --l2p-text: #F4F2FF;
     --l2p-text-2: #B9B5D6;
     --l2p-muted: #A8A4CA;
-    --l2p-divider: rgba(185, 166, 255, 0.08);
+    --l2p-divider: rgba(185, 166, 255, 0.07);
     --l2p-cat-normal: #6E9BFF;
     --l2p-cat-evening: #FF9F4A;
     --l2p-cat-morning: #3DBFF2;
@@ -59,6 +60,9 @@
     --l2p-place-1: #F5C15C;
     --l2p-place-2: #C9CBE0;
     --l2p-place-3: #E0915A;
+    --l2p-medal-1: #F5C15C;
+    --l2p-medal-2: #C9CBE0;
+    --l2p-medal-3: #E0915A;
 }
 
 :root[data-theme="light"] {
@@ -94,10 +98,15 @@
     --l2p-logo-tile-edge: transparent;
     --l2p-tone-high: #06604E;
     --l2p-tone-mid: #714B00;
-    --l2p-tone-low: #9F2A1D;
+    --l2p-tone-low: #912317;
     --l2p-place-1: #755600;
     --l2p-place-2: #575A78;
     --l2p-place-3: #8F4817;
+    /* Medals are graphics (podium edge, trophy), not text, so they can stay bright; the place shades above are text
+       and have to be dark enough for 4.5:1. */
+    --l2p-medal-1: #E0A31B;
+    --l2p-medal-2: #9EA3C4;
+    --l2p-medal-3: #D4813F;
 }
 
 /* Page background: two glows over the base colour. It does not depend on MudThemeProvider, so it is right before
@@ -192,6 +201,11 @@ h1:focus {
     color: var(--l2p-primary-text);
 }
 
+/* Outlined buttons: the edge is a soft primary, so a row of them (the admin hub) does not read as a wireframe. */
+.mud-button-outlined.mud-button-outlined-primary {
+    border-color: color-mix(in srgb, var(--l2p-primary) 45%, transparent);
+}
+
 /* Outlined and text primary chips (e.g. the "admin" chip): MudBlazor uses two classes, the extra .mud-chip out-ranks
    it regardless of stylesheet order. The border keeps the palette primary. */
 .mud-chip.mud-chip-outlined.mud-chip-color-primary,
@@ -249,6 +263,7 @@ h1:focus {
 .mud-main-content .mud-table-head .mud-table-cell.l2p-nick-cell,
 .mud-main-content .mud-table-head .mud-table-cell.l2p-pd-week {
     background: var(--l2p-table-head);
+    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--l2p-text);
     border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
@@ -258,6 +273,41 @@ h1:focus {
 .mud-main-content .mud-table-head .mud-table-cell.l2p-nick-cell,
 .mud-main-content .mud-table-head .mud-table-cell.l2p-pd-week {
     border-right-color: transparent;
+}
+
+/* One rhythm for every table (the custom grids use the same numbers): cells 0.35rem x 0.75rem, and the first and last
+   cell of a row are indented 1rem so the text does not hug the rounded card corners. Specificity beats MudBlazor's
+   dense padding (6px 24px 6px 16px). */
+.mud-main-content .mud-table tr > .mud-table-cell {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.mud-main-content .mud-table tr > .mud-table-cell:first-child {
+    padding-left: 1rem;
+}
+
+.mud-main-content .mud-table tr > .mud-table-cell:last-child {
+    padding-right: 1rem;
+}
+
+/* The place number sits right next to the nick; it is the first cell, so it keeps the left indent only. */
+.mud-main-content .mud-table tr > .mud-table-cell.l2p-rank-cell {
+    padding-right: 0;
+}
+
+.mud-main-content .mud-table tr > .mud-table-cell.l2p-rank-cell + .mud-table-cell {
+    padding-left: 0.5rem;
+}
+
+@media (max-width: 599.98px) {
+    .mud-main-content .mud-table tr > .mud-table-cell:first-child {
+        padding-left: 0.75rem;
+    }
+
+    .mud-main-content .mud-table tr > .mud-table-cell:last-child {
+        padding-right: 0.75rem;
+    }
 }
 
 /* Chips (attendees, "neaktivní", "admin") with the same small radius as the rest. */
@@ -747,14 +797,17 @@ td.l2p-nick-cell .l2p-nick-chip {
 /* Gold, silver and bronze by the shared place, so a tie gets the same colour. */
 .l2p-place-1 {
     --l2p-place-color: var(--l2p-place-1);
+    --l2p-medal-color: var(--l2p-medal-1);
 }
 
 .l2p-place-2 {
     --l2p-place-color: var(--l2p-place-2);
+    --l2p-medal-color: var(--l2p-medal-2);
 }
 
 .l2p-place-3 {
     --l2p-place-color: var(--l2p-place-3);
+    --l2p-medal-color: var(--l2p-medal-3);
 }
 
 @media (max-width: 959.98px) {

@@ -1,4 +1,24 @@
 /* Cells are rendered by MudBlazor components, so reach them via ::deep. */
+
+/* Fixed layout with the same column widths in every ranking table (Celkově, Týden, Hráči), so the columns line up from
+   one table to the next instead of each table sizing itself by its nicks. Below the minimum width the card scrolls. */
+.l2p-rank-table ::deep table {
+    table-layout: fixed;
+    min-width: 42rem;
+}
+
+.l2p-rank-table ::deep tr > :nth-child(1) {
+    width: 3rem;
+}
+
+.l2p-rank-table ::deep tr > :nth-child(2) {
+    width: 12rem;
+}
+
+.l2p-rank-table ::deep tr > :nth-child(3) {
+    width: 6rem;
+}
+
 .l2p-rank-table ::deep th,
 .l2p-rank-table ::deep td:not(.l2p-nick-cell) {
     white-space: nowrap;
@@ -16,11 +36,10 @@
 }
 
 .l2p-rank-table ::deep .l2p-stat-empty {
-    color: var(--mud-palette-text-disabled);
+    color: var(--l2p-muted);
 }
 
 .l2p-rank-table ::deep .l2p-rank-cell {
-    width: 2.5rem;
     padding-right: 0;
     text-align: right;
     font-weight: 700;
@@ -34,14 +53,13 @@
 
 /* Points bar relative to the leader. */
 .l2p-rank-table ::deep .l2p-rank-bar-cell {
-    width: 30%;
-    min-width: 7rem;
+    width: 22%;
 }
 
 .l2p-rank-table ::deep .l2p-rank-bar {
     height: 0.5rem;
     border-radius: 0.25rem;
-    background: var(--mud-palette-action-disabled-background);
+    background: color-mix(in srgb, var(--l2p-text) 12%, transparent);
     overflow: hidden;
 }
 
@@ -77,5 +95,13 @@
     /* The bar would push the percentages off screen; the points already say it. */
     .l2p-rank-table ::deep .l2p-rank-bar-cell {
         display: none;
+    }
+
+    .l2p-rank-table ::deep table {
+        min-width: 34rem;
+    }
+
+    .l2p-rank-table ::deep tr > :nth-child(2) {
+        width: 9rem;
     }
 }
