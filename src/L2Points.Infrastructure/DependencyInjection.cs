@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Azure.Identity;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Infrastructure.Services;
@@ -15,6 +16,9 @@ namespace L2Points.Infrastructure;
 
 public static class DependencyInjection
 {
+    /// <summary>Configuration key (env <c>DataProtection__KeyVaultKeyUri</c>) with the Key Vault key URI that encrypts Data Protection keys.</summary>
+    public const string KeyVaultKeyUriKey = "DataProtection:KeyVaultKeyUri";
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("Default")
@@ -27,9 +31,18 @@ public static class DependencyInjection
 
         services.AddIdentityServices();
 
-        services.AddDataProtection()
+        var dataProtection = services.AddDataProtection()
             .PersistKeysToDbContext<AppDbContext>()
             .SetApplicationName("L2Points");
+
+        // Keys are stored in the DB; when a Key Vault key is configured they are wrapped by it (unwrapped lazily
+        // on first use, so nothing calls Azure during registration). The credential is DefaultAzureCredential:
+        // in Azure it picks up the user-assigned managed identity from AZURE_CLIENT_ID.
+        var keyVaultKeyUri = configuration[KeyVaultKeyUriKey];
+        if (!string.IsNullOrWhiteSpace(keyVaultKeyUri))
+        {
+            dataProtection.ProtectKeysWithAzureKeyVault(new Uri(keyVaultKeyUri), new DefaultAzureCredential());
+        }
 
         services.TryAddSingleton(TimeProvider.System);
         services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.SectionName));
