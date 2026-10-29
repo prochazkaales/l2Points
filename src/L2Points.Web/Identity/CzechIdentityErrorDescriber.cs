@@ -33,6 +33,9 @@ public class CzechIdentityErrorDescriber : IdentityErrorDescriber
     public override IdentityError InvalidUserName(string? userName) =>
         Create(nameof(InvalidUserName), "Login může obsahovat jen písmena bez diakritiky, číslice a znaky - . _ @ +.");
 
+    public override IdentityError ConcurrencyFailure() =>
+        Create(nameof(ConcurrencyFailure), "Záznam mezitím změnil někdo jiný, načti stránku znovu.");
+
     private static IdentityError Create(string code, string description) =>
         new() { Code = code, Description = description };
 }

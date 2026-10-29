@@ -62,8 +62,8 @@ else
                     <MudTd>@activity.Points</MudTd>
                     @if (category == ActivityCategory.ChaoticEpic)
                     {
-                        <MudTd>@SlotPointsText(activity, EventSlot.Evening)</MudTd>
-                        <MudTd>@SlotPointsText(activity, EventSlot.Morning)</MudTd>
+                        <MudTd>@SlotPointsCell(activity, EventSlot.Evening)</MudTd>
+                        <MudTd>@SlotPointsCell(activity, EventSlot.Morning)</MudTd>
                     }
                     @if (category == ActivityCategory.NormalEpic)
                     {
@@ -114,9 +114,11 @@ else
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
-    // Empty means no override: the slot gives the base points of the activity.
-    private static string SlotPointsText(Activity activity, EventSlot slot) =>
-        activity.SlotPoints.FirstOrDefault(s => s.Slot == slot)?.Points.ToString() ?? "";
+    // No override: the slot gives the base points of the activity.
+    private static RenderFragment SlotPointsCell(Activity activity, EventSlot slot) =>
+        activity.SlotPoints.FirstOrDefault(s => s.Slot == slot) is { } overridden
+            ? @<text>@overridden.Points</text>
+            : @<MudText Typo="Typo.body2" Class="mud-text-secondary">stejné</MudText>;
 
     private async Task EditAsync(Activity activity)
     {

@@ -74,8 +74,9 @@ else
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" title="Upravit"
                                    aria-label="@($"Upravit: {player.Nick}")" Disabled="_saving"
                                    OnClick="@(() => EditAsync(player))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small" title="Reset hesla"
-                                   aria-label="@($"Reset hesla: {player.Nick}")" Disabled="_saving"
+                    <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small"
+                                   title="@(isSelf ? "Vlastní heslo změníš v profilu." : "Reset hesla")"
+                                   aria-label="@($"Reset hesla: {player.Nick}")" Disabled="@(_saving || isSelf)"
                                    OnClick="@(() => ResetPasswordAsync(player))" />
                     @if (player.IsActive)
                     {
@@ -121,6 +122,7 @@ else
     {
         MaxWidth = MaxWidth.ExtraSmall,
         FullWidth = true,
+        BackdropClick = false,
         CloseOnEscapeKey = true,
     };
 
@@ -195,7 +197,11 @@ else
             return;
         }
 
-        await ChangeAsync(ct => PlayerAdmin.SetActiveAsync(_actorId!, player.UserId, active, ct));
+        var reactivated = await ChangeAsync(ct => PlayerAdmin.SetActiveAsync(_actorId!, player.UserId, active, ct));
+        if (active && reactivated)
+        {
+            Snackbar.Add("Hráč je znovu aktivní. Pokud se vrací po delší době, posuň mu „aktivní od“.", Severity.Info);
+        }
     }
 
     private async Task SetAdminAsync(AdminPlayer player, bool isAdmin)
@@ -236,22 +242,27 @@ else
     private async Task<bool> ConfirmAsync(string title, string message, string yesText) =>
         await DialogService.ShowMessageBoxAsync(title, message, yesText: yesText, cancelText: "Zrušit") == true;
 
-    /// <summary>Runs one change; a returned password is shown to the admin (to <paramref name="passwordNick"/>) and not kept.</summary>
-    private async Task ChangeAsync(Func<CancellationToken, Task<PlayerAdminResult>> change, string? passwordNick = null)
+    /// <summary>
+    /// Runs one change; a returned password is shown to the admin (to <paramref name="passwordNick"/>) and not kept.
+    /// Returns true when the change succeeded.
+    /// </summary>
+    private async Task<bool> ChangeAsync(Func<CancellationToken, Task<PlayerAdminResult>> change, string? passwordNick = null)
     {
         if (_saving || _actorId is null)
         {
-            return;
+            return false;
         }
 
         // Captured up front: reading Token from a disposed source throws.
         var ct = _disposed.Token;
         _saving = true;
+        var succeeded = false;
         try
         {
             var result = await change(ct);
             if (result.Status == PlayerAdminStatus.Ok)
             {
+                succeeded = true;
                 if (result.Password is { } password)
                 {
                     var parameters = new DialogParameters<PasswordDialog>
@@ -271,7 +282,7 @@ else
         {
             // The component was disposed while saving.
             _saving = false;
-            return;
+            return false;
         }
         catch (Exception ex)
         {
@@ -286,7 +297,7 @@ else
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            return;
+            return false;
         }
         catch (Exception ex)
         {
@@ -298,6 +309,8 @@ else
         {
             _saving = false;
         }
+
+        return succeeded;
     }
 
     private static string ErrorText(PlayerAdminResult result) => result.Status switch
@@ -306,6 +319,7 @@ else
         PlayerAdminStatus.LoginTaken => "Login už existuje.",
         PlayerAdminStatus.CannotChangeSelf => "Sám sobě to udělat nemůžeš.",
         PlayerAdminStatus.UnknownPlayer => "Hráč už neexistuje.",
+        PlayerAdminStatus.ActorNotAllowed => "Tuto akci už nemůžeš provést.",
         _ => result.Message ?? "Uložení se nepovedlo, zkus to znovu.",
     };
 

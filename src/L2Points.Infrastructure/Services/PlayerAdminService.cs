@@ -138,6 +138,9 @@ public sealed class PlayerAdminService(
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
+        if (!await IsAllowedActorAsync(users, actorUserId))
+            return new PlayerAdminResult(PlayerAdminStatus.ActorNotAllowed);
+
         var user = await users.FindByIdAsync(userId);
         if (user is null)
             return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
@@ -161,6 +164,9 @@ public sealed class PlayerAdminService(
     {
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        if (!await IsAllowedActorAsync(users, actorUserId))
+            return new PlayerAdminResult(PlayerAdminStatus.ActorNotAllowed);
 
         var user = await users.FindByIdAsync(userId);
         if (user is null)
@@ -186,6 +192,9 @@ public sealed class PlayerAdminService(
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
+        if (!await IsAllowedActorAsync(users, actorUserId))
+            return new PlayerAdminResult(PlayerAdminStatus.ActorNotAllowed);
+
         var user = await users.FindByIdAsync(userId);
         if (user is null)
             return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
@@ -194,6 +203,16 @@ public sealed class PlayerAdminService(
 
         var deleted = await users.DeleteAsync(user);
         return deleted.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(deleted);
+    }
+
+    /// <summary>
+    /// The actor must still be an active admin: a deactivated or demoted admin keeps a working
+    /// circuit until revalidation, and must not be able to lock the others out meanwhile.
+    /// </summary>
+    private static async Task<bool> IsAllowedActorAsync(UserManager<AppUser> users, string actorUserId)
+    {
+        var actor = await users.FindByIdAsync(actorUserId);
+        return actor is { IsActive: true } && await users.IsInRoleAsync(actor, Roles.Admin);
     }
 
     private static string? ValidateNick(string nick)

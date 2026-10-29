@@ -8,6 +8,7 @@ public enum PlayerAdminStatus
     LoginTaken,
     Invalid,
     CannotChangeSelf,
+    ActorNotAllowed,
 }
 
 /// <param name="Status">Outcome of the operation.</param>

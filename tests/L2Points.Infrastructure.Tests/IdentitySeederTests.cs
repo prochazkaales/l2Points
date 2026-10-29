@@ -102,6 +102,59 @@ public class IdentitySeederTests
         Assert.True(await verifyManager.IsInRoleAsync(user, Roles.Player));
     }
 
+    private static async Task DeactivateAsync(ServiceProvider provider, string userName)
+    {
+        using var scope = provider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var user = (await userManager.FindByNameAsync(userName))!;
+        user.IsActive = false;
+        user.DeactivatedAt = new DateOnly(2026, 10, 28);
+        Assert.True((await userManager.UpdateAsync(user)).Succeeded);
+    }
+
+    [Fact]
+    public async Task Reactivates_config_admin_when_no_active_admin()
+    {
+        await using var provider = TestServices.Create(FullAdmin());
+        await SeedAsync(provider);
+        await DeactivateAsync(provider, "admin");
+
+        await SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var user = await userManager.FindByNameAsync("admin");
+        Assert.NotNull(user);
+        Assert.True(user.IsActive);
+        Assert.Null(user.DeactivatedAt);
+        Assert.True(await userManager.IsInRoleAsync(user, Roles.Admin));
+        Assert.True(await userManager.IsInRoleAsync(user, Roles.Player));
+    }
+
+    [Fact]
+    public async Task Does_nothing_when_an_active_admin_exists()
+    {
+        await using var provider = TestServices.Create(FullAdmin());
+        await SeedAsync(provider);
+        using (var scope = provider.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var other = new AppUser { UserName = "admin2", Nick = "Boss2", IsActive = true, ActiveFrom = new DateOnly(2026, 10, 26), CreatedAt = DateTime.UtcNow };
+            Assert.True((await userManager.CreateAsync(other, "Admin1234")).Succeeded);
+            Assert.True((await userManager.AddToRolesAsync(other, [Roles.Admin, Roles.Player])).Succeeded);
+        }
+        await DeactivateAsync(provider, "admin");
+
+        await SeedAsync(provider);
+
+        using var verifyScope = provider.CreateScope();
+        var verifyManager = verifyScope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var user = await verifyManager.FindByNameAsync("admin");
+        Assert.NotNull(user);
+        Assert.False(user.IsActive);
+        Assert.Equal(new DateOnly(2026, 10, 28), user.DeactivatedAt);
+    }
+
     [Fact]
     public async Task Seed_sets_active_from_to_monday_in_prague()
     {

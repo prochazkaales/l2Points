@@ -372,6 +372,33 @@ public class PlayerAdminServiceTests
     }
 
     [Fact]
+    public async Task Inactive_or_non_admin_actor_is_rejected()
+    {
+        await using var arranged = await ArrangeAsync();
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var alice = await TestData.CreatePlayerAsync(arranged.Provider, "alice", Monday);
+        var admin2 = await TestData.CreatePlayerAsync(arranged.Provider, "admin2", Monday, deactivatedAt: new DateOnly(2026, 10, 28));
+        using (var scope = arranged.Provider.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            Assert.True((await users.AddToRoleAsync((await users.FindByIdAsync(bob.Id))!, Roles.Player)).Succeeded);
+            Assert.True((await users.AddToRolesAsync((await users.FindByIdAsync(admin2.Id))!, [Roles.Admin, Roles.Player])).Succeeded);
+        }
+
+        var byPlayer = await arranged.Service.SetActiveAsync(bob.Id, alice.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.ActorNotAllowed, byPlayer.Status);
+        var storedAlice = await arranged.FindByIdAsync(alice.Id);
+        Assert.True(storedAlice.IsActive);
+        Assert.Null(storedAlice.DeactivatedAt);
+
+        var byInactiveAdmin = await arranged.Service.DeleteAsync(admin2.Id, alice.Id);
+
+        Assert.Equal(PlayerAdminStatus.ActorNotAllowed, byInactiveAdmin.Status);
+        Assert.NotNull(await arranged.FindAsync("alice"));
+    }
+
+    [Fact]
     public async Task Lifecycle_on_unknown_player()
     {
         await using var arranged = await ArrangeAsync();

@@ -25,7 +25,8 @@ public class IdentitySeeder(
             ThrowIfFailed(roleResult, $"Creating role '{role}' failed");
         }
 
-        if ((await userManager.GetUsersInRoleAsync(Roles.Admin)).Count > 0)
+        // Only an active admin counts: if all admins were deactivated, nobody could sign in.
+        if ((await userManager.GetUsersInRoleAsync(Roles.Admin)).Any(u => u.IsActive))
         {
             return;
         }
@@ -54,6 +55,13 @@ public class IdentitySeeder(
             };
 
             ThrowIfFailed(await userManager.CreateAsync(admin, options.Password), "Creating admin account failed");
+        }
+        else if (!admin.IsActive)
+        {
+            // Lockout recovery: no active admin is left, so the config admin is brought back.
+            admin.IsActive = true;
+            admin.DeactivatedAt = null;
+            ThrowIfFailed(await userManager.UpdateAsync(admin), "Reactivating admin account failed");
         }
 
         foreach (var role in new[] { Roles.Admin, Roles.Player })
