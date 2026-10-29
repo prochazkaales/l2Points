@@ -222,6 +222,15 @@ if ($initialSetup) {
     }
     $BudgetEmail = Read-RequiredValue $BudgetEmail 'E-mail for budget notifications'
 
+    # A typo in the login would later create a second super admin (see docs/deployment.md), so confirm it first.
+    Write-Host ''
+    Write-Host "Super admin login: $AdminUserName"
+    Write-Host "Super admin nick:  $AdminNick"
+    $confirmation = Read-Host -Prompt 'Deploy with these values? (y/N)'
+    if ($confirmation -notmatch '^[yY]$') {
+        throw 'Aborted: the super admin login and nick were not confirmed.'
+    }
+
     $image = $InitialImage
     if (-not (Test-PublicImage)) {
         throw "Image $image cannot be pulled anonymously. Make the GHCR package public (GitHub > Packages > l2points > Package settings > Change visibility) and run the script again."
@@ -255,6 +264,20 @@ else {
     $AdminUserName = $currentUserName
     $AdminNick = $currentNick
     $BudgetEmail = ''
+
+    # The budget is created only on the initial setup, so an update cannot restore a missing one. Warn only;
+    # a failing check (preview command, permissions) must not stop the update.
+    $budgetFound = $false
+    try {
+        & az consumption budget show --budget-name budget-l2points --resource-group $ResourceGroup --output none 2>$null
+        $budgetFound = ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        $budgetFound = $false
+    }
+    if (-not $budgetFound) {
+        Write-Warning "Budget 'budget-l2points' was not found on resource group $ResourceGroup (or the check failed). Re-running this script does not create it; create it in the Azure portal (Cost Management > Budgets) with a monthly amount and e-mail alerts."
+    }
 }
 Write-Host "Image: $image"
 

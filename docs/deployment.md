@@ -18,7 +18,7 @@ Všechno leží v jedné resource group `rg-l2points`, výchozí region je Germa
 | Log Analytics | `log-l2points` | retence 30 dní, denní strop ingestu 0,1 GB |
 | Identita aplikace | `id-l2points-app` | user-assigned; role Key Vault Secrets User a Key Vault Crypto User na Key Vaultu |
 | Identita GitHub Actions | `id-l2points-github` | federované přihlášení (OIDC, žádný klientský secret) jen pro `repo:prochazkaales/l2Points:ref:refs/heads/main`; role Contributor jen na `rg-l2points` |
-| Budget | `budget-l2points` | 20 USD měsíčně, e-mail při 80 % a 100 % skutečné útraty a při prognóze 100 % |
+| Budget | `budget-l2points` | 20 měsíčně (v měně fakturace předplatného, u předplatných Visual Studio typicky EUR nebo USD), e-mail při 80 % a 100 % skutečné útraty a při prognóze 100 % |
 
 Aplikace čte hesla z Key Vaultu přes svou identitu (Container Apps secrets odkazují na tajemství bez verze). Do repa ani do logů Actions se žádné tajemství nedostane.
 
@@ -31,6 +31,7 @@ Nastavuje ji `main.bicep`, ručně se nic nenastavuje.
 | `ConnectionStrings__Default` | connection string do Azure SQL (secret z Key Vaultu) |
 | `Admin__UserName`, `Admin__Nick`, `Admin__Password` | super admin, kterého aplikace při startu založí (heslo je secret z Key Vaultu) |
 | `DataProtection__KeyVaultKeyUri` | klíč v Key Vaultu, kterým se šifrují Data Protection klíče uložené v DB. Bez něj se klíče ukládají nešifrované a aplikace při startu zaloguje varování |
+| `Database__CreateIfMissing=false` | aplikace nikdy sama nevytvoří chybějící databázi. Aplikace se připojuje jako admin SQL serveru, takže holé `CREATE DATABASE` by vytvořilo drahou databázi ve výchozím tarifu a vyčerpalo kredit. Chybějící `sqldb-l2points` místo toho zastaví start s jasnou chybou. Bez proměnné (lokálně, `docker-compose.yml`, smoke test) se prázdná databáze vytvoří |
 | `ForwardedHeaders__TrustAllProxies=true` | viz níže |
 | `AZURE_CLIENT_ID` | klient identity aplikace, aby `DefaultAzureCredential` použil správnou user-assigned identitu |
 
@@ -42,7 +43,7 @@ Nastavuje ji `main.bicep`, ručně se nic nenastavuje.
 - `/health/ready` – s kontrolou databáze (readiness probe a kontroly v CI). Selhání jen vyřadí repliku z provozu, nerestartuje ji.
 - `/health` – alias `/health/ready`.
 
-Migrace a seed běží před spuštěním HTTP serveru. Při startu je serializuje aplikační zámek na SQL Serveru (`StartupLock`, čekání nejvýš 3 minuty), takže se při překryvu revizí nepřetahují dvě instance. `StartupLock` navíc vytvoří prázdnou databázi, pokud na serveru ještě neexistuje. Startup probe proto dává aplikaci zhruba 9 minut (30 s + 10 × 50 s). Stará revize mezitím dál obsluhuje provoz, takže pomalý start nové verze hráče neodstaví.
+Migrace a seed běží před spuštěním HTTP serveru. Při startu je serializuje aplikační zámek na SQL Serveru (`StartupLock`, čekání nejvýš 3 minuty), takže se při překryvu revizí nepřetahují dvě instance. `StartupLock` navíc vytvoří prázdnou databázi, pokud na serveru ještě neexistuje a `Database__CreateIfMissing` není `false` (v Azure je, takže tam chybějící databáze start zastaví). Startup probe proto dává aplikaci zhruba 9 minut (30 s + 10 × 50 s). Stará revize mezitím dál obsluhuje provoz, takže pomalý start nové verze hráče neodstaví.
 
 ## První zřízení krok za krokem
 
@@ -61,7 +62,7 @@ Co je potřeba: účet s rolí Owner (nebo ekvivalentem, skript vytváří role 
    az login
    pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id>
    ```
-   `az login` musí proběhnout uživatelským účtem tenantu předplatného, protože se z něj stane Entra admin SQL serveru (`az ad signed-in-user show`). Skript se zeptá na login a nick super admina (login ať není `admin`, to je jméno vývojového účtu), e-mail pro upozornění na útratu a dvakrát na heslo super admina (aspoň 8 znaků, číslice a malé písmeno). Login, nick a e-mail lze předat i parametry `-AdminUserName`, `-AdminNick`, `-BudgetEmail`. Heslo se zadává jen interaktivně a nikdy se nevypisuje. Skript:
+   `az login` musí proběhnout uživatelským účtem tenantu předplatného, protože se z něj stane Entra admin SQL serveru (`az ad signed-in-user show`). Skript se zeptá na login a nick super admina (login ať není `admin`, to je jméno vývojového účtu), e-mail pro upozornění na útratu, vypíše login a nick k potvrzení (`y`, cokoli jiného skript ukončí) a dvakrát se zeptá na heslo super admina (aspoň 8 znaků, číslice a malé písmeno). Login, nick a e-mail lze předat i parametry `-AdminUserName`, `-AdminNick`, `-BudgetEmail`. Heslo se zadává jen interaktivně a nikdy se nevypisuje. Skript:
    - přepne CLI do zadaného předplatného a ověří to,
    - zaregistruje resource providery (`Microsoft.App`, `Microsoft.Sql`, `Microsoft.KeyVault`, `Microsoft.OperationalInsights`, `Microsoft.ManagedIdentity`, `Microsoft.Consumption`), první registrace může trvat minuty,
    - vytvoří resource group (`-ResourceGroup`, výchozí `rg-l2points`; `-Location`, výchozí `germanywestcentral`),
@@ -104,7 +105,10 @@ Upravit `infra/main.bicep` a znovu spustit `pwsh ./infra/deploy.ps1 -Subscriptio
 - **zachová:** hesla (SQL i super admina, v Key Vaultu zůstanou), budget, aktuální image aplikace, login a nick super admina (parametry `-AdminUserName`, `-AdminNick` a `-BudgetEmail` se ignorují s varováním), Data Protection klíč (znovu se nevytváří),
 - **změní:** vše ostatní podle šablony.
 
-Entra adminem SQL serveru se stane uživatel, který skript právě spustil. Pokud ho spustí někdo jiný než dřív, admin se přepíše.
+Entra admin SQL serveru se nastavuje jen při vytvoření serveru (vlastnost `administrators` se při aktualizaci spolehlivě neaplikuje), opakované spuštění jiným uživatelem ho tedy nepřepíše. Změna Entra admina:
+```bash
+az sql server ad-admin create -g rg-l2points --server-name <sql-server-name> --display-name <upn> --object-id <object-id>
+```
 
 Rozpočet se po zřízení mění v portálu (Cost Management > Budgets), skript ho při aktualizaci nechává být. Stejný skript lze spustit i opakovaně bez změny šablony, nic se nezmění.
 
@@ -114,7 +118,13 @@ Heslo se mění v aplikaci na stránce `/profile`. Heslo v Key Vaultu (`admin-pa
 
 ### Varování: překlep v `Admin__UserName`
 
-`Admin__UserName` je login super admina, kterého aplikace při každém startu udržuje. Pokud se zadá jiný login (typicky překlep při prvním zřízení, nebo změna hodnoty později) a je k němu nastavené heslo, aplikace při dalším startu **založí nového super admina** s tímto loginem a původnímu účtu **odebere roli `SuperAdmin`** (role Admin mu zůstane). Původní účet tak nepřijde o data ani o přihlášení, ale přestane být super adminem a jeho práva (správa adminů, ochrana před deaktivací) přejdou na nový účet. Před změnou této hodnoty si proto ověřte login, který zadáváte. `deploy.ps1` login při aktualizaci nemění (bere ho z běžící aplikace), takže riziko je hlavně při prvním zřízení a při ručním zásahu do konfigurace Container App.
+`Admin__UserName` je login super admina, kterého aplikace při každém startu udržuje. Pokud se zadá jiný login (typicky překlep při prvním zřízení, nebo změna hodnoty později) a je k němu nastavené heslo, aplikace při dalším startu **založí nového super admina** s tímto loginem a původnímu účtu **odebere roli `SuperAdmin`** (role Admin mu zůstane). Původní účet tak nepřijde o data ani o přihlášení, ale přestane být super adminem a jeho práva (správa adminů, ochrana před deaktivací) přejdou na nový účet. Před změnou této hodnoty si proto ověřte login, který zadáváte. `deploy.ps1` login při aktualizaci nemění (bere ho z běžící aplikace) a při prvním zřízení ho vypíše k potvrzení, takže riziko je hlavně při ručním zásahu do konfigurace Container App.
+
+Login lze později změnit takto, s výše popsaným přenosem role `SuperAdmin` na nový účet (nový účet dostane heslo z `Admin__Password`, tedy z tajemství `admin-password`):
+```bash
+az containerapp update -g rg-l2points -n ca-l2points --set-env-vars Admin__UserName=<new-login>
+```
+Pozor: další spuštění `deploy.ps1` login čte z běžící aplikace, takže novou hodnotu zachová.
 
 ## Přístup do databáze
 
@@ -142,34 +152,38 @@ ContainerAppConsoleLogs_CL
 | where ContainerAppName_s == "ca-l2points"
 | order by TimeGenerated desc
 ```
-Logy se drží 30 dní. Denní strop ingestu je 0,1 GB; po jeho vyčerpání se logy do konce dne neukládají (kvůli kreditu předplatného).
+Logy se drží 30 dní. Produkce (`appsettings.Production.json`) neloguje jednotlivé SQL příkazy (EF Core `Database.Command` jen od úrovně Warning). Denní strop ingestu je 0,1 GB; po jeho vyčerpání se logy do konce dne neukládají (kvůli kreditu předplatného).
 
 Stav revizí: `az containerapp revision list -g rg-l2points -n ca-l2points -o table`.
 
 ## Obnova databáze ze zálohy
 
-Azure SQL Basic zálohuje automaticky a dovoluje obnovu k libovolnému okamžiku za posledních 7 dní (point-in-time restore, v ceně). Obnova vytvoří novou databázi vedle původní:
+Azure SQL Basic zálohuje automaticky a dovoluje obnovu k libovolnému okamžiku za posledních 7 dní (point-in-time restore, v ceně). Obnova vytvoří novou databázi vedle původní. Databáze `sqldb-l2points` nesmí během běhu aplikace nikdy chybět (aplikace je s `Database__CreateIfMissing=false` při startu odmítne vytvořit), proto se **neprohazují názvy přejmenováním**. Obnovuje se do nového názvu a aplikace se na něj přepne změnou connection stringu:
 
-```bash
-az sql db restore -g rg-l2points -s <sql-server-name> -n sqldb-l2points \
-  --dest-name sqldb-l2points-restored --time "2026-11-05T10:00:00Z"    # čas v UTC
-```
-
-Pak je potřeba obnovenou databázi podstrčit aplikaci. Connection string v Key Vaultu míří na jméno `sqldb-l2points`, nejjednodušší je tedy databáze prohodit přejmenováním a restartovat aplikaci, aby zahodila navázaná spojení:
-
-```bash
-az sql db rename -g rg-l2points -s <sql-server-name> -n sqldb-l2points --new-name sqldb-l2points-old
-az sql db rename -g rg-l2points -s <sql-server-name> -n sqldb-l2points-restored --new-name sqldb-l2points
-az containerapp revision restart -g rg-l2points -n ca-l2points --revision <revision-name>
-```
-
-Název revize je v `az containerapp revision list`. Po ověření aplikace smazat `sqldb-l2points-old`. Obnovená databáze obsahuje i Data Protection klíče, které šifruje stejný klíč v Key Vaultu, takže přihlášení zůstanou platná. Zkontrolovat, že obnovená databáze má tarif Basic (jinak by se účtovala vyšší sazba), případně ji přepnout v portálu.
+1. Obnovit do nové databáze:
+   ```bash
+   az sql db restore -g rg-l2points -s <sql-server-name> -n sqldb-l2points      --dest-name sqldb-l2points-restored --time "2026-11-05T10:00:00Z"    # čas v UTC
+   ```
+   Zkontrolovat, že obnovená databáze má tarif Basic (jinak by se účtovala vyšší sazba), případně ji přepnout v portálu.
+2. Přečíst současný connection string, nahradit v něm `Initial Catalog=sqldb-l2points` (resp. `Database=...`) novým názvem a uložit ho jako novou verzi tajemství `sql-connection-string`:
+   ```bash
+   az keyvault secret show --vault-name <kv-name> --name sql-connection-string --query value -o tsv
+   az keyvault secret set  --vault-name <kv-name> --name sql-connection-string --value "<upraveny-connection-string>"
+   ```
+   Uživatel, který to spouští, potřebuje na Key Vaultu roli Key Vault Secrets Officer (Owner předplatného ji nemá automaticky, RBAC režim vyžaduje přidělení, např. `az role assignment create --assignee <upn> --role "Key Vault Secrets Officer" --scope <kv-resource-id>`). Hodnotu connection stringu nikam nezapisovat ani nevkládat do repa, obsahuje heslo.
+3. Container App čte tajemství Key Vaultu bez verze, ale změnu zachytí až nová revize. Restartovat revizi nebo vytvořit novou:
+   ```bash
+   az containerapp revision restart -g rg-l2points -n ca-l2points --revision <revision-name>
+   ```
+   Název revize je v `az containerapp revision list`. Nová revize se po startu přihlásí k obnovené databázi.
+4. Ověřit aplikaci (`/health/ready`, přihlášení). Obnovená databáze obsahuje i Data Protection klíče, které šifruje stejný klíč v Key Vaultu, takže přihlášení zůstanou platná.
+5. Až je vše v pořádku, původní databázi smazat: `az sql db delete -g rg-l2points -s <sql-server-name> -n sqldb-l2points`. Pozor: `main.bicep` počítá s databází `sqldb-l2points`, takže aktualizace přes `deploy.ps1` po smazání vytvoří novou prázdnou Basic databázi (stojí cca 5 USD měsíčně a nikdo ji nepoužívá). Na starý název se lze vrátit stejným postupem: smazat starou databázi, obnovit z aktuální databáze do `sqldb-l2points` (krok 1) a přepnout tajemství zpět (kroky 2 a 3). Aplikace přitom celou dobu ukazuje na existující databázi.
 
 ## Náklady a budget
 
 Orientační odhad je 10 až 20 USD měsíčně (Container App v idle sazbě po odečtení měsíčního free grantu, SQL Basic přibližně 5 USD, Key Vault a Log Analytics pod 1 USD). Odhad je potřeba ověřit v Cost Management po prvním měsíci provozu. Pojistky:
 
-- budget `budget-l2points` na resource group, 20 USD měsíčně, e-mail při 80 % a 100 % skutečné útraty a při prognóze 100 % (e-mail se zadává při prvním zřízení a v repu není),
+- budget `budget-l2points` na resource group, částka 20 měsíčně v měně fakturace předplatného (nemusí to být USD), e-mail při 80 % a 100 % skutečné útraty a při prognóze 100 % (e-mail se zadává při prvním zřízení a v repu není),
 - denní strop logů 0,1 GB,
 - Container App běží právě v jedné replice, bez autoscale,
 - předplatné má spending limit, po vyčerpání kreditu se prostředky zastaví, nic se neúčtuje navíc (zastaví se ale všechny prostředky v předplatném, ne jen L2Points).
