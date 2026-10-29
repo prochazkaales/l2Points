@@ -106,7 +106,7 @@ Všechny sekce, které dnes stojí na `MudPaper`/`MudTable`, dostanou sklo (tř�
 ### Můj týden – mřížka (`WeekGridView`), priorita
 
 - Dvě tabulky pod sebou, každá vlastní glass karta s nadpisem nad ní (barevné tečky kategorií, váha 600): nahoře „Chaotic epicy“, pod ní „Normal epicy a Castle Siege“ (Castle Siege je oddělený řádek s tečkou CS a čarou nad ním). Řádky bez blur. U chaotic se slot v buňce značí malou tečkou barvy slotu před textem „V 21:00“ / „R 05:30“.
-- Hlavička tabulky je výrazný pruh: podbarvení primary ~14 %, popisky v barvě textu a váze 600, pod ní čára primary; přilepená buňka „Boss“ má stejný odstín neprůhledně. Každá tabulka má vlastní hlavičku dnů.
+- Hlavička tabulky je výrazný pruh: podbarvení primary ~14 %, popisky v barvě textu a váze 600, pod ní čára primary; přilepená buňka „Boss“ má stejný odstín neprůhledně. Každá tabulka má vlastní hlavičku dnů; sloupce jsou v obou tabulkách stejně široké (pevné rozvržení, sloupec Boss 10rem, na mobilu 6,75rem, dny rovným dílem, nejméně 6,5rem), takže dny leží pod sebou.
 - Kompaktní řádky: buňka 2 px svisle, zaškrtávací pole s plochou 28 px (na mobilu 36 px), řádek bez událostí má stejnou výšku jako řádek s jedním polem.
 - Dnešní den: celý sloupec jemně podbarvený primary (~10 %), buňka dne v hlavičce plná primary s textem na primary (`aria-current="date"`, `title` „Dnes“).
 - Zamčené dny: sloupec tlumený (text tlumený), ikona zámku v hlavičce zůstává.

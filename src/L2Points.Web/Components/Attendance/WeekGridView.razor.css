@@ -20,8 +20,13 @@
     overflow-x: auto;
 }
 
+/* Fixed layout with the same boss column width in both tables, so the day columns line up from table to table
+   (auto layout would size each table by its own content). Below the minimum width the card scrolls. */
 .l2p-grid {
+    --l2p-grid-boss-width: 10rem;
     width: 100%;
+    min-width: calc(var(--l2p-grid-boss-width) + 7 * 6.5rem);
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.875rem;
@@ -57,7 +62,6 @@
 
 .l2p-grid-day,
 .l2p-grid-cell {
-    min-width: 5.5rem;
     text-align: center;
 }
 
@@ -66,7 +70,7 @@
     position: sticky;
     left: 0;
     z-index: 1;
-    min-width: 8.5rem;
+    width: var(--l2p-grid-boss-width);
     text-align: left;
     font-weight: 400;
     white-space: nowrap;
@@ -337,9 +341,11 @@
 }
 
 @media (max-width: 599.98px) {
+    .l2p-grid {
+        --l2p-grid-boss-width: 6.75rem;
+    }
+
     .l2p-grid .l2p-grid-boss {
-        min-width: 6.25rem;
-        max-width: 6.75rem;
         white-space: normal;
         padding-left: 0.5rem;
         padding-right: 0.35rem;
