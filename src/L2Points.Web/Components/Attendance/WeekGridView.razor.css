@@ -41,7 +41,9 @@
     background-color: transparent;
 }
 
-/* Header row: a tinted band with full-contrast semibold labels, so it reads as the table head at a glance. */
+/* Header row: one opaque tinted band with full-contrast semibold labels, so it reads as the table head at a glance.
+   Opaque in every cell (not only the pinned one), otherwise the glass shows through the day cells and they read as a
+   lighter box next to "Boss". */
 .l2p-grid thead th {
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
@@ -51,12 +53,11 @@
     text-align: center;
     white-space: nowrap;
     color: var(--l2p-text);
-    background-color: var(--l2p-grid-head);
+    background-color: var(--l2p-grid-head-solid);
     border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
 }
 
 .l2p-grid-scroll {
-    --l2p-grid-head: color-mix(in srgb, var(--l2p-primary) 14%, transparent);
     --l2p-grid-head-solid: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
 }
 
@@ -86,9 +87,12 @@
     height: calc(28px + 0.25rem + 1px);
 }
 
+/* The pinned header cell is part of the same band (the pinned-column rule above out-ranks `thead th`); the boss
+   column divider starts under the band. */
 .l2p-grid thead th.l2p-grid-boss {
     font-weight: 600;
     background-color: var(--l2p-grid-head-solid);
+    border-right-color: transparent;
 }
 
 /* Castle Siege under the normal epics: a light tint of its category colour across the row. It is an image layer
