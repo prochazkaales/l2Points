@@ -106,4 +106,4 @@ Superpowers: spec → plán části → implementace. Každá část z roadmapy 
 
 ## Známé TODO / pozor
 
-- Ověřit, že přihlášení přežije nasazení nové revize (Data Protection klíče šifrované Key Vaultem).
+- Nic otevřeného z rolloutu; odložené drobnosti jsou v roadmapě (sekce Odloženo z části 7).
