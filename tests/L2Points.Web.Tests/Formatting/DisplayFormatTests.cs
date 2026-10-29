@@ -62,6 +62,7 @@ public class DisplayFormatTests
         Assert.Equal("Týdně v neděli 18:00 UTC", DisplayFormat.ScheduleLabel(catalog["CastleSiege"]));
         Assert.Equal("Ob týden v neděli", DisplayFormat.ScheduleLabel(catalog["Antharas"]));
         Assert.Equal("Rozpis: 6 spawnů týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticZaken"]));
+        Assert.Equal("Rozpis: 4 spawny týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticFrintezza"]));
     }
 
     [Fact]
@@ -73,5 +74,22 @@ public class DisplayFormatTests
         }
 
         Assert.Contains("22:00", DisplayFormat.CatalogMessage(CatalogChangeResult.InvalidSpawnTime));
+    }
+
+    [Theory]
+    [InlineData(0, "Rozpis: 0 spawnů týdně")]
+    [InlineData(1, "Rozpis: 1 spawn týdně")]
+    [InlineData(2, "Rozpis: 2 spawny týdně")]
+    [InlineData(4, "Rozpis: 4 spawny týdně")]
+    [InlineData(5, "Rozpis: 5 spawnů týdně")]
+    public void Schedule_label_slotted_czech_plural(int spawns, string expected)
+    {
+        var activity = new Activity { ScheduleType = ScheduleType.Slotted };
+        for (var i = 0; i < spawns; i++)
+        {
+            activity.Spawns.Add(new ActivitySpawn { DayOfWeek = DayOfWeek.Monday, Slot = EventSlot.Evening, TimeUtc = new TimeOnly(18, 0) });
+        }
+
+        Assert.Equal(expected, DisplayFormat.ScheduleLabel(activity));
     }
 }

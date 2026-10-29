@@ -68,7 +68,7 @@ public static class DisplayFormat
             ? $"Týdně {DayWithPreposition(a.WeeklyDay)} {time.ToString("HH:mm", CultureInfo.InvariantCulture)} UTC"
             : $"Týdně {DayWithPreposition(a.WeeklyDay)}",
         ScheduleType.Biweekly => $"Ob týden {DayWithPreposition(a.WeeklyDay)}",
-        ScheduleType.Slotted => $"Rozpis: {a.Spawns.Count} spawnů týdně",
+        ScheduleType.Slotted => $"Rozpis: {Spawns(a.Spawns.Count)} týdně",
         _ => a.ScheduleType.ToString(),
     };
 
@@ -82,6 +82,14 @@ public static class DisplayFormat
         CatalogChangeResult.DuplicateSpawn => "Pro tento den a slot už spawn existuje.",
         CatalogChangeResult.AnchorNotOnWeeklyDay => "Datum musí padnout na správný den v týdnu.",
         _ => "Uložení se nepovedlo, zkus to znovu.",
+    };
+
+    /// <summary>Czech count of spawns ("1 spawn", "2 spawny", "5 spawnů").</summary>
+    private static string Spawns(int count) => count switch
+    {
+        1 => "1 spawn",
+        >= 2 and <= 4 => $"{count} spawny",
+        _ => $"{count} spawnů",
     };
 
     private static string DayWithPreposition(DayOfWeek? day) => day switch
