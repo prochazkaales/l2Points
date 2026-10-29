@@ -281,7 +281,6 @@ h1:focus {
 .l2p-glass .mud-table-outlined,
 .mud-main-content .mud-paper-outlined .mud-paper-outlined,
 .mud-main-content .mud-paper-outlined .mud-table-outlined,
-.mud-main-content .l2p-podium-card,
 .mud-main-content .l2p-wk-card {
     background: var(--l2p-glass-strong);
     border-radius: 10px;

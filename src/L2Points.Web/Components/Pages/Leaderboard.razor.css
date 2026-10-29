@@ -6,7 +6,8 @@
     column-gap: 1.5rem;
 }
 
-/* Podium: first place in the middle and raised, second on the left, third on the right. */
+/* Podium: first place in the middle and raised, second on the left, third on the right. The cards stand on the page,
+   so they are regular glass cards with the place colour as their edge. */
 .l2p-podium {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr);
@@ -40,8 +41,9 @@
     grid-column: 3;
 }
 
+/* Your own card: a light primary tint over the glass (a stronger one reads as a dull grey-violet in the light theme). */
 .l2p-podium ::deep .l2p-podium-card.l2p-podium-me {
-    background: color-mix(in srgb, var(--l2p-primary) 12%, var(--l2p-glass-strong));
+    background: color-mix(in srgb, var(--l2p-primary) 8%, var(--l2p-glass));
 }
 
 .l2p-podium ::deep .l2p-podium-trophy {
@@ -61,9 +63,9 @@
 
 .l2p-podium ::deep .l2p-podium-points {
     font-size: 1.75rem;
-    font-weight: 300;
+    font-weight: 700;
     line-height: 1.2;
-    color: var(--mud-palette-primary);
+    color: var(--l2p-primary-text);
     font-variant-numeric: tabular-nums;
 }
 
@@ -72,7 +74,7 @@
 }
 
 .l2p-podium ::deep .l2p-podium-caption {
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
 }
 
 /* Thin progress line in a section head while the week reloads; it keeps its height so nothing jumps. */
