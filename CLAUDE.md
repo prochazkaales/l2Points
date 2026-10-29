@@ -4,7 +4,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 
 - Spec (zdroj pravdy pro doménová pravidla): `docs/superpowers/specs/2026-10-28-l2points-design.md`
 - Roadmapa částí implementace: `docs/superpowers/plans/2026-10-28-00-roadmap.md`
-- Stav: hotové části 1 až 7 (kostra, doména a persistence, stránka Můj týden, přehledy: Přehled, Týden – všichni, Detail hráče, šperky: galerie a admin přiřazení, admin: hráči, oprava účasti, aktivity a body, rozpis, nastavení, Azure: Bicep, `deploy.ps1`, CI/CD, health live/ready, šifrované Data Protection klíče). Rollout do Azure: kód je na GitHubu a první běh CI (build, testy, smoke test image, push do GHCR) prošel; Azure je zřízené v Poland Central (`rg-l2points`, `deploy.ps1` 29. 10. 2026), aplikace běží s image `latest`; první nasazení z CI zatím neproběhlo.
+- Stav: hotové části 1 až 7 (kostra, doména a persistence, stránka Můj týden, přehledy: Přehled, Týden – všichni, Detail hráče, šperky: galerie a admin přiřazení, admin: hráči, oprava účasti, aktivity a body, rozpis, nastavení, Azure: Bicep, `deploy.ps1`, CI/CD, health live/ready, šifrované Data Protection klíče). Rollout do Azure: kód je na GitHubu a první běh CI (build, testy, smoke test image, push do GHCR) prošel; Azure je zřízené v Poland Central (`rg-l2points`, `deploy.ps1` 29. 10. 2026) a každý push na `main` se nasazuje z CI (první úspěšné nasazení 29. 10. 2026), aplikace běží na `https://ca-l2points.graytree-049f5bba.polandcentral.azurecontainerapps.io`.
 
 ## Struktura solution
 
@@ -106,4 +106,4 @@ Superpowers: spec → plán části → implementace. Každá část z roadmapy 
 
 ## Známé TODO / pozor
 
-- Rollout do Azure: zbývá první nasazení z CI (GitHub variables, push) a ověření, že přihlášení přežije nasazení; deploy job je do té doby neověřený.
+- Ověřit, že přihlášení přežije nasazení nové revize (Data Protection klíče šifrované Key Vaultem).
