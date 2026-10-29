@@ -55,7 +55,7 @@ Co je potřeba: účet s rolí Owner (nebo ekvivalentem, skript vytváří role 
    git push --force -u origin main
    ```
    Workflow `CI/CD` na `main` sestaví a otestuje řešení, sestaví image, projede ho smoke testem (`scripts/smoke-test.sh`) a pushne `ghcr.io/prochazkaales/l2points:sha-<commit>` i `:latest`. Job `deploy` se přeskočí (zelený), dokud neexistují GitHub variables z kroku 5. Průběh je na záložce Actions.
-3. **Zveřejnit balíček v GHCR.** Po prvním pushi je balíček soukromý. Na GitHubu: profil > Packages > `l2points` > Package settings > Change visibility > Public. Container App pak image stahuje bez přihlašovacích údajů. `deploy.ps1` to při prvním zřízení anonymně ověří a pokud balíček není veřejný, skončí s návodem dřív, než cokoli vytvoří.
+3. **Zveřejnit balíček v GHCR.** Po prvním pushi je balíček soukromý. Na GitHubu: profil > Packages > `l2points` > Package settings > Change visibility > Public. Container App pak image stahuje bez přihlašovacích údajů. `deploy.ps1` to při prvním zřízení anonymně ověří a pokud balíček není veřejný, skončí s návodem dřív, než nasadí šablonu. Do té doby ale už zaregistroval resource providery a vytvořil prázdnou resource group, jiné prostředky nevzniknou.
 4. **Zřídit Azure.** V terminálu:
    ```powershell
    az login
@@ -193,7 +193,7 @@ Po novém zřízení se vytvoří nová identita GitHub Actions, takže je potř
 
 | Příznak | Příčina a postup |
 |---|---|
-| `deploy.ps1` skončí hned s hláškou, že image nejde stáhnout anonymně | Balíček v GHCR není veřejný (krok 3) nebo první push ještě nedoběhl. Napravit a spustit skript znovu, nic zatím nevzniklo |
+| `deploy.ps1` skončí hned s hláškou, že image nejde stáhnout anonymně | Balíček v GHCR není veřejný (krok 3) nebo první push ještě nedoběhl. Napravit a spustit skript znovu. Vznikla jen prázdná resource group (a registrace providerů), žádný Key Vault ani jiný prostředek. Chcete-li v tuto chvíli jiný region, nejdřív prázdnou skupinu smažte (`az group delete --name rg-l2points`), jinak skript `-Location` ignoruje a zůstane v původním regionu. Purge Key Vaultu není potřeba, žádný nevznikl |
 | Skript nenajde přihlášeného Entra uživatele | `az login` bez uživatelského účtu tenantu (osobní Microsoft účet, host). Přihlásit se `az login --tenant <tenant-id>` účtem z tenantu |
 | Nasazení selže na přístupu ke Key Vault tajemstvím i po automatickém opakování | Přidělení rolí se ještě nerozšířilo. Počkat pár minut a spustit skript znovu. Pokud Container App nevznikla, je to znovu první zřízení; pokud vznikla, jde o aktualizaci a opraví ji |
 | Selže vytvoření budgetu | Zbytek je nasazený. Další spuštění je aktualizace a budget přeskočí, vytvořit ho ručně v portálu (Cost Management > Budgets) |
