@@ -27,6 +27,12 @@ public class CzechIdentityErrorDescriber : IdentityErrorDescriber
     public override IdentityError PasswordRequiresUniqueChars(int uniqueChars) =>
         Create(nameof(PasswordRequiresUniqueChars), $"Heslo musí obsahovat alespoň {uniqueChars} různých znaků.");
 
+    public override IdentityError DuplicateUserName(string userName) =>
+        Create(nameof(DuplicateUserName), $"Login {userName} už existuje.");
+
+    public override IdentityError InvalidUserName(string? userName) =>
+        Create(nameof(InvalidUserName), "Login může obsahovat jen písmena bez diakritiky, číslice a znaky - . _ @ +.");
+
     private static IdentityError Create(string code, string description) =>
         new() { Code = code, Description = description };
 }

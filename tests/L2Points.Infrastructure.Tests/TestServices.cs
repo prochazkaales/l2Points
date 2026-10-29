@@ -50,6 +50,7 @@ internal static class TestServices
         services.AddScoped<OverviewService>();
         services.AddScoped<JewelService>();
         services.AddScoped<CatalogAdminService>();
+        services.AddScoped<PlayerAdminService>();
 
         var provider = services.BuildServiceProvider();
 

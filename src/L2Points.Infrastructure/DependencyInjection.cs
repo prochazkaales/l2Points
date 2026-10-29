@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<OverviewService>();
         services.AddScoped<JewelService>();
         services.AddScoped<CatalogAdminService>();
+        services.AddScoped<PlayerAdminService>();
 
         return services;
     }
