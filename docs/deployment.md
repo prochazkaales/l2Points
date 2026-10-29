@@ -6,7 +6,7 @@ Aplikace běží v Azure Container Apps s databází Azure SQL. Infrastruktura j
 
 ## Architektura
 
-Všechno leží v jedné resource group `rg-l2points`, výchozí region je Germany West Central (`germanywestcentral`). Názvy s příponou `<suffix>` mají šest znaků z `uniqueString` resource group, jsou tedy stabilní, dokud resource group existuje.
+Všechno leží v jedné resource group `rg-l2points`, výchozí region je Poland Central (`polandcentral`), nejbližší region k Praze s volnou kapacitou pro Container Apps (Germany West Central v říjnu 2026 nové Container Apps prostředí odmítal kvůli nedostatku kapacity). Názvy s příponou `<suffix>` mají šest znaků z `uniqueString` resource group, jsou tedy stabilní, dokud resource group existuje.
 
 | Prostředek | Název | Poznámka |
 |---|---|---|
@@ -65,7 +65,7 @@ Co je potřeba: účet s rolí Owner (nebo ekvivalentem, skript vytváří role 
    `az login` musí proběhnout uživatelským účtem tenantu předplatného, protože se z něj stane Entra admin SQL serveru (`az ad signed-in-user show`). Skript se zeptá na login a nick super admina (login ať není `admin`, to je jméno vývojového účtu), e-mail pro upozornění na útratu, vypíše login a nick k potvrzení (`y`, cokoli jiného skript ukončí) a dvakrát se zeptá na heslo super admina (aspoň 8 znaků, číslice a malé písmeno). Login, nick a e-mail lze předat i parametry `-AdminUserName`, `-AdminNick`, `-BudgetEmail`. Heslo se zadává jen interaktivně a nikdy se nevypisuje. Skript:
    - přepne CLI do zadaného předplatného a ověří to,
    - zaregistruje resource providery (`Microsoft.App`, `Microsoft.Sql`, `Microsoft.KeyVault`, `Microsoft.OperationalInsights`, `Microsoft.ManagedIdentity`, `Microsoft.Consumption`), první registrace může trvat minuty,
-   - vytvoří resource group (`-ResourceGroup`, výchozí `rg-l2points`; `-Location`, výchozí `germanywestcentral`),
+   - vytvoří resource group (`-ResourceGroup`, výchozí `rg-l2points`; `-Location`, výchozí `polandcentral`),
    - vygeneruje náhodné heslo SQL admina a spolu s heslem super admina ho uloží do Key Vaultu,
    - nasadí `main.bicep` s image `ghcr.io/prochazkaales/l2points:latest` a založí budget. Pokud první nasazení selže (typicky kvůli zpoždění přidělení rolí k Key Vaultu), po dvou minutách ho jednou zopakuje se stejnými parametry.
 
@@ -76,11 +76,11 @@ Co je potřeba: účet s rolí Owner (nebo ekvivalentem, skript vytváří role 
 
 ### Region a náhradní region
 
-Pokud předplatné v Germany West Central odmítne vytvořit SQL server nebo jiný prostředek, dá se zvolit jiný region (`-Location westeurope`), ale **jen na čistém prostředí**. Resource group má region pevný a šablona ho použije pro všechny prostředky, takže u už existující skupiny se `-Location` ignoruje (skript jen varuje). Pokud nasazení selhalo až poté, co vznikla resource group a Key Vault:
+Pokud předplatné ve výchozím regionu odmítne vytvořit SQL server nebo jiný prostředek, dá se zvolit jiný region (třeba `-Location swedencentral`), ale **jen na čistém prostředí**. Typická chyba je `ManagedEnvironmentCapacityHeavyUsageError` / `AKSCapacityHeavyUsage` u `cae-l2points`: region dočasně nezakládá nová Container Apps prostředí a opakování nepomůže. Volnou kapacitu lze předem ověřit prázdným prostředím v dočasné resource group (prázdné nic nestojí): `az group create -n rg-probe -l <region>`, `az containerapp env create -g rg-probe -n cae-probe -l <region> --logs-destination none`, výsledek zjistí `az containerapp env show -g rg-probe -n cae-probe --query properties.provisioningState` (`Succeeded` / `Failed`), pak `az group delete -n rg-probe --yes`. Resource group má region pevný a šablona ho použije pro všechny prostředky, takže u už existující skupiny se `-Location` ignoruje (skript jen varuje). Pokud nasazení selhalo až poté, co vznikla resource group a Key Vault:
 
 1. smazat resource group: `az group delete --name rg-l2points`,
 2. purge smazaného Key Vaultu (viz Smazání prostředí), jinak nový Key Vault stejného jména narazí na soft-deleted vault,
-3. spustit znovu: `pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id> -Location westeurope`.
+3. spustit znovu: `pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id> -Location <region>`.
 
 ## Běžné nasazení
 

@@ -27,7 +27,7 @@ param(
 
     [string] $ResourceGroup = 'rg-l2points',
 
-    [string] $Location = 'germanywestcentral',
+    [string] $Location = 'polandcentral',
 
     # Required only on the first provisioning; the script asks for missing values.
     [string] $AdminUserName,
