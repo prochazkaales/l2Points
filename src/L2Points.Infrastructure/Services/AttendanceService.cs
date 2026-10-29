@@ -69,6 +69,15 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
         if (await ExistsAsync(db, targetUserId, activityId, date, slot, ct))
             return AttendanceChangeResult.Ok;
 
+        if (AttendanceRules.WeeklyLimit(activity) is not null)
+        {
+            var week = Week.Containing(date).Range;
+            var attendedInWeek = await db.Attendances.CountAsync(
+                a => a.UserId == targetUserId && a.ActivityId == activityId && a.Date >= week.From && a.Date <= week.To, ct);
+            if (AttendanceRules.IsWeeklyLimitReached(activity, attendedInWeek))
+                return AttendanceChangeResult.WeeklyLimitReached;
+        }
+
         db.Attendances.Add(new Attendance
         {
             UserId = targetUserId,

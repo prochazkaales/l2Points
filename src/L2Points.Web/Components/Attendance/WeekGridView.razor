@@ -30,6 +30,7 @@
                 </tr>
                 @foreach (var row in group.Rows)
                 {
+                    var limitReached = AttendanceRules.IsWeeklyLimitReached(row.Activity, row.Cells.Count(c => c.IsChecked));
                     <tr>
                         <th class="l2p-grid-boss" scope="row">@row.Activity.Name</th>
                         @foreach (var day in Days)
@@ -37,7 +38,7 @@
                             <td class="l2p-grid-cell @DayClass(day)">
                                 @foreach (var cell in row.Cells.Where(c => c.Date == day))
                                 {
-                                    @RenderCell(row.Activity, cell)
+                                    @RenderCell(row.Activity, cell, limitReached)
                                 }
                             </td>
                         }
@@ -104,15 +105,25 @@
             : prefix;
     }
 
-    private RenderFragment RenderCell(Activity activity, WeekGridCell cell) => __builder =>
+    private RenderFragment RenderCell(Activity activity, WeekGridCell cell, bool limitReached) => __builder =>
     {
         var label = CellLabel(cell);
         var ariaLabel = $"{activity.Name}, {DisplayFormat.DayHeader(cell.Date)}" + (label is null ? "" : $", {label}");
         // An unchecked cell outside the schedule cannot be added (the server rejects it); only removal is allowed.
-        var disabled = ReadOnly || !cell.IsEditable || (!cell.IsScheduled && !cell.IsChecked);
+        // The same holds once a flexible boss has its weekly count checked; it is computed from the shown state,
+        // so it follows optimistic toggles without waiting for a reload.
+        var blockedByLimit = limitReached && !cell.IsChecked;
+        var disabled = ReadOnly || !cell.IsEditable || (!cell.IsScheduled && !cell.IsChecked) || blockedByLimit;
 
         <div class="l2p-grid-check">
-            @if (!cell.IsScheduled)
+            @if (blockedByLimit && cell.IsEditable && !ReadOnly)
+            {
+                <MudTooltip Text="@($"Za týden už je zaškrtnuto {AttendanceRules.WeeklyLimit(activity)}×, víc výskytů se nečeká.")">
+                    <MudCheckBox T="bool" Value="@cell.IsChecked" Label="@label" AriaLabel="@ariaLabel" Disabled="@disabled"
+                                 Color="Color.Primary" Dense="true" />
+                </MudTooltip>
+            }
+            else if (!cell.IsScheduled)
             {
                 <MudTooltip Text="Mimo rozpis">
                     <MudCheckBox T="bool" Value="@cell.IsChecked" Label="@label" AriaLabel="@ariaLabel" Disabled="@disabled"

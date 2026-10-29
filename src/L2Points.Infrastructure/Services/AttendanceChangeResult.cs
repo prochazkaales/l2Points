@@ -8,4 +8,5 @@ public enum AttendanceChangeResult
     OutsideEditWindow,
     UnknownActivity,
     InvalidSlot,
+    WeeklyLimitReached,
 }

@@ -200,4 +200,40 @@ public class AttendanceServiceTests
         var other = await f.Service.GetWeekGridAsync(f.PlayerB, Week.Containing(Tuesday), false);
         Assert.All(other.Rows.Single(r => r.Activity.Code == "QueenAnt").Cells, c => Assert.False(c.IsChecked));
     }
+
+    [Fact]
+    public async Task Flexible_boss_cannot_exceed_expected_per_week()
+    {
+        // Today is Tuesday 3. 11.: the player may edit 28. 10. to 3. 11., which spans two weeks.
+        await using var f = await CreateAsync("2026-11-03T10:00:00Z");
+        var frintezza = await TestData.ActivityIdAsync(f.Provider, "Frintezza");
+
+        foreach (var day in new[] { 28, 29, 30 })
+        {
+            var ok = await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 10, day), EventSlot.None, true);
+            Assert.Equal(AttendanceChangeResult.Ok, ok);
+        }
+
+        var fourth = await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 10, 31), EventSlot.None, true);
+        var byAdmin = await f.Service.SetAttendanceAsync(f.Admin, true, f.PlayerA, frintezza, new DateOnly(2026, 11, 1), EventSlot.None, true);
+        var again = await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 10, 29), EventSlot.None, true);
+        var otherPlayer = await f.Service.SetAttendanceAsync(f.PlayerB, false, f.PlayerB, frintezza, new DateOnly(2026, 10, 31), EventSlot.None, true);
+        var nextWeek = await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 11, 2), EventSlot.None, true);
+
+        Assert.Equal(AttendanceChangeResult.WeeklyLimitReached, fourth);
+        Assert.Equal(AttendanceChangeResult.WeeklyLimitReached, byAdmin);
+        Assert.Equal(AttendanceChangeResult.Ok, again);
+        Assert.Equal(AttendanceChangeResult.Ok, otherPlayer);
+        Assert.Equal(AttendanceChangeResult.Ok, nextWeek);
+        await using (var db = f.NewContext())
+        {
+            Assert.Equal(4, await db.Attendances.CountAsync(a => a.UserId == f.PlayerA));
+        }
+
+        // Removing one frees a day for another.
+        Assert.Equal(AttendanceChangeResult.Ok,
+            await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 10, 28), EventSlot.None, false));
+        Assert.Equal(AttendanceChangeResult.Ok,
+            await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 10, 31), EventSlot.None, true));
+    }
 }
