@@ -1,7 +1,7 @@
 .l2p-pd-summaries {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
-    gap: 1rem;
+    gap: var(--l2p-space-4);
 }
 
 /* Cells are rendered by MudBlazor components, so reach them via ::deep. */
@@ -31,7 +31,7 @@
     left: 0;
     z-index: 2;
     background: var(--l2p-surface-solid);
-    border-right: 1px solid var(--l2p-glass-edge);
+    border-right: var(--l2p-line-width) solid var(--l2p-line);
 }
 
 /* Scroll target of the history links; keeps the heading clear of the fixed app bar. */
@@ -42,7 +42,7 @@
 .l2p-pd-jewels {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--l2p-space-2);
 }
 
 .l2p-pd-jewels ::deep .l2p-pd-jewel-chip {

@@ -18,6 +18,61 @@
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Theme-independent scales. Spacing, radii, lines, type and touch sizes come from here, not from fixed rem/px in the
+   page styles. Table and grid cell paddings keep their own tokens so the table density is not tied to the block spacing. */
+:root {
+    /* Spacing, 4/8 px grid. */
+    --l2p-space-1: 4px;
+    --l2p-space-2: 8px;
+    --l2p-space-3: 12px;
+    --l2p-space-4: 16px;
+    --l2p-space-5: 24px;
+    --l2p-space-6: 32px;
+    --l2p-space-7: 48px;
+    /* Rhythm by role. */
+    --l2p-gap-title: var(--l2p-space-2);    /* section title -> card */
+    --l2p-gap-tiles: var(--l2p-space-3);    /* tiles in a grid (KPI, jewels, podium) */
+    --l2p-gap-section: var(--l2p-space-6);  /* between sections */
+    --l2p-pad-card: var(--l2p-space-4);     /* 12 px below 600 px */
+    --l2p-page-head: var(--l2p-space-5);    /* under the page title */
+
+    /* Radius (the scale of the glass spec plus full). */
+    --l2p-radius-sm: 6px;    /* badges, checkbox, legend box, focus ring */
+    --l2p-radius-md: 8px;    /* buttons, inputs, chips, nav items, day picker (MudTheme DefaultBorderRadius) */
+    --l2p-radius-lg: 10px;   /* nested surfaces, tiles */
+    --l2p-radius-xl: 12px;   /* cards, dialogs */
+    --l2p-radius-full: 999px; /* meters, bars, switch */
+
+    /* Lines. */
+    --l2p-line-width: 1px;
+    --l2p-line-width-strong: 1.5px;  /* checkbox, legend */
+
+    /* Type scale. */
+    --l2p-font-xs: 0.75rem;     /* 12 badges, captions, minimum */
+    --l2p-font-sm: 0.8125rem;   /* 13 table head, legend */
+    --l2p-font-md: 0.875rem;    /* 14 table cells, body 2 */
+    --l2p-font-base: 1rem;      /* 16 body */
+    --l2p-font-lg: 1.125rem;    /* 18 section title */
+    --l2p-font-xl: 1.25rem;     /* 20 names in KPI, card titles */
+    --l2p-font-2xl: 1.5rem;     /* 24 KPI value on phones, page title on phones (26-28 ok) */
+    --l2p-font-3xl: 2rem;       /* 32 KPI value, page title on desktop */
+
+    /* Touch. */
+    --l2p-touch: 44px;
+    --l2p-touch-gap: 8px;
+
+    /* Table cell paddings (own tokens, unchanged values): the first and last cell of a row are indented by the edge. */
+    --l2p-cell-y: 0.35rem;
+    --l2p-cell-x: 0.75rem;
+    --l2p-cell-edge: 1rem;
+}
+
+@media (max-width: 599.98px) {
+    :root {
+        --l2p-pad-card: var(--l2p-space-3);
+    }
+}
+
 /* Glass UI tokens. The theme is chosen by data-theme on <html>, set before first paint by l2pTheme.apply (inline
    script in App.razor) and re-applied after enhanced navigation (js/theme.js); without the attribute (no JS) dark is used. */
 :root,
@@ -33,7 +88,7 @@
        shadow are kept quiet for the same reason; a dark shadow on a dark page only smudges the glow. */
     --l2p-glass-edge: rgba(185, 166, 255, 0.16);
     --l2p-glass-hi: rgba(255, 255, 255, 0.04);
-    --l2p-glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+    --l2p-glass-shadow: var(--l2p-shadow-1);
     --l2p-surface-solid: #16132A;
     --l2p-surface-pinned: color-mix(in srgb, var(--l2p-primary) 10%, var(--l2p-surface-solid));
     --l2p-row-me: color-mix(in srgb, var(--l2p-primary) 10%, transparent);
@@ -100,7 +155,7 @@
     --l2p-glass-strong: rgba(109, 74, 224, 0.065);
     --l2p-glass-edge: rgba(90, 70, 170, 0.22);
     --l2p-glass-hi: rgba(255, 255, 255, 0.90);
-    --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.14);
+    --l2p-glass-shadow: var(--l2p-shadow-1);
     --l2p-surface-solid: #F8F8FD;
     --l2p-surface-pinned: color-mix(in srgb, var(--l2p-primary) 5%, var(--l2p-surface-solid));
     --l2p-row-me: color-mix(in srgb, var(--l2p-primary) 10%, transparent);
@@ -273,9 +328,9 @@ h1:focus {
 .mud-main-content .mud-paper-outlined,
 .mud-main-content .mud-table-outlined {
     background: var(--l2p-glass);
-    border: 1px solid var(--l2p-glass-edge);
-    border-radius: 12px;
-    box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
+    border: var(--l2p-line-width) solid var(--l2p-line);
+    border-radius: var(--l2p-radius-xl);
+    box-shadow: var(--l2p-shadow-1);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
     backdrop-filter: blur(20px) saturate(140%);
 }
@@ -314,10 +369,10 @@ h1:focus {
 .mud-main-content .mud-table-head .mud-table-cell.l2p-nick-cell,
 .mud-main-content .mud-table-head .mud-table-cell.l2p-pd-week {
     background: var(--l2p-table-head);
-    font-size: 0.8125rem;
+    font-size: var(--l2p-font-sm);
     font-weight: 600;
     color: var(--l2p-text);
-    border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
+    border-bottom: var(--l2p-line-width) solid var(--l2p-line-strong);
 }
 
 /* The pinned-column divider starts under the header band, as in the attendance grid. */
@@ -326,20 +381,20 @@ h1:focus {
     border-right-color: transparent;
 }
 
-/* One rhythm for every table (the custom grids use the same numbers): cells 0.35rem x 0.75rem, and the first and last
-   cell of a row are indented 1rem so the text does not hug the rounded card corners. Specificity beats MudBlazor's
-   dense padding (6px 24px 6px 16px). */
+/* One rhythm for every table (the custom grids use the same numbers): cells --l2p-cell-y x --l2p-cell-x, and the first
+   and last cell of a row are indented by --l2p-cell-edge so the text does not hug the rounded card corners.
+   Specificity beats MudBlazor's dense padding (6px 24px 6px 16px). */
 .mud-main-content .mud-table tr > .mud-table-cell {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.875rem;
+    padding: var(--l2p-cell-y) var(--l2p-cell-x);
+    font-size: var(--l2p-font-md);
 }
 
 .mud-main-content .mud-table tr > .mud-table-cell:first-child {
-    padding-left: 1rem;
+    padding-left: var(--l2p-cell-edge);
 }
 
 .mud-main-content .mud-table tr > .mud-table-cell:last-child {
-    padding-right: 1rem;
+    padding-right: var(--l2p-cell-edge);
 }
 
 /* The place number sits right next to the nick; it is the first cell, so it keeps the left indent only. */
@@ -348,22 +403,22 @@ h1:focus {
 }
 
 .mud-main-content .mud-table tr > .mud-table-cell.l2p-rank-cell + .mud-table-cell {
-    padding-left: 0.5rem;
+    padding-left: var(--l2p-space-2);
 }
 
 @media (max-width: 599.98px) {
     .mud-main-content .mud-table tr > .mud-table-cell:first-child {
-        padding-left: 0.75rem;
+        padding-left: var(--l2p-cell-x);
     }
 
     .mud-main-content .mud-table tr > .mud-table-cell:last-child {
-        padding-right: 0.75rem;
+        padding-right: var(--l2p-cell-x);
     }
 }
 
 /* Chips (attendees, "neaktivní", "admin") with the same small radius as the rest. */
 .mud-main-content .mud-chip {
-    border-radius: 8px;
+    border-radius: var(--l2p-radius-md);
 }
 
 .mud-main-content .mud-table-outlined {
@@ -373,7 +428,7 @@ h1:focus {
 /* Surfaces nested in a card: stronger glass, no blur (a blurred layer inside a blurred layer is slow and muddy).
    .l2p-glass-strong is the explicit class for such a surface. */
 .l2p-glass-strong {
-    border: 1px solid var(--l2p-glass-edge);
+    border: var(--l2p-line-width) solid var(--l2p-line);
 }
 
 .l2p-glass-strong,
@@ -384,14 +439,39 @@ h1:focus {
 .mud-main-content .mud-paper-outlined .mud-table-outlined,
 .mud-main-content .l2p-wk-card {
     background: var(--l2p-glass-strong);
-    border-radius: 10px;
+    border-radius: var(--l2p-radius-lg);
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
 
-/* Popovers, menus, dialogs, tooltips and snackbars are rendered outside .mud-main-content and use the opaque palette
-   Surface (#16132A / #F8F8FD), checked in the running app, so they need no override here. */
+/* Tiles in a grid (KPI figures, podium cards, jewel cards): glass without blur, because a dozen backdrop filters on one
+   page cost far more than they show. The extra class out-ranks the glass rule above (.mud-main-content .mud-paper-outlined). */
+.mud-main-content .mud-paper-outlined.l2p-tile {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-radius: var(--l2p-radius-lg);
+}
+
+/* Popovers, menus, dialogs, tooltips and snackbars are rendered outside .mud-main-content, so the glass rules above do
+   not reach them. Dialogs and popovers get the card radius, a line and an elevation from the scale; a dialog is opaque. */
+.mud-dialog {
+    border-radius: var(--l2p-radius-xl);
+    border: var(--l2p-line-width) solid var(--l2p-line);
+    box-shadow: var(--l2p-shadow-3);
+    background: var(--l2p-surface-solid);
+}
+
+.mud-popover {
+    border-radius: var(--l2p-radius-md);
+    border: var(--l2p-line-width) solid var(--l2p-line);
+    box-shadow: var(--l2p-shadow-2);
+}
+
+.mud-overlay-dialog .mud-overlay-scrim.mud-overlay-dark,
+.mud-overlay-drawer .mud-overlay-scrim.mud-overlay-dark {
+    background-color: var(--l2p-scrim);
+}
 
 /* ---- App shell ---- */
 .l2p-brand {
@@ -414,11 +494,11 @@ h1:focus {
 }
 
 .mud-appbar {
-    border-bottom: 1px solid var(--l2p-glass-edge);
+    border-bottom: var(--l2p-line-width) solid var(--l2p-line);
 }
 
 .mud-drawer {
-    border-right: 1px solid var(--l2p-glass-edge);
+    border-right: var(--l2p-line-width) solid var(--l2p-line);
 }
 
 /* A drawer that slides over the content on a phone is a menu, so it is opaque. */
@@ -432,8 +512,8 @@ h1:focus {
 }
 
 .mud-drawer .mud-navmenu .mud-nav-link {
-    margin: 4px 8px;
-    border-radius: 8px;
+    margin: var(--l2p-space-1) var(--l2p-space-2);
+    border-radius: var(--l2p-radius-md);
     color: var(--l2p-text-2);
 }
 
@@ -519,7 +599,7 @@ h1:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: var(--l2p-space-4);
     box-sizing: border-box;
     /* The glow is painted by html (same as body); --account-bg only backs it up. */
     background: transparent;
@@ -530,12 +610,12 @@ h1:focus {
 .account-card {
     width: 100%;
     max-width: 24rem;
-    padding: 2rem 1.75rem;
+    padding: var(--l2p-space-6) var(--l2p-space-5);
     box-sizing: border-box;
     background: var(--account-card);
-    border: 1px solid var(--account-border);
-    border-radius: 12px;
-    box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
+    border: var(--l2p-line-width) solid var(--account-border);
+    border-radius: var(--l2p-radius-xl);
+    box-shadow: var(--l2p-shadow-1);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
     backdrop-filter: blur(20px) saturate(140%);
 }
@@ -560,34 +640,34 @@ h1:focus {
 .account-brand {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: var(--l2p-space-3);
     font-size: 1.15rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     color: var(--account-text);
-    margin-bottom: 1.25rem;
+    margin-bottom: var(--l2p-space-5);
 }
 
 .account-title {
-    font-size: 1.5rem;
+    font-size: var(--l2p-font-2xl);
     font-weight: 500;
-    margin: 0 0 1.25rem;
+    margin: 0 0 var(--l2p-space-5);
 }
 
 .account-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--l2p-space-4);
 }
 
 .account-field {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: var(--l2p-space-2);
 }
 
 .account-field label {
-    font-size: 0.875rem;
+    font-size: var(--l2p-font-md);
     color: var(--account-muted);
 }
 
@@ -597,8 +677,8 @@ h1:focus {
     color: var(--account-text);
     background: var(--l2p-glass-strong);
     /* The glass edge is too faint to outline a field, so inputs get their own border. */
-    border: 1px solid var(--account-input-border);
-    border-radius: 10px;
+    border: var(--l2p-line-width) solid var(--account-input-border);
+    border-radius: var(--l2p-radius-md);
 }
 
 .account-field input:focus {
@@ -614,8 +694,8 @@ h1:focus {
 .account-check {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
+    gap: var(--l2p-space-2);
+    font-size: var(--l2p-font-md);
 }
 
 .account-button {
@@ -625,7 +705,7 @@ h1:focus {
     color: var(--account-accent-text);
     background: var(--account-accent);
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--l2p-radius-md);
     cursor: pointer;
 }
 
@@ -636,9 +716,9 @@ h1:focus {
 .account-error,
 .account-success {
     padding: 0.65rem 0.85rem;
-    margin-bottom: 1rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    margin-bottom: var(--l2p-space-4);
+    border-radius: var(--l2p-radius-sm);
+    font-size: var(--l2p-font-md);
 }
 
 .account-error {
@@ -653,18 +733,18 @@ h1:focus {
 
 .account-link {
     display: inline-block;
-    margin-top: 1.25rem;
+    margin-top: var(--l2p-space-5);
     color: var(--account-link);
 }
 
 .account-muted {
     color: var(--account-muted);
-    font-size: 0.85rem;
+    font-size: var(--l2p-font-sm);
 }
 
 .account-page .validation-message {
     color: var(--account-error-text);
-    font-size: 0.8rem;
+    font-size: var(--l2p-font-sm);
 }
 
 /* Player nick cell of the overview tables (PlayerNickCell): pinned to the left while the table scrolls horizontally.
@@ -676,11 +756,11 @@ h1:focus {
     white-space: nowrap;
     /* Opaque, otherwise the scrolled cells show through the pinned column. */
     background: var(--l2p-row-bg, var(--l2p-surface-solid));
-    border-right: 1px solid var(--l2p-glass-edge);
+    border-right: var(--l2p-line-width) solid var(--l2p-line);
 }
 
 td.l2p-nick-cell .l2p-nick-chip {
-    margin: 0 0 0 0.5rem;
+    margin: 0 0 0 var(--l2p-space-2);
     height: 1.25rem;
 }
 
@@ -688,8 +768,8 @@ td.l2p-nick-cell .l2p-nick-chip {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.25rem 0.4rem;
-    margin-left: 0.5rem;
+    gap: var(--l2p-space-1) var(--l2p-space-2);
+    margin-left: var(--l2p-space-2);
     vertical-align: middle;
 }
 
@@ -711,7 +791,7 @@ td.l2p-nick-cell .l2p-nick-chip {
     .l2p-jewels {
         display: flex;
         width: fit-content;
-        margin: 0.2rem 0 0;
+        margin: var(--l2p-space-1) 0 0;
     }
 }
 
@@ -720,11 +800,11 @@ td.l2p-nick-cell .l2p-nick-chip {
 .l2p-kpis {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: var(--l2p-gap-tiles);
 }
 
 .l2p-kpi {
-    padding: 0.75rem 1rem;
+    padding: var(--l2p-space-3) var(--l2p-pad-card);
     min-width: 0;
 }
 
@@ -735,8 +815,8 @@ td.l2p-nick-cell .l2p-nick-chip {
 }
 
 .l2p-kpi-value {
-    font-size: 2rem;
-    font-weight: 300;
+    font-size: var(--l2p-font-3xl);
+    font-weight: 600;
     line-height: 1.3;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -745,7 +825,7 @@ td.l2p-nick-cell .l2p-nick-chip {
 }
 
 .l2p-kpi-more {
-    font-size: 0.9rem;
+    font-size: var(--l2p-font-md);
     font-weight: 500;
     color: var(--mud-palette-text-secondary);
 }
@@ -756,8 +836,8 @@ td.l2p-nick-cell .l2p-nick-chip {
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem 1.5rem;
-    margin-bottom: 1.5rem;
+    gap: var(--l2p-space-2) var(--l2p-space-5);
+    margin-bottom: var(--l2p-page-head);
 }
 
 .mud-typography.l2p-page-title {
@@ -777,11 +857,20 @@ td.l2p-nick-cell .l2p-nick-chip {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: 1rem;
-    row-gap: 0.25rem;
+    column-gap: var(--l2p-space-4);
+    row-gap: var(--l2p-space-1);
     min-height: 2.25rem;
-    margin: 0 0 0.4rem;
-    padding: 0 0.25rem;
+    margin: 0 0 var(--l2p-gap-title);
+    padding: 0 var(--l2p-space-1);
+}
+
+/* A section of a page (title + card); the gap between sections comes from the scale. */
+.l2p-section {
+    margin-bottom: var(--l2p-gap-section);
+}
+
+.l2p-section:last-child {
+    margin-bottom: 0;
 }
 
 /* Title on the left, controls (view switch) pushed to the right. */
@@ -792,7 +881,7 @@ td.l2p-nick-cell .l2p-nick-chip {
 .l2p-section-title,
 .mud-typography.l2p-section-title {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: var(--l2p-font-lg);
     font-weight: 600;
     line-height: 1.4;
     letter-spacing: normal;
@@ -803,7 +892,7 @@ td.l2p-nick-cell .l2p-nick-chip {
 .l2p-section-title {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: var(--l2p-space-2);
 }
 
 .l2p-section-title .mud-icon-root {
@@ -814,7 +903,7 @@ td.l2p-nick-cell .l2p-nick-chip {
 .l2p-view-switch {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--l2p-space-1);
 }
 
 .l2p-view-switch .mud-input-control,
@@ -823,11 +912,11 @@ td.l2p-nick-cell .l2p-nick-chip {
 }
 
 .l2p-view-label {
-    padding: 0.25rem;
+    padding: var(--l2p-space-1);
     border: none;
     background: none;
     font: inherit;
-    font-size: 0.875rem;
+    font-size: var(--l2p-font-md);
     font-weight: 500;
     color: var(--l2p-text-2);
     cursor: pointer;
@@ -841,7 +930,7 @@ td.l2p-nick-cell .l2p-nick-chip {
 .l2p-view-label:focus-visible {
     outline: 2px solid var(--l2p-focus-ring);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: var(--l2p-radius-sm);
 }
 
 /* Percentage badges by band (DisplayFormat.PercentTone). */
@@ -849,8 +938,8 @@ td.l2p-nick-cell .l2p-nick-chip {
     display: inline-block;
     min-width: 3.25rem;
     padding: 0.05rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    border-radius: var(--l2p-radius-sm);
+    font-size: var(--l2p-font-sm);
     font-weight: 600;
     text-align: center;
 }
@@ -897,7 +986,7 @@ a:not(.mud-button-root):focus-visible,
 .mud-list-item-clickable:focus-visible,
 .mud-menu-item:focus-visible,
 .l2p-wk-day:focus-visible {
-    border-radius: var(--l2p-radius-md, 8px);
+    border-radius: var(--l2p-radius-md);
 }
 
 /* Cards clip their content (overflow: clip), so inside tables, grids and menus the ring is drawn inward and is not cut. */
@@ -915,7 +1004,7 @@ a:not(.mud-button-root):focus-visible,
 .mud-switch:has(.mud-switch-input:focus-visible) .mud-switch-span {
     outline: 2px solid var(--l2p-focus-ring);
     outline-offset: 2px;
-    border-radius: 999px;
+    border-radius: var(--l2p-radius-full);
 }
 
 /* Reduced motion: the indeterminate loading bar becomes a static stripe and the click ripple is removed.
@@ -964,17 +1053,30 @@ a:not(.mud-button-root):focus-visible,
 }
 
 @media (max-width: 599.98px) {
-    .l2p-kpi {
-        padding: 0.6rem 0.75rem;
-    }
-
     .l2p-kpi-value {
-        font-size: 1.5rem;
+        font-size: var(--l2p-font-2xl);
     }
+}
 
-    .l2p-section-head {
-        padding: 0 0.25rem;
-    }
+/* Fixed layout with the same column widths in every catalog table (/points, /admin/activities), so the point columns
+   line up from one table to the next instead of each table sizing itself by its content. Below the minimum width the
+   card scrolls. The first column (name) is 14rem, the point columns and the narrow ones 6rem, the schedule takes the rest. */
+.l2p-catalog-table table {
+    table-layout: fixed;
+    min-width: 36rem;
+}
+
+.l2p-catalog-table tr > :first-child {
+    width: 14rem;
+}
+
+.l2p-catalog-table tr > .l2p-col-points,
+.l2p-catalog-table tr > .l2p-col-narrow {
+    width: 6rem;
+}
+
+.l2p-catalog-table tr > .l2p-col-wide {
+    width: 9rem;
 }
 
 /* Page titles are a touch lighter than MudBlazor's default h4 weight. */

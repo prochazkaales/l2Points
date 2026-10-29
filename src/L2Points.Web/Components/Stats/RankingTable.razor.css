@@ -58,7 +58,7 @@
 
 .l2p-rank-table ::deep .l2p-rank-bar {
     height: 0.5rem;
-    border-radius: 0.25rem;
+    border-radius: var(--l2p-radius-full);
     background: color-mix(in srgb, var(--l2p-text) 12%, transparent);
     overflow: hidden;
 }
@@ -66,7 +66,7 @@
 .l2p-rank-table ::deep .l2p-rank-bar span {
     display: block;
     height: 100%;
-    border-radius: 0.25rem;
+    border-radius: var(--l2p-radius-full);
     /* The only place the primary -> primary 2 gradient is used (spec). */
     background: linear-gradient(90deg, var(--l2p-primary), var(--l2p-primary-2));
 }

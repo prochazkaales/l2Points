@@ -1,14 +1,14 @@
 .l2p-jewel-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
-    gap: 1rem;
+    gap: var(--l2p-gap-tiles);
 }
 
 .l2p-jewel-head {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
+    gap: var(--l2p-space-4);
+    margin-bottom: var(--l2p-space-3);
 }
 
 /* JewelIcon renders the <img>, so reach it via ::deep from this page's wrapper. */
@@ -28,5 +28,5 @@
 .l2p-jewel-holders {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: var(--l2p-space-1);
 }

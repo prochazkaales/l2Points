@@ -1,12 +1,12 @@
 .l2p-admin-jewel-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.5rem;
+    gap: var(--l2p-space-2);
+    padding: var(--l2p-space-1) var(--l2p-space-2);
 }
 
 .l2p-admin-jewel-row + .l2p-admin-jewel-row {
-    border-top: 1px solid var(--l2p-glass-edge);
+    border-top: var(--l2p-line-width) solid var(--l2p-line-subtle);
 }
 
 /* JewelIcon renders the <img>, so reach it via ::deep from this page's row. */

@@ -2,7 +2,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--l2p-space-1);
     width: fit-content;
     max-width: 100%;
     /* No track of its own: arrows, label and the "Tento týden" button sit straight on the page. The left arrow is
@@ -32,17 +32,17 @@
     .l2p-week-nav ::deep .l2p-week-nav-label {
         min-width: 0;
         flex: 1 1 auto;
-        font-size: 0.95rem;
+        font-size: var(--l2p-font-md);
         white-space: nowrap;
     }
 
     .l2p-week-nav ::deep .mud-icon-button {
-        padding: 0.25rem;
+        padding: var(--l2p-space-1);
     }
 
     .l2p-week-nav ::deep .l2p-week-nav-current {
-        margin-left: 0.25rem;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        margin-left: var(--l2p-space-1);
+        padding-left: var(--l2p-space-2);
+        padding-right: var(--l2p-space-2);
     }
 }

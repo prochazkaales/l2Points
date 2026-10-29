@@ -45,7 +45,7 @@ else
         }
     </div>
 
-    <div class="l2p-kpis mb-4">
+    <div class="l2p-kpis l2p-section">
         <KpiCard Label="Účast party" Note="celkově">@DisplayFormat.Percent(_summary.PartyAttendance.Percent)</KpiCard>
         <KpiCard Label="Body party" Note="@PartyPointsNote">@DisplayFormat.Points(_summary.WeekPoints)</KpiCard>
         @if (_summary.PlayersOfWeek.Count > 0)
@@ -69,12 +69,12 @@ else
 
     @if (_summary.Podium.Count > 0)
     {
-        <div class="l2p-podium mb-4">
+        <div class="l2p-podium l2p-section">
             @for (var i = 0; i < _summary.Podium.Count; i++)
             {
                 var row = _summary.Podium[i];
                 var rank = _summary.Ranks[row.Player.UserId];
-                <MudPaper Outlined="true" Class="@($"l2p-podium-card l2p-podium-{i + 1} l2p-place-{rank}" + (row.Player.UserId == _userId ? " l2p-podium-me" : ""))">
+                <MudPaper Outlined="true" Class="@($"l2p-tile l2p-podium-card l2p-podium-{i + 1} l2p-place-{rank}" + (row.Player.UserId == _userId ? " l2p-podium-me" : ""))">
                     <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Class="l2p-podium-trophy" />
                     <div class="l2p-podium-nick">
                         <MudLink Href="@DisplayFormat.PlayerUrl(row.Player.UserId)" Underline="Underline.Hover" Color="Color.Primary">@row.Player.Nick</MudLink>
@@ -88,14 +88,14 @@ else
         </div>
     }
 
-    <section class="mb-4">
+    <section class="l2p-section">
         <SectionTitle Text="Celkově" Icon="@Icons.Material.Outlined.EmojiEvents" />
         <MudPaper Outlined="true">
             <RankingTable Rows="_rows" Ranks="_summary.Ranks" Jewels="_jewels" UserId="@_userId" ShowBar="true" />
         </MudPaper>
     </section>
 
-    <section>
+    <section class="l2p-section">
         <SectionTitle Text="Týden" Icon="@Icons.Material.Outlined.DateRange">
             <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
         </SectionTitle>

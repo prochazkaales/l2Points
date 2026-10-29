@@ -30,20 +30,20 @@ else
             continue;
         }
 
-        <section class="mb-4">
+        <section class="l2p-section">
             <SectionTitle Text="@title" Icon="@icon" />
-            <div class="l2p-points">
+            <div class="l2p-points l2p-catalog-table">
                 <MudTable T="Activity" Items="items" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
                     <HeaderContent>
                         <MudTh Class="l2p-nick-cell">Název</MudTh>
                         @if (category == ActivityCategory.ChaoticEpic)
                         {
-                            <MudTh Class="l2p-points-value">Večerní</MudTh>
-                            <MudTh Class="l2p-points-value">Ranní</MudTh>
+                            <MudTh Class="l2p-points-value l2p-col-points">Večerní</MudTh>
+                            <MudTh Class="l2p-points-value l2p-col-points">Ranní</MudTh>
                         }
                         else
                         {
-                            <MudTh Class="l2p-points-value">Body</MudTh>
+                            <MudTh Class="l2p-points-value l2p-col-points">Body</MudTh>
                         }
                         <MudTh>Rozpis</MudTh>
                     </HeaderContent>
@@ -51,12 +51,12 @@ else
                         <MudTd Class="l2p-nick-cell">@context.Name</MudTd>
                         @if (category == ActivityCategory.ChaoticEpic)
                         {
-                            <MudTd Class="l2p-points-value">@SlotPoints(context, EventSlot.Evening)</MudTd>
-                            <MudTd Class="l2p-points-value">@SlotPoints(context, EventSlot.Morning)</MudTd>
+                            <MudTd Class="l2p-points-value l2p-col-points">@SlotPoints(context, EventSlot.Evening)</MudTd>
+                            <MudTd Class="l2p-points-value l2p-col-points">@SlotPoints(context, EventSlot.Morning)</MudTd>
                         }
                         else
                         {
-                            <MudTd Class="l2p-points-value">@context.Points</MudTd>
+                            <MudTd Class="l2p-points-value l2p-col-points">@context.Points</MudTd>
                         }
                         <MudTd>@DisplayFormat.ScheduleLabel(context)</MudTd>
                     </RowTemplate>

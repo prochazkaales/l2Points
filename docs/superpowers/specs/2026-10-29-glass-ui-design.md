@@ -79,14 +79,17 @@ Pásma procent (`.l2p-tone-*`) a místa 1–3 (`.l2p-place-*`) zůstávají výz
 
 Hodnoty tokenů hlídají `TokenContrastTests` (kontrast textu, štítků a neaktivního textu nad sklem, září a řádkem „já“) a `AppThemeTokensTests` (palety `AppTheme.cs` zrcadlí tokeny; `DefaultBorderRadius` je 8 px a tlačítka bez velkých písmen).
 
-Text na plné primary (rozhodnutí návrhu): v tmavém režimu tmavý `#0B0A1A`, protože bílá na `#8B6CFF` má jen ~3,7:1; tmavá na ní má ~5,3:1 a stejně to už dnes dělají účtové stránky (`--account-accent-text`). Primary `#8B6CFF` jako text má na tmavém pozadí ~4,9:1, ale nad září v pravém dolním rohu jen ~3:1, proto text používá světlejší `--l2p-primary-text` (`#B9A6FF`, nad září na kartě >= 5:1); zář `--l2p-glow-1` má v tmavém režimu .27 a tlumený text `#A8A4CA` (>= 4,5:1 i na vnořeném silnějším skle v maximu záře, na kartě nad zářím ~5,4:1). Ve světlém režimu bílá na `#6D4AE0` (~5,6:1). Kde se níže píše „bílý text/fajfka na primary“, platí tato barva.
+Text na plné primary (rozhodnutí návrhu): v tmavém režimu tmavý `#0B0A1A`, protože bílá na `#8B6CFF` má jen ~3,7:1; tmavá na ní má ~5,3:1 a stejně to už dnes dělají účtové stránky (`--account-accent-text`). Primary `#8B6CFF` jako text má na tmavém pozadí ~4,9:1, ale nad září v pravém dolním rohu jen ~3:1, proto text používá světlejší `--l2p-primary-text` (`#B9A6FF`, nad září na kartě >= 5:1); zář `--l2p-glow-1` má v tmavém režimu .27 a tlumený text `--l2p-muted` (`#AEAAD0` v tmavém, `#58537A` ve světlém režimu; >= 4,5:1 i na vnořeném silnějším skle v maximu záře). Ve světlém režimu bílá na `#6D4AE0` (~5,6:1). Kde se níže píše „bílý text/fajfka na primary“, platí tato barva.
 
 Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní položka navigace, zvolený přepínač, zaškrtnutá buňka, hlavní tlačítko). Přechod primary → primary 2 jen na pruhu bodů v žebříčku.
 
 ## Sklo
 
 - Globální třída `.l2p-glass`: výplň, 1px hrana, `inset 0 1px 0` horní světlo, stín, `border-radius: 12px`, `backdrop-filter: blur(20px) saturate(140%)` (s `-webkit-` prefixem). Karty (outlined `MudPaper`/`MudTable`) mají `overflow: clip`, aby neprůhledné přilepené buňky v rohu nevyčnívaly přes zaoblení. Zaoblení je střídmé: karta 12 px, vnořená plocha 10 px, položka draweru, čip a výběr dne 8 px, štítek procent 6 px. Hlavička každé tabulky (MudTable i vlastní tabulky) je stejný neprůhledný pruh `--l2p-table-head` s popisky v barvě textu a váze 600; nadpisy sekcí nad kartami mají před sebou ikonu v `--l2p-primary-text`.
-- Blur jen na velkých kontejnerech: app bar, drawer, karty sekcí. Nikdy na řádcích, buňkách, chipech (výkon na mobilu). Vnořené plochy uvnitř karty používají jen „silnější sklo“ bez blur.
+- Blur jen na velkých kontejnerech: app bar, drawer, karty sekcí. Nikdy na řádcích, buňkách, chipech (výkon na mobilu). Vnořené plochy uvnitř karty používají jen „silnější sklo“ bez blur. Stejně tak dlaždice v mřížce (`.l2p-tile`: KPI, karty stupňů vítězů, karty šperků) jsou sklo bez blur, takže na stránce zbývají nejvýš čtyři vrstvy s `backdrop-filter` (app bar, drawer a karty tabulek).
+- Škály (tokeny `--l2p-*` v `app.css`, společné pro všechny stránky): mezery `--l2p-space-1..7` (4/8/12/16/24/32/48 px) a rytmus podle role (`--l2p-gap-title` 8 px pod nadpisem sekce, `--l2p-gap-tiles` 12 px mezi dlaždicemi, `--l2p-gap-section` 32 px mezi sekcemi, `--l2p-pad-card` 16 px, pod 600 px 12 px, `--l2p-page-head` 24 px pod nadpisem stránky); buňky tabulek a mřížky mají vlastní tokeny (`--l2p-cell-*`, `--l2p-grid-cell-*`). Radiusy `--l2p-radius-sm|md|lg|xl|full` (6/8/10/12 px/pilulka): štítky, checkbox a legenda sm; tlačítka, vstupy, čipy, položky draweru a výběr dne md; vnořené plochy a dlaždice lg; karty a dialogy xl; metry a pruhy full. Stíny `--l2p-shadow-1` (karta, `--l2p-glass-shadow` je jeho alias), `-2` (popover), `-3` (dialog). Písmo `--l2p-font-xs..3xl` (12 až 32 px, nejmenší text 12 px), čáry `--l2p-line-width` a `--l2p-line-width-strong`.
+- Dialog (`.mud-dialog`) je neprůhledný se zaoblením xl, hranou `--l2p-line` a stínem 3, popover má radius md, hranu a stín 2; scrim dialogu a draweru je `--l2p-scrim`.
+- Ikony (I2): navigace a akce jsou Filled, ikony nadpisů sekcí Outlined.
 - Popovery, menu, select, autocomplete, dialogy, tooltipy, snackbary a přilepené buňky tabulek mají **neprůhledný povrch** z tabulky výše. MudBlazor `Surface` v paletě zůstává neprůhledný (tím se tohle zajistí automaticky); sklo se dává jen třídou na vybrané kontejnery.
 - Fallback: `@supports not (backdrop-filter: blur(1px))` a `@media (prefers-reduced-transparency: reduce)` → karty dostanou neprůhledný povrch.
 - Pozadí stránky: dvě radiální záře nad barvou pozadí, `background-attachment: fixed` na `body` (na iOS, kde `fixed` nefunguje, stačí, že záře scrolluje s obsahem).
@@ -95,7 +98,7 @@ Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní polo
 
 - Písmo Outfit (OFL), self-hosted jako variable `woff2` v `wwwroot/fonts/` s licencí `OFL.txt`, podmnožiny latin a latin-ext (česká diakritika). Žádné externí CDN, jako dosud.
 - Fallback stack zůstává (`Segoe UI`, `Roboto`, …), aby se nic nerozbilo před načtením fontu (`font-display: swap`).
-- Váhy: text 400, nadpisy a popisky 500, velká čísla 200–300. Velká čísla: KPI hodnoty, body v souhrnu týdne, body ve stupních vítězů. `font-variant-numeric: tabular-nums` u čísel v tabulkách a mřížce.
+- Váhy: text 400, nadpisy a popisky 500, KPI hodnoty 600 (32 px, na telefonu 24 px). Velká čísla: KPI hodnoty, body v souhrnu týdne, body ve stupních vítězů. `font-variant-numeric: tabular-nums` u čísel v tabulkách a mřížce.
 - Účtové stránky (statické SSR) používají stejné písmo.
 
 ## Shell (MainLayout)

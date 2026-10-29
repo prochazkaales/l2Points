@@ -44,83 +44,89 @@ else
         }
     </PageHeader>
 
-    <div class="l2p-pd-summaries mb-4">
+    <div class="l2p-pd-summaries l2p-section">
         <WeekSummaryCard Summary="_detail.Overall" Title="Celkově" PointsLabel="Body celkem" />
         <WeekSummaryCard Summary="_detail.CurrentWeek" Title="Aktuální týden" />
     </div>
 
-    <SectionTitle Text="Šperky" Icon="@Icons.Material.Outlined.Diamond" />
-    @if (_detail.Jewels.Count == 0)
-    {
-        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">Zatím žádný šperk.</MudText>
-    }
-    else
-    {
-        <div class="l2p-pd-jewels mb-4">
-            @foreach (var jewel in _detail.Jewels)
-            {
-                <MudChip T="string" Variant="Variant.Outlined" Size="Size.Medium" Class="l2p-pd-jewel-chip">
-                    <JewelIcon Type="jewel.Type" Count="1" Size="24" Decorative="true" />
-                    <span>@jewel.Type.Name</span>
-                    @if (jewel.Count > 1)
-                    {
-                        <strong>×@jewel.Count</strong>
-                    }
-                </MudChip>
-            }
+    <section class="l2p-section">
+        <SectionTitle Text="Šperky" Icon="@Icons.Material.Outlined.Diamond" />
+        @if (_detail.Jewels.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Zatím žádný šperk.</MudText>
+        }
+        else
+        {
+            <div class="l2p-pd-jewels">
+                @foreach (var jewel in _detail.Jewels)
+                {
+                    <MudChip T="string" Variant="Variant.Outlined" Size="Size.Medium" Class="l2p-pd-jewel-chip">
+                        <JewelIcon Type="jewel.Type" Count="1" Size="24" Decorative="true" />
+                        <span>@jewel.Type.Name</span>
+                        @if (jewel.Count > 1)
+                        {
+                            <strong>×@jewel.Count</strong>
+                        }
+                    </MudChip>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="l2p-section">
+        <SectionTitle Text="Historie po týdnech" Icon="@Icons.Material.Outlined.History" />
+        @if (_detail.History.Count == 0)
+        {
+            <MudAlert Severity="Severity.Normal">Zatím tu žádná historie není.</MudAlert>
+        }
+        else
+        {
+            <div class="l2p-pd">
+                <MudTable T="WeekHistoryRow" Items="_detail.History" Dense="true" Elevation="0" Outlined="true"
+                          Breakpoint="Breakpoint.None">
+                    <HeaderContent>
+                        <MudTh Class="l2p-pd-week">Týden</MudTh>
+                        <MudTh Class="l2p-pd-col">Body</MudTh>
+                        <MudTh Class="l2p-pd-col">Celkem</MudTh>
+                        <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Normal)</MudTh>
+                        <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Evening)</MudTh>
+                        <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Morning)</MudTh>
+                        <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.CastleSiege)</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="l2p-pd-week">
+                            <MudLink Href="@WeekHref(context.Week)" OnClick="@(() => OnHistoryWeekClickedAsync(context.Week))"
+                                     Underline="Underline.Hover" Color="Color.Primary">@DisplayFormat.WeekLabel(context.Week)</MudLink>
+                        </MudTd>
+                        <StatCells Stats="context.Summary.Stats" Points="context.Summary.Points" />
+                    </RowTemplate>
+                </MudTable>
+            </div>
+        }
+    </section>
+
+    <section class="l2p-section">
+        <div id="@GridSectionId" class="l2p-pd-grid-anchor">
+            <SectionTitle Text="Účast v týdnu" Icon="@Icons.Material.Outlined.EventAvailable" />
         </div>
-    }
-
-    <SectionTitle Text="Historie po týdnech" Icon="@Icons.Material.Outlined.History" />
-    @if (_detail.History.Count == 0)
-    {
-        <MudAlert Severity="Severity.Normal" Class="mb-4">Zatím tu žádná historie není.</MudAlert>
-    }
-    else
-    {
-        <div class="l2p-pd mb-4">
-            <MudTable T="WeekHistoryRow" Items="_detail.History" Dense="true" Elevation="0" Outlined="true"
-                      Breakpoint="Breakpoint.None">
-                <HeaderContent>
-                    <MudTh Class="l2p-pd-week">Týden</MudTh>
-                    <MudTh Class="l2p-pd-col">Body</MudTh>
-                    <MudTh Class="l2p-pd-col">Celkem</MudTh>
-                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Normal)</MudTh>
-                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Evening)</MudTh>
-                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.Morning)</MudTh>
-                    <MudTh Class="l2p-pd-col">@DisplayFormat.CategoryLabel(StatCategory.CastleSiege)</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd Class="l2p-pd-week">
-                        <MudLink Href="@WeekHref(context.Week)" OnClick="@(() => OnHistoryWeekClickedAsync(context.Week))"
-                                 Underline="Underline.Hover" Color="Color.Primary">@DisplayFormat.WeekLabel(context.Week)</MudLink>
-                    </MudTd>
-                    <StatCells Stats="context.Summary.Stats" Points="context.Summary.Points" />
-                </RowTemplate>
-            </MudTable>
+        <div class="mb-3">
+            <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
         </div>
-    }
 
-    <div id="@GridSectionId" class="l2p-pd-grid-anchor">
-        <SectionTitle Text="Účast v týdnu" Icon="@Icons.Material.Outlined.EventAvailable" />
-    </div>
-    <div class="mb-3">
-        <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
-    </div>
-
-    @if (_gridError)
-    {
-        <MudAlert Severity="Severity.Error" Class="mb-3">Týden se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
-        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadGridAsync">Zkusit znovu</MudButton>
-    }
-    else if (_grid is null)
-    {
-        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
-    }
-    else
-    {
-        <WeekGridView Grid="_grid" ReadOnly="true" Today="_today" />
-    }
+        @if (_gridError)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">Týden se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadGridAsync">Zkusit znovu</MudButton>
+        }
+        else if (_grid is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+        }
+        else
+        {
+            <WeekGridView Grid="_grid" ReadOnly="true" Today="_today" />
+        }
+    </section>
 }
 
 @code {

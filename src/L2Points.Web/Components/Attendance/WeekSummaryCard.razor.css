@@ -2,14 +2,14 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
+    gap: var(--l2p-space-4);
+    margin-bottom: var(--l2p-space-2);
 }
 
 .l2p-summary-points {
     display: flex;
     align-items: baseline;
-    gap: 0.5rem;
+    gap: var(--l2p-space-2);
     margin-left: auto;
 }
 
@@ -27,15 +27,15 @@
 .l2p-summary-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.5rem;
+    gap: var(--l2p-space-2);
 }
 
 .l2p-summary-tile {
     display: flex;
     flex-direction: column;
-    padding: 0.4rem 0.75rem;
-    border: 1px solid transparent;
-    border-radius: 10px;
+    padding: var(--l2p-space-2) var(--l2p-space-3);
+    border: var(--l2p-line-width) solid transparent;
+    border-radius: var(--l2p-radius-lg);
     background: var(--l2p-glass-strong);
 }
 
@@ -79,6 +79,6 @@
         grid-column: 1 / -1;
         flex-direction: row;
         align-items: baseline;
-        gap: 0.75rem;
+        gap: var(--l2p-space-3);
     }
 }

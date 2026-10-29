@@ -1,7 +1,7 @@
 .l2p-jewel {
     display: inline-flex;
     align-items: center;
-    gap: 0.15rem;
+    gap: var(--l2p-space-1);
     vertical-align: middle;
 }
 
@@ -10,7 +10,7 @@
 }
 
 .l2p-jewel-count {
-    font-size: 0.75rem;
+    font-size: var(--l2p-font-xs);
     font-weight: 600;
     line-height: 1;
 }

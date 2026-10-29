@@ -42,7 +42,7 @@ else if (_overview is null || _summary is null)
 }
 else
 {
-    <div class="l2p-kpis mb-4">
+    <div class="l2p-kpis l2p-section">
         <KpiCard Label="Body party" Note="@PreviousWeekNote">@DisplayFormat.Points(_summary.WeekPoints)</KpiCard>
         <KpiCard Label="Účast party" Note="v týdnu">@DisplayFormat.Percent(_summary.WeekAttendance.Percent)</KpiCard>
         <KpiCard Label="Epiců s účastí" Note="@AverageNote">@_overview.Events.Count</KpiCard>
@@ -64,14 +64,14 @@ else
         }
     </div>
 
-    <section class="mb-4">
+    <section class="l2p-section">
         <SectionTitle Text="Hráči" Icon="@Icons.Material.Outlined.Groups" />
         <MudPaper Outlined="true">
             <RankingTable Rows="_overview.Players" Ranks="_weekRanks" Jewels="_overview.Jewels" UserId="@_userId" Weekly="true" ShowBar="true" NickWeek="_week" />
         </MudPaper>
     </section>
 
-    <section>
+    <section class="l2p-section">
         <SectionTitle Text="Události týdne" Icon="@Icons.Material.Outlined.Event" Class="l2p-section-head-split">
             @* A switch between the two views; the labels on both sides also pick a view. *@
             <div class="l2p-view-switch">

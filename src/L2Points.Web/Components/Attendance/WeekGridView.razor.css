@@ -3,13 +3,13 @@
 .l2p-grid-stack {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--l2p-gap-section);
 }
 
 .l2p-grid-title {
     display: flex;
     align-items: center;
-    margin: 0 0 0.4rem 0.25rem;
+    margin: 0 0 var(--l2p-gap-title) var(--l2p-space-1);
 }
 
 .l2p-grid-scroll {
@@ -20,20 +20,22 @@
    (auto layout would size each table by its own content). Below the minimum width the card scrolls. */
 .l2p-grid {
     --l2p-grid-boss-width: 10rem;
+    --l2p-grid-cell-y: 0.125rem;
+    --l2p-grid-cell-x: 0.5rem;
     width: 100%;
     min-width: calc(var(--l2p-grid-boss-width) + 7 * 6.5rem);
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.875rem;
+    font-size: var(--l2p-font-md);
     color: var(--l2p-text);
 }
 
 /* Cells are transparent so the glass shows through; only the pinned boss column is opaque (see below). */
 .l2p-grid th,
 .l2p-grid td {
-    padding: 0.125rem 0.5rem;
-    border-bottom: 1px solid var(--l2p-divider);
+    padding: var(--l2p-grid-cell-y) var(--l2p-grid-cell-x);
+    border-bottom: var(--l2p-line-width) solid var(--l2p-line-subtle);
     background-color: transparent;
 }
 
@@ -41,16 +43,16 @@
    Opaque in every cell (not only the pinned one), otherwise the glass shows through the day cells and they read as a
    lighter box next to "Boss". */
 .l2p-grid thead th {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    font-size: 0.8125rem;
+    padding-top: var(--l2p-space-2);
+    padding-bottom: var(--l2p-space-2);
+    font-size: var(--l2p-font-sm);
     font-weight: 600;
     letter-spacing: 0.01em;
     text-align: center;
     white-space: nowrap;
     color: var(--l2p-text);
     background-color: var(--l2p-table-head);
-    border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
+    border-bottom: var(--l2p-line-width) solid var(--l2p-line-strong);
 }
 
 .l2p-grid-day,
@@ -64,19 +66,19 @@
     left: 0;
     z-index: 1;
     width: var(--l2p-grid-boss-width);
-    padding-left: 1rem;
+    padding-left: var(--l2p-cell-edge);
     text-align: left;
     font-weight: 400;
     white-space: nowrap;
     color: var(--l2p-text);
     background-color: var(--l2p-surface-solid);
-    border-right: 1px solid var(--l2p-glass-edge);
+    border-right: var(--l2p-line-width) solid var(--l2p-line);
 }
 
 /* Rows without any event this week (Valakas on an off week) keep the height of a row with one checkbox
    (28px box + padding + divider; cells are border-box), so the row lines stay even. */
 .l2p-grid tbody th {
-    height: calc(28px + 0.25rem + 1px);
+    height: calc(28px + 2 * var(--l2p-grid-cell-y) + var(--l2p-line-width));
 }
 
 /* The pinned header cell is part of the same band (the pinned-column rule above out-ranks `thead th`); the boss
@@ -171,7 +173,7 @@
 }
 
 .l2p-grid-check ::deep .mud-checkbox .mud-typography {
-    font-size: 0.75rem;
+    font-size: var(--l2p-font-xs);
     white-space: nowrap;
     color: var(--l2p-text-2);
 }
@@ -220,8 +222,8 @@
     height: 20px;
     margin: -10px 0 0 -10px;
     box-sizing: border-box;
-    border: 1.5px solid var(--l2p-muted);
-    border-radius: 6px;
+    border: var(--l2p-line-width-strong) solid var(--l2p-muted);
+    border-radius: var(--l2p-radius-sm);
     background: transparent;
 }
 
@@ -262,11 +264,11 @@
 }
 
 .l2p-cell-blocked ::deep .mud-checkbox .mud-icon-button::before {
-    border: 1.5px dashed color-mix(in srgb, var(--l2p-muted) 50%, transparent);
+    border: var(--l2p-line-width-strong) dashed color-mix(in srgb, var(--l2p-muted) 50%, transparent);
 }
 
 .l2p-cell-blocked ::deep .mud-checkbox .mud-checkbox-true::before {
-    border: 1.5px solid transparent;
+    border: var(--l2p-line-width-strong) solid transparent;
     background: color-mix(in srgb, var(--l2p-primary) 55%, var(--l2p-surface-solid));
 }
 
@@ -296,11 +298,11 @@
 .l2p-grid-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem 1.25rem;
-    margin: 0.6rem 0 0;
-    padding: 0 0.25rem;
+    gap: var(--l2p-space-2) var(--l2p-space-5);
+    margin: var(--l2p-space-3) 0 0;
+    padding: 0 var(--l2p-space-1);
     list-style: none;
-    font-size: 0.8125rem;
+    font-size: var(--l2p-font-sm);
     color: var(--l2p-text-2);
 }
 
@@ -320,7 +322,7 @@
     height: 14px;
     margin-right: 0.4rem;
     box-sizing: border-box;
-    border-radius: 4px;
+    border-radius: var(--l2p-radius-sm);
 }
 
 .l2p-legend-checked {
@@ -328,7 +330,7 @@
 }
 
 .l2p-legend-unchecked {
-    border: 1.5px solid var(--l2p-muted);
+    border: var(--l2p-line-width-strong) solid var(--l2p-muted);
 }
 
 .l2p-legend-locked {
@@ -336,7 +338,7 @@
 }
 
 .l2p-legend-blocked {
-    border: 1.5px dashed color-mix(in srgb, var(--l2p-muted) 50%, transparent);
+    border: var(--l2p-line-width-strong) dashed color-mix(in srgb, var(--l2p-muted) 50%, transparent);
 }
 
 @media (max-width: 599.98px) {
@@ -346,8 +348,8 @@
 
     .l2p-grid .l2p-grid-boss {
         white-space: normal;
-        padding-left: 0.75rem;
-        padding-right: 0.35rem;
+        padding-left: var(--l2p-cell-x);
+        padding-right: var(--l2p-cell-y);
         line-height: 1.2;
     }
 
