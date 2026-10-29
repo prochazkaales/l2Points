@@ -23,6 +23,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 - `infra/` – `main.bicep` (celá Azure infrastruktura v jednom souboru na úrovni resource group) a `deploy.ps1` (ruční zřízení a aktualizace, nikdy z CI). Podrobnosti a postupy v `docs/deployment.md`.
 - `.github/workflows/ci-cd.yml` – `build-test` na každý push a PR, na `main` navíc `image` (build, smoke test, push do `ghcr.io/prochazkaales/l2points`) a `deploy` (OIDC, `az containerapp update`; přeskočí se, dokud nejsou GitHub variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`).
 - `scripts/smoke-test.sh <image>` – smoke test image proti SQL Serveru přes `docker-compose.yml` (health, `/login`, ikony šperků, tzdata a ICU, žádné `fail`/`crit` v logu). `.gitattributes` drží `*.sh` s LF.
+- Favicon: `wwwroot/favicon.svg` (drahokam, tmavá varianta přes `prefers-color-scheme` uvnitř SVG), záložní `favicon.ico`, `favicon-32.png` a `apple-touch-icon.png` jsou světlá varianta a generuje je `scripts/generate-favicons.py` (Pillow); při změně SVG upravit i geometrii ve skriptu a přegenerovat.
 - `tests/L2Points.Domain.Tests` – xUnit, čistá doménová logika.
 - `tests/L2Points.Infrastructure.Tests` – xUnit nad SQLite in-memory (Identity, seed katalogu, mapování).
 - `tests/L2Points.Web.Tests` – xUnit, čistá logika webu bez UI (`Formatting/DisplayFormat`, `Formatting/TimeInput`, `PlayerUrl`, `JewelImageTests` – každý seedovaný šperk má ikonu).
