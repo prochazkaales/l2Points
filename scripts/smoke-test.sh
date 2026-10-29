@@ -104,6 +104,13 @@ code="$(curl -sS -o /dev/null -D "$headers_file" -w '%{http_code}' --max-time 10
 grep -qiE '^content-type: *image/png' "$headers_file" || fail "/images/jewels/AntharasEarring.png is not served as image/png"
 echo "OK: /images/jewels/AntharasEarring.png -> 200 image/png"
 
+# Blazor framework script (missing when the framework web assets were not restored).
+headers_file="$WORK_DIR/blazor-headers.txt"
+code="$(curl -sS -o /dev/null -D "$headers_file" -w '%{http_code}' --max-time 10 "$BASE_URL/_framework/blazor.web.js")"
+[[ "$code" == "200" ]] || fail "/_framework/blazor.web.js returned $code"
+grep -qiE '^content-type: *text/javascript' "$headers_file" || fail "/_framework/blazor.web.js is not served as JavaScript"
+echo "OK: /_framework/blazor.web.js -> 200 text/javascript"
+
 # Time zone data and ICU in the runtime image.
 docker run --rm --entrypoint sh "$IMAGE" -c 'test -f /usr/share/zoneinfo/Europe/Prague && ls /usr/lib/*/libicuuc.so.*' \
   || fail "image is missing tzdata (Europe/Prague) or ICU"

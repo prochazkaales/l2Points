@@ -16,6 +16,9 @@
 
   <PropertyGroup>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- The SDK adds the framework web assets (_framework/blazor.web.js) only when it sees .razor files
+         during restore; the Dockerfile restores from the project files alone, so request them explicitly. -->
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
 
 </Project>
