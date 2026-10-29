@@ -38,7 +38,12 @@
                     </th>
                     @if (index == 0)
                     {
-                        <th colspan="@Days.Count"></th>
+                        @* The dates are in the table header right above; empty cells (not one colspan) keep today's
+                           column tint unbroken. *@
+                        @foreach (var day in Days)
+                        {
+                            <td class="@(day == Today ? "l2p-grid-today" : null)"></td>
+                        }
                     }
                     else
                     {

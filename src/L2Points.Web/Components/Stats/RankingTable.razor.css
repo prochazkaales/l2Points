@@ -49,7 +49,8 @@
     display: block;
     height: 100%;
     border-radius: 0.25rem;
-    background: var(--mud-palette-primary);
+    /* The only place the primary -> primary 2 gradient is used (spec). */
+    background: linear-gradient(90deg, var(--l2p-primary), var(--l2p-primary-2));
 }
 
 .l2p-rank-table ::deep tr.l2p-rank-me {
