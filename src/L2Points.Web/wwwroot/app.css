@@ -620,23 +620,61 @@ td.l2p-nick-cell .l2p-nick-chip {
     color: var(--mud-palette-text-secondary);
 }
 
-/* A glass section with a title and optional controls in its head row. */
+/* Section heading above a glass card (not inside it): the title and optional controls (week navigator, view switch)
+   in one row. Same type as the table titles on "Můj týden". */
 .l2p-section-head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     column-gap: 1rem;
     row-gap: 0.25rem;
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--l2p-divider);
+    min-height: 2.25rem;
+    margin: 0 0 0.4rem;
+    padding: 0 0.25rem;
 }
 
-.l2p-section-title {
-    font-size: 1.15rem;
-    font-weight: 500;
+.mud-typography.l2p-section-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.4;
     letter-spacing: normal;
     text-transform: none;
     color: var(--l2p-text);
+}
+
+/* "Karty [switch] Mřížka": the labels pick a view too; the active one is primary text. */
+.l2p-view-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.l2p-view-switch .mud-input-control,
+.l2p-view-switch .mud-switch {
+    margin: 0;
+}
+
+.l2p-view-label {
+    padding: 0.25rem;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--l2p-text-2);
+    cursor: pointer;
+}
+
+.l2p-view-label-on {
+    font-weight: 600;
+    color: var(--l2p-primary-text);
+}
+
+.l2p-view-label:focus-visible {
+    outline: 2px solid var(--l2p-primary);
+    outline-offset: 2px;
+    border-radius: 6px;
 }
 
 /* Percentage badges by band (DisplayFormat.PercentTone). */
@@ -696,7 +734,7 @@ td.l2p-nick-cell .l2p-nick-chip {
     }
 
     .l2p-section-head {
-        padding: 0.5rem 0.25rem 0.5rem 0.75rem;
+        padding: 0 0.25rem;
     }
 }
 
@@ -711,21 +749,3 @@ td.l2p-nick-cell .l2p-nick-chip {
     font-variant-numeric: tabular-nums;
 }
 
-/* Segmented switch (MudToggleGroup): stronger glass track, the chosen item is the one full primary fill. */
-.mud-main-content .mud-toggle-group {
-    background: var(--l2p-glass-strong);
-    border: 1px solid var(--l2p-glass-edge);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.mud-main-content .mud-toggle-group .mud-toggle-item {
-    border-radius: 0;
-    color: var(--l2p-text-2);
-}
-
-.mud-main-content .mud-toggle-group .mud-toggle-item.mud-toggle-item-selected,
-.mud-main-content .mud-toggle-group .mud-toggle-item.mud-toggle-item-selected:hover {
-    background: var(--l2p-primary);
-    color: var(--l2p-on-primary);
-}

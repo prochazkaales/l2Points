@@ -89,26 +89,30 @@ else
         </div>
     }
 
-    <MudPaper Outlined="true" Class="mb-4">
+    <section class="mb-4">
         <div class="l2p-section-head">
-            <MudText Typo="Typo.subtitle2" Class="l2p-section-title">Celkově</MudText>
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title">Celkově</MudText>
         </div>
-        <RankingTable Rows="_rows" Ranks="_summary.Ranks" Jewels="_jewels" UserId="@_userId" ShowBar="true" />
-    </MudPaper>
+        <MudPaper Outlined="true">
+            <RankingTable Rows="_rows" Ranks="_summary.Ranks" Jewels="_jewels" UserId="@_userId" ShowBar="true" />
+        </MudPaper>
+    </section>
 
-    <MudPaper Outlined="true">
+    <section>
         <div class="l2p-section-head">
-            <MudText Typo="Typo.subtitle2" Class="l2p-section-title">Týden</MudText>
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title">Týden</MudText>
             <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
         </div>
-        <div class="l2p-lb-week-loading">
-            @if (_loading == LoadScope.Week)
-            {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
-            }
-        </div>
-        <RankingTable Rows="_weekRows" Ranks="_weekRanks" Jewels="_jewels" UserId="@_userId" Weekly="true" NickWeek="_week" />
-    </MudPaper>
+        <MudPaper Outlined="true">
+            <div class="l2p-lb-week-loading">
+                @if (_loading == LoadScope.Week)
+                {
+                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
+                }
+            </div>
+            <RankingTable Rows="_weekRows" Ranks="_weekRanks" Jewels="_jewels" UserId="@_userId" Weekly="true" NickWeek="_week" />
+        </MudPaper>
+    </section>
 }
 
 @code {

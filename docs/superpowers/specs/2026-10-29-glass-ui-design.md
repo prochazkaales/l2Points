@@ -99,9 +99,9 @@ Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní polo
 Všechny sekce, které dnes stojí na `MudPaper`/`MudTable`, dostanou sklo (třída nebo `Elevation="0"` + `.l2p-glass`). Konkrétně:
 
 - `KpiCard`, `WeekSummaryCard`, `RankingTable`, karty na `/week`, `/jewels`, `/points`, `/players/{Id}`, admin stránky a dialogy (dialogy neprůhledné, viz výše).
-- `.l2p-section-head`: nadpis sekce bez kapitálek, váha 500, velikost ~1.25rem, barva textu (ne primary) – klidnější, jako v referenci.
+- `.l2p-section-head`: nadpis sekce **nad** kartou (ne první řádek uvnitř karty), bez kapitálek, váha 600, velikost ~1.05rem, barva textu (ne primary), stejně jako nadpisy tabulek v Můj týden; ve stejném řádku mohou být ovládací prvky sekce (navigátor týdne, přepínač zobrazení). Platí pro Hráči a Události týdne na `/week` a Celkově a Týden na `/leaderboard`.
 - Chipy a štítky „neaktivní“, „admin“: obrys + barevný text místo plné výplně. Štítky pásem procent (`.l2p-tone-*`) a druhu události (Normal/Večerní/Ranní/CS na `/week`) mají barevné podbarvení ~16 % a barevný text bez obrysu (podle procent má být barva vidět na první pohled i v dlouhém sloupci); odstíny pásem jsou tomu přizpůsobené, aby měly na podbarvení ≥ 4,5:1 (dark `#6FE3C8`/`#F5C15C`/`#FFA3A3`, light `#06604E`/`#714B00`/`#9F2A1D`).
-- Přepínače (`MudToggleGroup` Karty/Mřížka na `/week`): segmentovaný přepínač na silnějším skle, zvolená položka plná primary. `WeekNavigator` je bez rámečku a pozadí (šipky, rozsah týdne a textové tlačítko „Tento týden“ přímo na stránce). Přehled (`/leaderboard`) si nechává dvě sekce pod sebou (Celkově, Týden); přepínač Týden/Celkově z mockupu se nedělá (změna struktury stránky).
+- Přepínač Karty/Mřížka na `/week`: `MudSwitch` s popisky po stranách („Karty“ [přepínač] „Mřížka“), popisky jsou klikací a zvolený je v barvě `--l2p-primary-text` a tučněji. `WeekNavigator` je bez rámečku a pozadí (šipky, rozsah týdne a textové tlačítko „Tento týden“ přímo na stránce). Přehled (`/leaderboard`) si nechává dvě sekce pod sebou (Celkově, Týden); přepínač Týden/Celkově z mockupu se nedělá (změna struktury stránky).
 
 ### Můj týden – mřížka (`WeekGridView`), priorita
 

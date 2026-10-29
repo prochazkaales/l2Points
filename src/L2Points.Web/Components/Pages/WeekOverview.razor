@@ -64,133 +64,141 @@ else
         }
     </div>
 
-    <MudPaper Outlined="true" Class="mb-4">
+    <section class="mb-4">
         <div class="l2p-section-head">
-            <MudText Typo="Typo.subtitle2" Class="l2p-section-title">Hráči</MudText>
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title">Hráči</MudText>
         </div>
-        <RankingTable Rows="_overview.Players" Ranks="_weekRanks" Jewels="_overview.Jewels" UserId="@_userId" Weekly="true" NickWeek="_week" />
-    </MudPaper>
+        <MudPaper Outlined="true">
+            <RankingTable Rows="_overview.Players" Ranks="_weekRanks" Jewels="_overview.Jewels" UserId="@_userId" Weekly="true" NickWeek="_week" />
+        </MudPaper>
+    </section>
 
-    <MudPaper Outlined="true">
+    <section>
         <div class="l2p-section-head l2p-wk-events-head">
-            <MudText Typo="Typo.subtitle2" Class="l2p-section-title">Události týdne</MudText>
-            <MudToggleGroup T="EventView" @bind-Value="_view" SelectionMode="SelectionMode.SingleSelection"
-                            Color="Color.Primary" Outlined="true" CheckMark="false" Size="Size.Small" Class="l2p-wk-view">
-                <MudToggleItem Value="EventView.Cards">Karty</MudToggleItem>
-                <MudToggleItem Value="EventView.Grid">Mřížka</MudToggleItem>
-            </MudToggleGroup>
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title">Události týdne</MudText>
+            @* A switch between the two views; the labels on both sides also pick a view. *@
+            <div class="l2p-view-switch">
+                <button type="button" class="@ViewLabelClass(EventView.Cards)" @onclick="() => _view = EventView.Cards">Karty</button>
+                <MudSwitch T="bool" Value="@(_view == EventView.Grid)" ValueChanged="@(grid => _view = grid ? EventView.Grid : EventView.Cards)"
+                           Color="Color.Primary" UncheckedColor="Color.Primary" AriaLabel="Zobrazit události jako mřížku" />
+                <button type="button" class="@ViewLabelClass(EventView.Grid)" @onclick="() => _view = EventView.Grid">Mřížka</button>
+            </div>
         </div>
 
-        <div class="l2p-wk-days">
-            @foreach (var day in _week.Days)
-            {
-                var count = EventsOn(day).Count;
-                <button type="button" class="@DayClass(day, count)" aria-pressed="@(day == _day ? "true" : "false")"
-                        @onclick="() => _day = day">
-                    <span>@DisplayFormat.DayHeader(day)</span>
-                    <span class="l2p-wk-day-count">@count</span>
-                </button>
-            }
-        </div>
-
-        @{
-            var events = EventsOn(_day);
-        }
-        @if (events.Count == 0)
-        {
-            <MudText Typo="Typo.body2" Class="pa-4 l2p-wk-empty">@(_day > _today ? "Tento den ještě nenastal." : "Tento den nikdo nic nezapsal.")</MudText>
-        }
-        else if (_view == EventView.Cards)
-        {
-            <div class="l2p-wk-cards">
-                @foreach (var ev in events)
+        <MudPaper Outlined="true">
+            <div class="l2p-wk-days">
+                @foreach (var day in _week.Days)
                 {
-                    <MudPaper Outlined="true" Class="l2p-wk-card">
-                        <div class="l2p-wk-card-top">
-                            <span class="l2p-wk-time">@(DisplayFormat.EventTime(ev.Date, ev.TimeUtc) ?? "")</span>
-                            @KindBadge(ev)
-                        </div>
-                        <div class="l2p-wk-card-title">@ev.Activity.Name</div>
-                        <div class="l2p-wk-card-count">
-                            <strong>@ev.Attendees.Count</strong>
-                            <span class="l2p-wk-muted">z @PartySize</span>
-                            <span class="l2p-wk-meter"><span style="@MeterStyle(ev.Attendees.Count)"></span></span>
-                        </div>
-                        <div class="l2p-wk-attendees">
-                            @foreach (var attendee in ev.Attendees)
-                            {
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                                         Color="@(attendee.UserId == _userId ? Color.Primary : Color.Default)"
-                                         Href="@DisplayFormat.PlayerUrl(attendee.UserId, _week)">@attendee.Nick</MudChip>
-                            }
-                        </div>
-                    </MudPaper>
+                    var count = EventsOn(day).Count;
+                    <button type="button" class="@DayClass(day, count)" aria-pressed="@(day == _day ? "true" : "false")"
+                            @onclick="() => _day = day">
+                        <span>@DisplayFormat.DayHeader(day)</span>
+                        <span class="l2p-wk-day-count">@count</span>
+                    </button>
                 }
             </div>
-        }
-        else
-        {
-            <div class="l2p-wk-grid-scroll">
-                <table class="l2p-wk-grid">
-                    <thead>
-                        <tr>
-                            <th class="l2p-wk-grid-nick" scope="col">Hráč</th>
-                            @foreach (var ev in events)
-                            {
-                                <th scope="col">
-                                    @KindBadge(ev)
-                                    <span class="l2p-wk-grid-boss">@ev.Activity.Name</span>
-                                    <span class="l2p-wk-muted">@DisplayFormat.EventTime(ev.Date, ev.TimeUtc)</span>
-                                </th>
-                            }
-                            <th scope="col">Den</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in _overview.Players)
-                        {
-                            var player = row.Player;
-                            var attended = events.Count(e => e.Attendees.Any(a => a.UserId == player.UserId));
-                            <tr class="@(player.UserId == _userId ? "l2p-wk-grid-me" : null)">
-                                <th class="l2p-wk-grid-nick" scope="row">
-                                    <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId, _week)" Underline="Underline.Hover"
-                                             Color="@(player.IsActive ? Color.Primary : Color.Inherit)">@player.Nick</MudLink>
-                                </th>
+
+            @{
+                var events = EventsOn(_day);
+            }
+            @if (events.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Class="pa-4 l2p-wk-empty">@(_day > _today ? "Tento den ještě nenastal." : "Tento den nikdo nic nezapsal.")</MudText>
+            }
+            else if (_view == EventView.Cards)
+            {
+                <div class="l2p-wk-cards">
+                    @foreach (var ev in events)
+                    {
+                        <MudPaper Outlined="true" Class="l2p-wk-card">
+                            <div class="l2p-wk-card-top">
+                                <span class="l2p-wk-time">@(DisplayFormat.EventTime(ev.Date, ev.TimeUtc) ?? "")</span>
+                                @KindBadge(ev)
+                            </div>
+                            <div class="l2p-wk-card-title">@ev.Activity.Name</div>
+                            <div class="l2p-wk-card-count">
+                                <strong>@ev.Attendees.Count</strong>
+                                <span class="l2p-wk-muted">z @PartySize</span>
+                                <span class="l2p-wk-meter"><span style="@MeterStyle(ev.Attendees.Count)"></span></span>
+                            </div>
+                            <div class="l2p-wk-attendees">
+                                @foreach (var attendee in ev.Attendees)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                                             Color="@(attendee.UserId == _userId ? Color.Primary : Color.Default)"
+                                             Href="@DisplayFormat.PlayerUrl(attendee.UserId, _week)">@attendee.Nick</MudChip>
+                                }
+                            </div>
+                        </MudPaper>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="l2p-wk-grid-scroll">
+                    <table class="l2p-wk-grid">
+                        <thead>
+                            <tr>
+                                <th class="l2p-wk-grid-nick" scope="col">Hráč</th>
                                 @foreach (var ev in events)
                                 {
-                                    <td>
-                                        @if (ev.Attendees.Any(a => a.UserId == player.UserId))
-                                        {
-                                            <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="l2p-wk-yes" title="Byl(a) tam" />
-                                        }
-                                        else
-                                        {
-                                            <span class="l2p-wk-no" aria-label="Nebyl(a)">·</span>
-                                        }
-                                    </td>
+                                    <th scope="col">
+                                        @KindBadge(ev)
+                                        <span class="l2p-wk-grid-boss">@ev.Activity.Name</span>
+                                        <span class="l2p-wk-muted">@DisplayFormat.EventTime(ev.Date, ev.TimeUtc)</span>
+                                    </th>
                                 }
-                                <td class="l2p-wk-grid-sum">@attended/@events.Count</td>
+                                <th scope="col">Den</th>
                             </tr>
-                        }
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th class="l2p-wk-grid-nick" scope="row">Počet</th>
-                            @foreach (var ev in events)
+                        </thead>
+                        <tbody>
+                            @foreach (var row in _overview.Players)
                             {
-                                <td class="l2p-wk-grid-sum">@ev.Attendees.Count</td>
+                                var player = row.Player;
+                                var attended = events.Count(e => e.Attendees.Any(a => a.UserId == player.UserId));
+                                <tr class="@(player.UserId == _userId ? "l2p-wk-grid-me" : null)">
+                                    <th class="l2p-wk-grid-nick" scope="row">
+                                        <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId, _week)" Underline="Underline.Hover"
+                                                 Color="@(player.IsActive ? Color.Primary : Color.Inherit)">@player.Nick</MudLink>
+                                    </th>
+                                    @foreach (var ev in events)
+                                    {
+                                        <td>
+                                            @if (ev.Attendees.Any(a => a.UserId == player.UserId))
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="l2p-wk-yes" title="Byl(a) tam" />
+                                            }
+                                            else
+                                            {
+                                                <span class="l2p-wk-no" aria-label="Nebyl(a)">·</span>
+                                            }
+                                        </td>
+                                    }
+                                    <td class="l2p-wk-grid-sum">@attended/@events.Count</td>
+                                </tr>
                             }
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        }
-    </MudPaper>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th class="l2p-wk-grid-nick" scope="row">Počet</th>
+                                @foreach (var ev in events)
+                                {
+                                    <td class="l2p-wk-grid-sum">@ev.Attendees.Count</td>
+                                }
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+        </MudPaper>
+    </section>
 }
 
 @code {
     private enum EventView { Cards, Grid }
+
+    private string ViewLabelClass(EventView view) => _view == view ? "l2p-view-label l2p-view-label-on" : "l2p-view-label";
 
     private readonly CancellationTokenSource _disposed = new();
 
