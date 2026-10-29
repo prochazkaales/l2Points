@@ -135,12 +135,12 @@ Ring of Queen Ant, Ring of Core, Earring of Orfen, Earring of Zaken, Necklace of
 
 ### 3.7 Uživatelé a role
 
-- Role **Admin** a **Player**. Registrace zvenku neexistuje.
+- Role **Admin**, **Player** a **SuperAdmin**. Registrace zvenku neexistuje.
 - Admin zakládá hráče: **login + nick**. **Heslo vygeneruje aplikace**, zobrazí se adminovi jednou a admin ho předá.
 - Hráč si po přihlášení může heslo změnit.
 - Admin může: resetovat heslo (nové vygenerované), **deaktivovat** hráče (nemůže se přihlásit, historie zůstává, v žebříčku je skrytý s možností zobrazit neaktivní) a **smazat** hráče (smaže se i jeho účast a šperky, s potvrzením).
-- První admin se vytvoří při startu z konfigurace (env proměnné), pokud žádný admin neexistuje.
-- **Admin je zároveň hráč** *(moje volba)*: má svůj týden, objevuje se v žebříčku a počítají se mu body. Role Admin je jen přídavek. Admin může na stránce hráčů udělit nebo odebrat roli Admin jinému hráči, ale nesmí odebrat roli poslednímu adminovi.
+- Admin z konfigurace (env proměnné `Admin__UserName`, `Admin__Password`, `Admin__Nick`) se vytvoří při startu, pokud neexistuje. Je to **super admin** (role SuperAdmin, právě jeden, v UI se nepřiděluje): při každém startu je aktivní a má role Admin, Player a SuperAdmin, jeho existující heslo se nemění. Při změně `Admin__UserName` přejde role SuperAdmin na nový účet.
+- **Admin je zároveň hráč** *(moje volba)*: má svůj týden, objevuje se v žebříčku a počítají se mu body. Role Admin je jen přídavek. Roli Admin uděluje a odebírá na stránce hráčů **jen super admin** *(změna na žádost uživatele)*. Ostatní admini super admina nemohou deaktivovat, smazat, resetovat mu heslo ani mu odebrat admina; nick, „aktivní od“, účast a šperky mu upravit mohou. Žádný admin nemůže deaktivovat ani smazat sám sebe ani si odebrat roli Admin.
 
 ## 4. Stránky
 

@@ -30,7 +30,9 @@ public sealed class PlayerAdminService(
                 u.ActiveFrom,
                 u.DeactivatedAt,
                 db.UserRoles.Any(ur => ur.UserId == u.Id
-                    && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.Admin))))
+                    && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.Admin)),
+                db.UserRoles.Any(ur => ur.UserId == u.Id
+                    && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.SuperAdmin))))
             .ToListAsync(ct);
 
         return rows
@@ -105,15 +107,23 @@ public sealed class PlayerAdminService(
         return updated.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(updated);
     }
 
-    /// <summary>Replaces the password with a generated one (returned once) and clears any lockout.</summary>
-    public async Task<PlayerAdminResult> ResetPasswordAsync(string userId, CancellationToken ct = default)
+    /// <summary>
+    /// Replaces the password with a generated one (returned once) and clears any lockout.
+    /// Nobody but the super admin may reset the super admin's password.
+    /// </summary>
+    public async Task<PlayerAdminResult> ResetPasswordAsync(string actorUserId, string userId, CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
+        if (!await IsAllowedActorAsync(users, actorUserId))
+            return new PlayerAdminResult(PlayerAdminStatus.ActorNotAllowed);
+
         var user = await users.FindByIdAsync(userId);
         if (user is null)
             return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
+        if (actorUserId != userId && await users.IsInRoleAsync(user, Roles.SuperAdmin))
+            return new PlayerAdminResult(PlayerAdminStatus.SuperAdminProtected);
 
         var removed = await users.RemovePasswordAsync(user);
         if (!removed.Succeeded)
@@ -132,6 +142,7 @@ public sealed class PlayerAdminService(
     /// <summary>
     /// Deactivates (today in Prague becomes DeactivatedAt, the security stamp rotates so sessions end)
     /// or reactivates the player. Setting the current state again changes nothing.
+    /// The super admin cannot be deactivated by anyone else; reactivating it is allowed.
     /// </summary>
     public async Task<PlayerAdminResult> SetActiveAsync(string actorUserId, string userId, bool active, CancellationToken ct = default)
     {
@@ -146,6 +157,8 @@ public sealed class PlayerAdminService(
             return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
         if (!active && actorUserId == userId)
             return new PlayerAdminResult(PlayerAdminStatus.CannotChangeSelf);
+        if (!active && await users.IsInRoleAsync(user, Roles.SuperAdmin))
+            return new PlayerAdminResult(PlayerAdminStatus.SuperAdminProtected);
         if (user.IsActive == active)
             return new PlayerAdminResult(PlayerAdminStatus.Ok);
 
@@ -158,7 +171,8 @@ public sealed class PlayerAdminService(
 
     /// <summary>
     /// Grants or revokes the Admin role. The security stamp rotates, so the player is signed out
-    /// and gets the new roles on the next sign-in.
+    /// and gets the new roles on the next sign-in. Only the super admin may do this, and the
+    /// super admin's own Admin role cannot be changed.
     /// </summary>
     public async Task<PlayerAdminResult> SetAdminAsync(string actorUserId, string userId, bool isAdmin, CancellationToken ct = default)
     {
@@ -173,6 +187,10 @@ public sealed class PlayerAdminService(
             return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
         if (!isAdmin && actorUserId == userId)
             return new PlayerAdminResult(PlayerAdminStatus.CannotChangeSelf);
+        if (await users.IsInRoleAsync(user, Roles.SuperAdmin))
+            return new PlayerAdminResult(PlayerAdminStatus.SuperAdminProtected);
+        if (!await IsSuperAdminAsync(users, actorUserId))
+            return new PlayerAdminResult(PlayerAdminStatus.RequiresSuperAdmin);
         if (await users.IsInRoleAsync(user, Roles.Admin) == isAdmin)
             return new PlayerAdminResult(PlayerAdminStatus.Ok);
 
@@ -186,7 +204,10 @@ public sealed class PlayerAdminService(
         return stamp.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(stamp);
     }
 
-    /// <summary>Deletes the player; attendance and jewels go with it (cascading foreign keys).</summary>
+    /// <summary>
+    /// Deletes the player; attendance and jewels go with it (cascading foreign keys).
+    /// The super admin cannot be deleted.
+    /// </summary>
     public async Task<PlayerAdminResult> DeleteAsync(string actorUserId, string userId, CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -200,6 +221,8 @@ public sealed class PlayerAdminService(
             return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
         if (actorUserId == userId)
             return new PlayerAdminResult(PlayerAdminStatus.CannotChangeSelf);
+        if (await users.IsInRoleAsync(user, Roles.SuperAdmin))
+            return new PlayerAdminResult(PlayerAdminStatus.SuperAdminProtected);
 
         var deleted = await users.DeleteAsync(user);
         return deleted.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(deleted);
@@ -213,6 +236,12 @@ public sealed class PlayerAdminService(
     {
         var actor = await users.FindByIdAsync(actorUserId);
         return actor is { IsActive: true } && await users.IsInRoleAsync(actor, Roles.Admin);
+    }
+
+    private static async Task<bool> IsSuperAdminAsync(UserManager<AppUser> users, string actorUserId)
+    {
+        var actor = await users.FindByIdAsync(actorUserId);
+        return actor is not null && await users.IsInRoleAsync(actor, Roles.SuperAdmin);
     }
 
     private static string? ValidateNick(string nick)

@@ -48,6 +48,8 @@ else
                 @{
                     var player = context;
                     var isSelf = player.UserId == _actorId;
+                    // Other admins must not touch the super admin; the server enforces this too.
+                    var isProtected = player.IsSuperAdmin && !isSelf;
                 }
                 <MudTd Class="l2p-nick-cell">
                     <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover">@player.Nick</MudLink>
@@ -65,7 +67,11 @@ else
                     }
                 </MudTd>
                 <MudTd>
-                    @if (player.IsAdmin)
+                    @if (player.IsSuperAdmin)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">Super admin</MudChip>
+                    }
+                    else if (player.IsAdmin)
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">admin</MudChip>
                     }
@@ -75,13 +81,14 @@ else
                                    aria-label="@($"Upravit: {player.Nick}")" Disabled="_saving"
                                    OnClick="@(() => EditAsync(player))" />
                     <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small"
-                                   title="@(isSelf ? "Vlastní heslo změníš v profilu." : "Reset hesla")"
-                                   aria-label="@($"Reset hesla: {player.Nick}")" Disabled="@(_saving || isSelf)"
+                                   title="@(isSelf ? "Vlastní heslo změníš v profilu." : isProtected ? ProtectedText : "Reset hesla")"
+                                   aria-label="@($"Reset hesla: {player.Nick}")" Disabled="@(_saving || isSelf || isProtected)"
                                    OnClick="@(() => ResetPasswordAsync(player))" />
                     @if (player.IsActive)
                     {
-                        <MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small" title="Deaktivovat"
-                                       aria-label="@($"Deaktivovat: {player.Nick}")" Disabled="@(_saving || isSelf)"
+                        <MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small"
+                                       title="@(isProtected ? ProtectedText : "Deaktivovat")"
+                                       aria-label="@($"Deaktivovat: {player.Nick}")" Disabled="@(_saving || isSelf || isProtected)"
                                        OnClick="@(() => SetActiveAsync(player, false))" />
                     }
                     else
@@ -90,20 +97,22 @@ else
                                        aria-label="@($"Aktivovat: {player.Nick}")" Disabled="_saving"
                                        OnClick="@(() => SetActiveAsync(player, true))" />
                     }
-                    @if (player.IsAdmin)
+                    @* Only the super admin manages admin roles, so the buttons are hidden for others. *@
+                    @if (ActorIsSuperAdmin && player.IsAdmin)
                     {
                         <MudIconButton Icon="@Icons.Material.Filled.RemoveModerator" Size="Size.Small" title="Odebrat admina"
                                        aria-label="@($"Odebrat admina: {player.Nick}")" Disabled="@(_saving || isSelf)"
                                        OnClick="@(() => SetAdminAsync(player, false))" />
                     }
-                    else
+                    else if (ActorIsSuperAdmin)
                     {
                         <MudIconButton Icon="@Icons.Material.Filled.AddModerator" Size="Size.Small" title="Udělit admina"
                                        aria-label="@($"Udělit admina: {player.Nick}")" Disabled="_saving"
                                        OnClick="@(() => SetAdminAsync(player, true))" />
                     }
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" title="Smazat"
-                                   aria-label="@($"Smazat: {player.Nick}")" Disabled="@(_saving || isSelf)"
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                   title="@(isProtected ? ProtectedText : "Smazat")"
+                                   aria-label="@($"Smazat: {player.Nick}")" Disabled="@(_saving || isSelf || isProtected)"
                                    OnClick="@(() => DeleteAsync(player))" />
                     <MudIconButton Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Small" title="Účast"
                                    aria-label="@($"Účast: {player.Nick}")"
@@ -135,12 +144,17 @@ else
         CloseOnEscapeKey = false,
     };
 
+    private const string ProtectedText = "Super admina nelze měnit.";
+
     private readonly CancellationTokenSource _disposed = new();
 
     private IReadOnlyList<AdminPlayer>? _players;
     private string? _actorId;
     private bool _error;
     private bool _saving;
+
+    // Taken from the loaded rows (database), not from the claims, which may be stale until the next sign-in.
+    private bool ActorIsSuperAdmin => _players?.Any(p => p.UserId == _actorId && p.IsSuperAdmin) == true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -186,7 +200,7 @@ else
             return;
         }
 
-        await ChangeAsync(ct => PlayerAdmin.ResetPasswordAsync(player.UserId, ct), player.Nick);
+        await ChangeAsync(ct => PlayerAdmin.ResetPasswordAsync(_actorId!, player.UserId, ct), player.Nick);
     }
 
     private async Task SetActiveAsync(AdminPlayer player, bool active)
@@ -320,6 +334,8 @@ else
         PlayerAdminStatus.CannotChangeSelf => "Sám sobě to udělat nemůžeš.",
         PlayerAdminStatus.UnknownPlayer => "Hráč už neexistuje.",
         PlayerAdminStatus.ActorNotAllowed => "Tuto akci už nemůžeš provést.",
+        PlayerAdminStatus.RequiresSuperAdmin => "Admin práva může měnit jen super admin.",
+        PlayerAdminStatus.SuperAdminProtected => ProtectedText,
         _ => result.Message ?? "Uložení se nepovedlo, zkus to znovu.",
     };
 

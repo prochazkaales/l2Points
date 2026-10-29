@@ -8,4 +8,5 @@ public sealed record AdminPlayer(
     bool IsActive,
     DateOnly ActiveFrom,
     DateOnly? DeactivatedAt,
-    bool IsAdmin);
+    bool IsAdmin,
+    bool IsSuperAdmin);

@@ -63,6 +63,16 @@ public class PlayerAdminServiceTests
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             return (await users.GetSecurityStampAsync((await users.FindByIdAsync(userId))!))!;
         }
+
+        /// <summary>An active admin without the SuperAdmin role.</summary>
+        public async Task<AppUser> CreateRegularAdminAsync(string userName)
+        {
+            var user = await TestData.CreatePlayerAsync(Provider, userName, Monday);
+            using var scope = Provider.CreateScope();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            Assert.True((await users.AddToRolesAsync((await users.FindByIdAsync(user.Id))!, [Roles.Admin, Roles.Player])).Succeeded);
+            return user;
+        }
     }
 
     private static async Task<Arranged> ArrangeAsync()
@@ -73,7 +83,7 @@ public class PlayerAdminServiceTests
         using (var scope = provider.CreateScope())
         {
             var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            foreach (var role in new[] { Roles.Admin, Roles.Player })
+            foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin })
             {
                 Assert.True((await roles.CreateAsync(new IdentityRole(role))).Succeeded);
             }
@@ -84,7 +94,7 @@ public class PlayerAdminServiceTests
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var tracked = (await users.FindByIdAsync(admin.Id))!;
-            Assert.True((await users.AddToRolesAsync(tracked, [Roles.Admin, Roles.Player])).Succeeded);
+            Assert.True((await users.AddToRolesAsync(tracked, [Roles.Admin, Roles.Player, Roles.SuperAdmin])).Succeeded);
         }
 
         var service = new PlayerAdminService(
@@ -216,7 +226,7 @@ public class PlayerAdminServiceTests
             oldStamp = (await users.GetSecurityStampAsync(tracked))!;
         }
 
-        var result = await arranged.Service.ResetPasswordAsync(bob.Id);
+        var result = await arranged.Service.ResetPasswordAsync(arranged.Admin.Id, bob.Id);
 
         Assert.Equal(PlayerAdminStatus.Ok, result.Status);
         Assert.False(string.IsNullOrEmpty(result.Password));
@@ -236,7 +246,7 @@ public class PlayerAdminServiceTests
     {
         await using var arranged = await ArrangeAsync();
 
-        var result = await arranged.Service.ResetPasswordAsync("missing");
+        var result = await arranged.Service.ResetPasswordAsync(arranged.Admin.Id, "missing");
 
         Assert.Equal(PlayerAdminStatus.UnknownPlayer, result.Status);
         Assert.Null(result.Password);
@@ -407,5 +417,92 @@ public class PlayerAdminServiceTests
         Assert.Equal(PlayerAdminStatus.UnknownPlayer, (await arranged.Service.SetActiveAsync(adminId, "nobody", false)).Status);
         Assert.Equal(PlayerAdminStatus.UnknownPlayer, (await arranged.Service.SetAdminAsync(adminId, "nobody", true)).Status);
         Assert.Equal(PlayerAdminStatus.UnknownPlayer, (await arranged.Service.DeleteAsync(adminId, "nobody")).Status);
+        Assert.Equal(PlayerAdminStatus.UnknownPlayer, (await arranged.Service.ResetPasswordAsync(adminId, "nobody")).Status);
+    }
+
+    [Fact]
+    public async Task Reset_password_rejects_inactive_or_non_admin_actor()
+    {
+        await using var arranged = await ArrangeAsync();
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var alice = await TestData.CreatePlayerAsync(arranged.Provider, "alice", Monday);
+
+        var result = await arranged.Service.ResetPasswordAsync(bob.Id, alice.Id);
+
+        Assert.Equal(PlayerAdminStatus.ActorNotAllowed, result.Status);
+        Assert.Null(result.Password);
+        Assert.True(await arranged.CheckPasswordAsync(alice.Id, "Passw0rd!x"));
+    }
+
+    [Fact]
+    public async Task Only_super_admin_changes_admin_role()
+    {
+        await using var arranged = await ArrangeAsync();
+        var admin2 = await arranged.CreateRegularAdminAsync("admin2");
+        var admin3 = await arranged.CreateRegularAdminAsync("admin3");
+        var bob = await arranged.Service.CreateAsync("bob", "Bob", null);
+        Assert.Equal(PlayerAdminStatus.Ok, bob.Status);
+        var bobUser = (await arranged.FindAsync("bob"))!;
+        var bobStamp = await arranged.StampOfAsync(bobUser.Id);
+
+        var grant = await arranged.Service.SetAdminAsync(admin2.Id, bobUser.Id, true);
+        var revoke = await arranged.Service.SetAdminAsync(admin2.Id, admin3.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.RequiresSuperAdmin, grant.Status);
+        Assert.Equal(PlayerAdminStatus.RequiresSuperAdmin, revoke.Status);
+        Assert.Equal([Roles.Player], await arranged.RolesOfAsync(bobUser));
+        Assert.Equal([Roles.Admin, Roles.Player], (await arranged.RolesOfAsync(admin3)).Order().ToArray());
+        Assert.Equal(bobStamp, await arranged.StampOfAsync(bobUser.Id));
+
+        var bySuperAdmin = await arranged.Service.SetAdminAsync(arranged.Admin.Id, bobUser.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.Ok, bySuperAdmin.Status);
+        Assert.Equal([Roles.Admin, Roles.Player], (await arranged.RolesOfAsync(bobUser)).Order().ToArray());
+    }
+
+    [Fact]
+    public async Task Super_admin_is_protected_from_other_admins()
+    {
+        await using var arranged = await ArrangeAsync();
+        var admin2 = await arranged.CreateRegularAdminAsync("admin2");
+        var superId = arranged.Admin.Id;
+        var oldStamp = await arranged.StampOfAsync(superId);
+
+        var deactivate = await arranged.Service.SetActiveAsync(admin2.Id, superId, false);
+        var delete = await arranged.Service.DeleteAsync(admin2.Id, superId);
+        var reset = await arranged.Service.ResetPasswordAsync(admin2.Id, superId);
+        var revoke = await arranged.Service.SetAdminAsync(admin2.Id, superId, false);
+
+        Assert.Equal(PlayerAdminStatus.SuperAdminProtected, deactivate.Status);
+        Assert.Equal(PlayerAdminStatus.SuperAdminProtected, delete.Status);
+        Assert.Equal(PlayerAdminStatus.SuperAdminProtected, reset.Status);
+        Assert.Null(reset.Password);
+        Assert.Equal(PlayerAdminStatus.SuperAdminProtected, revoke.Status);
+        var stored = await arranged.FindByIdAsync(superId);
+        Assert.True(stored.IsActive);
+        Assert.Null(stored.DeactivatedAt);
+        Assert.True(await arranged.CheckPasswordAsync(superId, "Passw0rd!x"));
+        Assert.Equal([Roles.Admin, Roles.Player, Roles.SuperAdmin], (await arranged.RolesOfAsync(stored)).Order().ToArray());
+        Assert.Equal(oldStamp, await arranged.StampOfAsync(superId));
+
+        var edit = await arranged.Service.UpdateAsync(superId, "Velitel", new DateOnly(2026, 10, 19));
+
+        Assert.Equal(PlayerAdminStatus.Ok, edit.Status);
+        Assert.Equal("Velitel", (await arranged.FindByIdAsync(superId)).Nick);
+    }
+
+    [Fact]
+    public async Task Get_players_flags_super_admin()
+    {
+        await using var arranged = await ArrangeAsync();
+        await arranged.CreateRegularAdminAsync("admin2");
+        await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+
+        var players = await arranged.Service.GetPlayersAsync();
+
+        Assert.True(players.Single(p => p.Login == "admin").IsSuperAdmin);
+        Assert.False(players.Single(p => p.Login == "admin2").IsSuperAdmin);
+        Assert.True(players.Single(p => p.Login == "admin2").IsAdmin);
+        Assert.False(players.Single(p => p.Login == "bob").IsSuperAdmin);
     }
 }

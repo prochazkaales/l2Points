@@ -9,6 +9,8 @@ public enum PlayerAdminStatus
     Invalid,
     CannotChangeSelf,
     ActorNotAllowed,
+    RequiresSuperAdmin,
+    SuperAdminProtected,
 }
 
 /// <param name="Status">Outcome of the operation.</param>

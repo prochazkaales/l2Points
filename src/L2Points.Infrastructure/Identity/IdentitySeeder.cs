@@ -10,11 +10,15 @@ public class IdentitySeeder(
     IOptions<AdminOptions> adminOptions,
     TimeProvider timeProvider)
 {
+    /// <summary>
+    /// Ensures the roles and the config admin (Admin__UserName): it is always active, has the roles
+    /// Admin, Player and SuperAdmin, and is the only super admin. Its existing password is never changed.
+    /// </summary>
     public async Task SeedAsync(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
 
-        foreach (var role in new[] { Roles.Admin, Roles.Player })
+        foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin })
         {
             if (await roleManager.RoleExistsAsync(role))
             {
@@ -25,17 +29,15 @@ public class IdentitySeeder(
             ThrowIfFailed(roleResult, $"Creating role '{role}' failed");
         }
 
-        // Only an active admin counts: if all admins were deactivated, nobody could sign in.
-        if ((await userManager.GetUsersInRoleAsync(Roles.Admin)).Any(u => u.IsActive))
-        {
-            return;
-        }
-
         var options = adminOptions.Value;
-        if (string.IsNullOrWhiteSpace(options.UserName)
-            || string.IsNullOrWhiteSpace(options.Password)
-            || string.IsNullOrWhiteSpace(options.Nick))
+        if (string.IsNullOrWhiteSpace(options.UserName))
         {
+            // Only an active admin counts: if all admins were deactivated, nobody could sign in.
+            if ((await userManager.GetUsersInRoleAsync(Roles.Admin)).Any(u => u.IsActive))
+            {
+                return;
+            }
+
             throw new InvalidOperationException(
                 "No admin account exists. Set Admin__UserName, Admin__Password and Admin__Nick.");
         }
@@ -44,6 +46,12 @@ public class IdentitySeeder(
         var admin = await userManager.FindByNameAsync(options.UserName);
         if (admin is null)
         {
+            if (string.IsNullOrWhiteSpace(options.Password) || string.IsNullOrWhiteSpace(options.Nick))
+            {
+                throw new InvalidOperationException(
+                    "The config admin account does not exist yet. Set Admin__Password and Admin__Nick.");
+            }
+
             var now = timeProvider.GetUtcNow();
             admin = new AppUser
             {
@@ -58,17 +66,28 @@ public class IdentitySeeder(
         }
         else if (!admin.IsActive)
         {
-            // Lockout recovery: no active admin is left, so the config admin is brought back.
+            // Lockout recovery: the super admin can always sign in again.
             admin.IsActive = true;
             admin.DeactivatedAt = null;
             ThrowIfFailed(await userManager.UpdateAsync(admin), "Reactivating admin account failed");
         }
 
-        foreach (var role in new[] { Roles.Admin, Roles.Player })
+        foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin })
         {
             if (!await userManager.IsInRoleAsync(admin, role))
             {
                 ThrowIfFailed(await userManager.AddToRoleAsync(admin, role), $"Assigning role '{role}' to admin failed");
+            }
+        }
+
+        // There is exactly one super admin: when Admin__UserName changes, the role moves to the new account.
+        foreach (var other in await userManager.GetUsersInRoleAsync(Roles.SuperAdmin))
+        {
+            if (other.Id != admin.Id)
+            {
+                ThrowIfFailed(
+                    await userManager.RemoveFromRoleAsync(other, Roles.SuperAdmin),
+                    $"Removing role '{Roles.SuperAdmin}' from '{other.UserName}' failed");
             }
         }
     }
