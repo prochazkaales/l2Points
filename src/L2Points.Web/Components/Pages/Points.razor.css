@@ -1,0 +1,12 @@
+/* Cells are rendered by MudBlazor components, so reach them via ::deep. */
+.l2p-points ::deep th,
+.l2p-points ::deep td:not(.l2p-nick-cell) {
+    white-space: nowrap;
+}
+
+.l2p-points ::deep .l2p-points-value {
+    text-align: right;
+    padding-right: 1.5rem;
+    font-weight: 600;
+    width: 6rem;
+}
