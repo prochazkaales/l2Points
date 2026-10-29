@@ -336,6 +336,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: dataProtectionKey.properties.keyUri
             }
             {
+              // The app connects as server admin; never let it create a missing database (default tier is expensive).
+              name: 'Database__CreateIfMissing'
+              value: 'false'
+            }
+            {
               name: 'ForwardedHeaders__TrustAllProxies'
               value: 'true'
             }

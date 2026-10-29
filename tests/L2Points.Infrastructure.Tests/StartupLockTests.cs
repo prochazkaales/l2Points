@@ -1,3 +1,4 @@
+using L2Points.Infrastructure;
 using L2Points.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +24,23 @@ public class StartupLockTests
         var ex = Assert.Throws<InvalidOperationException>(() => StartupLock.EnsureAcquired(code));
 
         Assert.Contains(code.ToString(), ex.Message);
+    }
+
+    [Theory]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, true)]
+    public void ShouldCreateDatabase_decides_from_existence_and_setting(bool exists, bool createIfMissing, bool expected)
+    {
+        Assert.Equal(expected, StartupLock.ShouldCreateDatabase(exists, createIfMissing));
+    }
+
+    [Fact]
+    public void ShouldCreateDatabase_throws_when_missing_and_creation_not_allowed()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => StartupLock.ShouldCreateDatabase(exists: false, createIfMissing: false));
+
+        Assert.Contains(DependencyInjection.CreateDatabaseIfMissingKey, ex.Message);
     }
 
     [Fact]

@@ -19,6 +19,12 @@ public static class DependencyInjection
     /// <summary>Configuration key (env <c>DataProtection__KeyVaultKeyUri</c>) with the Key Vault key URI that encrypts Data Protection keys.</summary>
     public const string KeyVaultKeyUriKey = "DataProtection:KeyVaultKeyUri";
 
+    /// <summary>
+    /// Configuration key (env <c>Database__CreateIfMissing</c>, default true). When false, a missing database makes startup fail
+    /// instead of being created (set in Azure so the app never creates a default-tier database by accident).
+    /// </summary>
+    public const string CreateDatabaseIfMissingKey = "Database:CreateIfMissing";
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("Default")

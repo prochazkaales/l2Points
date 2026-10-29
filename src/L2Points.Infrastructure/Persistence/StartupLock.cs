@@ -22,8 +22,11 @@ internal static class StartupLock
     /// <paramref name="db"/> stays open for the whole action; everything that uses the same context instance
     /// (migrations, Identity, seeders) therefore runs on the session that owns the lock.
     /// Providers other than SQL Server (tests on SQLite) just run the action.
+    /// When <paramref name="createDatabaseIfMissing"/> is false, a missing database is an error instead of being created
+    /// (production: the app connects as server admin and a plain CREATE DATABASE would make an expensive default-tier database).
     /// </summary>
-    public static async Task RunExclusiveAsync(AppDbContext db, Func<Task> action, TimeSpan timeout, CancellationToken ct = default)
+    public static async Task RunExclusiveAsync(
+        AppDbContext db, Func<Task> action, TimeSpan timeout, CancellationToken ct = default, bool createDatabaseIfMissing = true)
     {
         if (!db.Database.IsSqlServer())
         {
@@ -33,12 +36,15 @@ internal static class StartupLock
 
         // The lock needs an open connection to the app database, which fails (error 4060) on a brand new server
         // where MigrateAsync has not created it yet (docker compose, CI smoke test). Create the empty database first.
-        await EnsureDatabaseExistsAsync(db, ct);
+        await EnsureDatabaseExistsAsync(db, createDatabaseIfMissing, ct);
 
         await db.Database.OpenConnectionAsync(ct);
         try
         {
             var connection = db.Database.GetDbConnection();
+
+            // Note: the lock belongs to this session. If the connection drops mid-action and is silently re-established
+            // (EnableRetryOnFailure), the lock is released. Accepted: the window is tiny and only exists at startup.
 
             EnsureAcquired(await ExecuteLockCommandAsync(
                 connection, "sp_getapplock", timeout, ct, ("@LockMode", "Exclusive"), ("@LockTimeout", (int)timeout.TotalMilliseconds)));
@@ -64,10 +70,32 @@ internal static class StartupLock
         }
     }
 
-    private static async Task EnsureDatabaseExistsAsync(AppDbContext db, CancellationToken ct)
+    /// <summary>
+    /// Decides what to do with the database at startup: <c>true</c> = create it, <c>false</c> = it exists;
+    /// throws when it is missing and creating it is not allowed.
+    /// </summary>
+    public static bool ShouldCreateDatabase(bool exists, bool createIfMissing)
+    {
+        if (exists)
+        {
+            return false;
+        }
+
+        if (!createIfMissing)
+        {
+            throw new InvalidOperationException(
+                $"The database does not exist and the app refuses to create it automatically " +
+                $"('{DependencyInjection.CreateDatabaseIfMissingKey}' is false). " +
+                "Check the connection string and the database name, or restore the database first.");
+        }
+
+        return true;
+    }
+
+    private static async Task EnsureDatabaseExistsAsync(AppDbContext db, bool createIfMissing, CancellationToken ct)
     {
         var creator = db.GetService<IRelationalDatabaseCreator>();
-        if (await creator.ExistsAsync(ct))
+        if (!ShouldCreateDatabase(await creator.ExistsAsync(ct), createIfMissing))
         {
             return;
         }
