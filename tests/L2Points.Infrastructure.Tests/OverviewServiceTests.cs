@@ -95,6 +95,26 @@ public class OverviewServiceTests
     }
 
     [Fact]
+    public async Task Leaderboard_returns_points_of_previous_week()
+    {
+        await using var x = await ArrangeAsync();
+
+        var result = await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: false);
+
+        Assert.Equal(3, result.PreviousWeekPoints);
+    }
+
+    [Fact]
+    public async Task Leaderboard_has_no_previous_week_before_tracking_start()
+    {
+        await using var x = await ArrangeAsync();
+
+        var result = await x.Service.GetLeaderboardAsync(Week.Containing(Mon), includeInactive: false);
+
+        Assert.Null(result.PreviousWeekPoints);
+    }
+
+    [Fact]
     public async Task Leaderboard_week_before_tracking_start_is_empty()
     {
         await using var x = await ArrangeAsync();

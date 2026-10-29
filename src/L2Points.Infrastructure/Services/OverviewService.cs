@@ -28,8 +28,13 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
         var attendances = await LoadAttendancesAsync(db, trackingStart, today, week, includeInactive ? null : players, ct);
 
         var rows = LeaderboardCalculator.Build(players, activities, attendances, week, trackingStart, today);
+        // The attendances already reach back to tracking start, so they cover the previous week too.
+        var previous = week.Previous();
+        int? previousWeekPoints = previous.Sunday < trackingStart
+            ? null
+            : LeaderboardCalculator.Build(players, activities, attendances, previous, trackingStart, today).Sum(r => r.Week.Points);
         var jewels = await db.LoadJewelsByPlayerAsync(ct);
-        return new LeaderboardResult(rows, jewels);
+        return new LeaderboardResult(rows, jewels, previousWeekPoints);
     }
 
     /// <summary>

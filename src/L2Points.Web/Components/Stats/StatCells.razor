@@ -22,6 +22,10 @@
     [Parameter]
     public bool ShowPoints { get; set; } = true;
 
+    /// <summary>Percentages are shown as coloured badges by their band (<see cref="DisplayFormat.PercentTone"/>).</summary>
+    [Parameter]
+    public bool Toned { get; set; }
+
     /// <summary>Extra CSS class applied to every cell (used to hide a whole column set on narrow screens).</summary>
     [Parameter]
     public string? CellClass { get; set; }
@@ -29,10 +33,11 @@
     private string Css(string own) => CellClass is null ? own : $"{own} {CellClass}";
 
     // A native title (not MudTooltip) keeps the row light: ten popovers per row would be too heavy on long tables.
-    private static RenderFragment Pct(CategoryStat stat) => builder =>
+    private RenderFragment Pct(CategoryStat stat) => builder =>
     {
+        var tone = Toned ? DisplayFormat.PercentTone(stat.Percent) : null;
         builder.OpenElement(0, "span");
-        builder.AddAttribute(1, "class", stat.Percent is null ? "l2p-stat-empty" : "l2p-stat-value");
+        builder.AddAttribute(1, "class", stat.Percent is null ? "l2p-stat-empty" : tone is null ? "l2p-stat-value" : $"l2p-stat-value l2p-tone l2p-tone-{tone}");
         builder.AddAttribute(2, "title", $"{stat.Attended} / {stat.Expected}");
         builder.AddContent(3, DisplayFormat.Percent(stat.Percent));
         builder.CloseElement();
