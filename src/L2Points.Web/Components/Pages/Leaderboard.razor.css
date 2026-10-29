@@ -109,3 +109,13 @@
         display: none;
     }
 }
+
+@media (pointer: coarse), (max-width: 599.98px) {
+    .l2p-podium ::deep .l2p-podium-nick a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: var(--l2p-touch);
+        min-height: var(--l2p-touch);
+    }
+}

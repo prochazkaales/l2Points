@@ -692,6 +692,11 @@ h1:focus {
     padding-right: var(--l2p-touch);
 }
 
+.account-password input::-ms-reveal,
+.account-password input::-ms-clear {
+    display: none;
+}
+
 .account-password-toggle {
     position: absolute;
     top: 0;
@@ -1158,9 +1163,23 @@ a:not(.mud-button-root):focus-visible,
         padding-block: 0.6rem;
     }
 
+    /* The nick link fills the cell height (a 44px row); chip and jewels keep their own layout beside or below it. */
+    .mud-main-content .mud-table td.l2p-nick-cell {
+        padding-block: 0;
+    }
+
     .l2p-nick-cell a {
-        display: inline-block;
-        padding-block: 0.25rem;
+        display: inline-flex;
+        align-items: center;
+        min-width: var(--l2p-touch);
+        min-height: var(--l2p-touch);
+    }
+
+    .l2p-kpi-value a {
+        display: inline-flex;
+        align-items: center;
+        min-width: var(--l2p-touch);
+        min-height: var(--l2p-touch);
     }
 
     .mud-drawer .mud-navmenu .mud-nav-link {
