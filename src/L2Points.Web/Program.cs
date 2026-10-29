@@ -3,12 +3,13 @@ using L2Points.Infrastructure;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Web.Components;
+using L2Points.Web.Hosting;
 using L2Points.Web.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
@@ -44,17 +45,21 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>();
+    .AddDbContextCheck<AppDbContext>(tags: ["ready"]);
 
-// The app runs behind a reverse proxy (Azure), which is the only hop that can reach it.
+// Behind a reverse proxy (Azure) the proxy IP is not fixed; trusting all proxies is opt-in via configuration.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownProxies.Clear();
-    options.KnownIPNetworks.Clear();
-});
+    ForwardedHeadersSetup.Configure(
+        options, builder.Configuration.GetValue<bool>(ForwardedHeadersSetup.TrustAllProxiesKey)));
 
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(app.Configuration[DependencyInjection.KeyVaultKeyUriKey]))
+{
+    app.Logger.LogWarning(
+        "{Key} is not configured: Data Protection keys are stored unencrypted in the database.",
+        DependencyInjection.KeyVaultKeyUriKey);
+}
 
 app.UseForwardedHeaders();
 
@@ -80,7 +85,10 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets().AllowAnonymous();
-app.MapHealthChecks("/health").AllowAnonymous();
+// Liveness runs no checks (the process is up); readiness and the legacy /health include the database check.
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = r => r.Tags.Contains("ready") }).AllowAnonymous();
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = r => r.Tags.Contains("ready") }).AllowAnonymous();
 
 // Anonymous on purpose: a tab with an expired cookie must still end on /login instead of a 401/405 page.
 app.MapPost("/logout", async (HttpContext context, IAntiforgery antiforgery, SignInManager<AppUser> signInManager) =>
