@@ -3,3 +3,52 @@
 .l2p-ap ::deep td:not(.l2p-nick-cell) {
     white-space: nowrap;
 }
+
+/* Phones show players as cards instead of the wide table. */
+.l2p-ap-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--l2p-gap-tiles);
+}
+
+.l2p-ap-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--l2p-space-2);
+    padding: var(--l2p-space-3);
+}
+
+.l2p-ap-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--l2p-space-2);
+}
+
+.l2p-ap-card-head ::deep .l2p-ap-card-nick {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-weight: 500;
+}
+
+@media (pointer: coarse), (max-width: 599.98px) {
+    .l2p-ap-card-head ::deep .l2p-ap-card-nick {
+        display: inline-flex;
+        align-items: center;
+        min-width: var(--l2p-touch);
+        min-height: var(--l2p-touch);
+    }
+}
+
+.l2p-ap-card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--l2p-space-1);
+}
+
+.l2p-ap-card-meta {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--l2p-text-2);
+    font-size: var(--l2p-font-sm);
+}

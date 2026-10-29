@@ -1,0 +1,99 @@
+@using L2Points.Infrastructure.Services
+
+@* Row actions of one player: the two most used ones (edit, attendance) are visible, the rest is in a menu. A disabled menu item
+   says why on a second line, so the reason is not only in a tooltip. The server enforces the same rules. *@
+<div class="l2p-pa">
+    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" title="Upravit"
+                   aria-label="@($"Upravit: {Player.Nick}")" Disabled="Busy"
+                   OnClick="@(() => OnEdit.InvokeAsync())" />
+    <MudIconButton Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Medium" title="Účast"
+                   aria-label="@($"Účast: {Player.Nick}")"
+                   Href="@($"/admin/attendance?player={Uri.EscapeDataString(Player.UserId)}")" />
+    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Medium" AriaLabel="@($"Další akce: {Player.Nick}")"
+             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+        <MudMenuItem Icon="@Icons.Material.Filled.Diamond"
+                     Href="@($"/admin/jewels?player={Uri.EscapeDataString(Player.UserId)}")">Šperky</MudMenuItem>
+        <MudMenuItem Icon="@Icons.Material.Filled.LockReset" Disabled="@(Busy || !State.CanResetPassword)"
+                     OnClick="@(() => OnResetPassword.InvokeAsync())">
+            <span class="l2p-menu-label">Reset hesla</span>
+            @if (!State.CanResetPassword)
+            {
+                <span class="l2p-menu-hint">@State.ResetPasswordHint</span>
+            }
+        </MudMenuItem>
+        @if (Player.IsActive)
+        {
+            <MudMenuItem Icon="@Icons.Material.Filled.PersonOff" Disabled="@(Busy || !State.CanDeactivate)"
+                         OnClick="@(() => OnSetActive.InvokeAsync(false))">
+                <span class="l2p-menu-label">Deaktivovat</span>
+                @if (!State.CanDeactivate)
+                {
+                    <span class="l2p-menu-hint">@DisabledReason</span>
+                }
+            </MudMenuItem>
+        }
+        else
+        {
+            <MudMenuItem Icon="@Icons.Material.Filled.HowToReg" Disabled="Busy"
+                         OnClick="@(() => OnSetActive.InvokeAsync(true))">Aktivovat</MudMenuItem>
+        }
+        @* Only the super admin manages admin roles, so the item is hidden for others. *@
+        @if (State.ShowAdminToggle)
+        {
+            if (Player.IsAdmin)
+            {
+                <MudMenuItem Icon="@Icons.Material.Filled.RemoveModerator" Disabled="@(Busy || !State.CanRemoveAdmin)"
+                             OnClick="@(() => OnSetAdmin.InvokeAsync(false))">
+                    <span class="l2p-menu-label">Odebrat admina</span>
+                    @if (!State.CanRemoveAdmin)
+                    {
+                        <span class="l2p-menu-hint">@DisabledReason</span>
+                    }
+                </MudMenuItem>
+            }
+            else
+            {
+                <MudMenuItem Icon="@Icons.Material.Filled.AddModerator" Disabled="Busy"
+                             OnClick="@(() => OnSetAdmin.InvokeAsync(true))">Udělit admina</MudMenuItem>
+            }
+        }
+        <MudDivider />
+        <MudMenuItem Icon="@Icons.Material.Filled.Delete" Class="l2p-menu-danger" Disabled="@(Busy || !State.CanDelete)"
+                     OnClick="@(() => OnDelete.InvokeAsync())">
+            <span class="l2p-menu-label">Smazat</span>
+            @if (!State.CanDelete)
+            {
+                <span class="l2p-menu-hint">@DisabledReason</span>
+            }
+        </MudMenuItem>
+    </MudMenu>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public AdminPlayer Player { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public PlayerActionState State { get; set; } = default!;
+
+    /// <summary>A change is running; every action that would start another one is disabled.</summary>
+    [Parameter]
+    public bool Busy { get; set; }
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback OnResetPassword { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnSetActive { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnSetAdmin { get; set; }
+
+    private string? DisabledReason => State.IsSelf ? "Vlastní účet" : State.ProtectedText;
+}

@@ -468,6 +468,13 @@ h1:focus {
     box-shadow: var(--l2p-shadow-2);
 }
 
+/* A destructive menu item (PlayerActions). It sits on the MudMenuItem root, which component-scoped CSS does not reach;
+   a disabled item keeps the muted disabled colour because MudBlazor's .mud-menu-item.mud-disabled out-ranks this rule. */
+.mud-menu-item.l2p-menu-danger,
+.mud-menu-item.l2p-menu-danger .mud-icon-root {
+    color: var(--l2p-danger);
+}
+
 .mud-overlay-dialog .mud-overlay-scrim.mud-overlay-dark,
 .mud-overlay-drawer .mud-overlay-scrim.mud-overlay-dark {
     background-color: var(--l2p-scrim);
