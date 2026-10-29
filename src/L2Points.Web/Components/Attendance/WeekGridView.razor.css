@@ -76,12 +76,14 @@
     white-space: nowrap;
     color: var(--l2p-text);
     background-color: var(--l2p-surface-solid);
-    border-right: 1px solid var(--l2p-divider);
+    /* Text-based line: visible in both themes (glass-edge is white, which disappears on the light surface). */
+    border-right: 1px solid color-mix(in srgb, var(--l2p-text) 14%, transparent);
 }
 
-/* Rows without any event this week (Antharas on an off week) keep the height of a row with one checkbox. */
+/* Rows without any event this week (Valakas on an off week) keep the height of a row with one checkbox
+   (28px box + padding + divider; cells are border-box), so the row lines stay even. */
 .l2p-grid tbody th {
-    height: 1.75rem;
+    height: calc(28px + 0.25rem + 1px);
 }
 
 .l2p-grid thead th.l2p-grid-boss {
@@ -89,10 +91,14 @@
     background-color: var(--l2p-grid-head-solid);
 }
 
-/* First row of a later category in the table (Castle Siege under the normal epics). */
-.l2p-grid tr.l2p-grid-split > th,
-.l2p-grid tr.l2p-grid-split > td {
-    border-top: 1px solid var(--l2p-glass-edge);
+/* Castle Siege under the normal epics: a light tint of its category colour across the row. It is an image layer
+   like the hover, so it sits on top of today's tint and of the opaque pinned column. */
+.l2p-grid tr.l2p-grid-row-cs > th,
+.l2p-grid tr.l2p-grid-row-cs > td {
+    --l2p-grid-row-tint: linear-gradient(
+        color-mix(in srgb, var(--l2p-cat-cs) 12%, transparent),
+        color-mix(in srgb, var(--l2p-cat-cs) 12%, transparent));
+    background-image: var(--l2p-grid-row-tint);
 }
 
 .l2p-grid-dot {
@@ -112,10 +118,6 @@
 
 .l2p-grid-dot-morning {
     background: var(--l2p-cat-morning);
-}
-
-.l2p-grid-dot-cs {
-    background: var(--l2p-cat-cs);
 }
 
 .l2p-grid tbody tr:last-child th,
@@ -152,7 +154,8 @@
     .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid tbody tr:hover > td {
         background-image: linear-gradient(
             color-mix(in srgb, var(--l2p-primary) 8%, transparent),
-            color-mix(in srgb, var(--l2p-primary) 8%, transparent));
+            color-mix(in srgb, var(--l2p-primary) 8%, transparent)),
+            var(--l2p-grid-row-tint, none);
     }
 }
 

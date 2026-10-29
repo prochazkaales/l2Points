@@ -34,18 +34,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var (row, split) in table.Rows)
+                        @foreach (var row in table.Rows)
                         {
                             var limitReached = AttendanceRules.IsWeeklyLimitReached(row.Activity, row.Cells.Count(c => c.IsChecked));
-                            <tr class="@(split ? "l2p-grid-split" : null)">
-                                <th class="l2p-grid-boss" scope="row">
-                                    @if (row.Activity.Category != table.Categories[0])
-                                    {
-                                        <span class="@($"l2p-grid-dot l2p-grid-dot-{DisplayFormat.EventKindKey(row.Activity.Category, EventSlot.None)}")"
-                                              aria-hidden="true"></span>
-                                    }
-                                    @row.Activity.Name
-                                </th>
+                            <tr class="@(row.Activity.Category == ActivityCategory.CastleSiege ? "l2p-grid-row-cs" : null)">
+                                <th class="l2p-grid-boss" scope="row">@row.Activity.Name</th>
                                 @foreach (var day in Days)
                                 {
                                     <td class="l2p-grid-cell @DayClass(day)">
@@ -78,11 +71,11 @@
 
 @code {
     // Chaotic first: it has the most events in a week. Castle Siege shares the table with normal epics (one row,
-    // no slots); rows of a later category get its dot and a divider above the first one.
+    // no slots) and is told apart by a light tint of its category colour.
     private static readonly (string Title, string[] DotKeys, ActivityCategory[] Categories)[] TableOrder =
     [
         ("Chaotic epicy", ["evening", "morning"], [ActivityCategory.ChaoticEpic]),
-        ("Normal epicy a Castle Siege", ["normal", "cs"], [ActivityCategory.NormalEpic, ActivityCategory.CastleSiege]),
+        ("Normal epicy a Castle Siege", ["normal"], [ActivityCategory.NormalEpic, ActivityCategory.CastleSiege]),
     ];
 
     [Parameter, EditorRequired]
@@ -105,20 +98,14 @@
 
     private IReadOnlyList<DateOnly> Days => Grid.Week.Days.ToList();
 
-    private IEnumerable<(string Title, string[] DotKeys, ActivityCategory[] Categories, List<(WeekGridRow Row, bool Split)> Rows)> Tables =>
+    /// <summary>Each table with its rows: the given categories in that order, catalog order within one.</summary>
+    private IEnumerable<(string Title, string[] DotKeys, List<WeekGridRow> Rows)> Tables =>
         TableOrder
-            .Select(t => (t.Title, t.DotKeys, t.Categories, Rows: TableRows(t.Categories)))
+            .Select(t => (t.Title, t.DotKeys, Rows: Grid.Rows
+                .Where(r => t.Categories.Contains(r.Activity.Category))
+                .OrderBy(r => Array.IndexOf(t.Categories, r.Activity.Category))
+                .ToList()))
             .Where(t => t.Rows.Count > 0);
-
-    /// <summary>Rows of the given categories in that order (catalog order within one); Split marks a category change.</summary>
-    private List<(WeekGridRow Row, bool Split)> TableRows(ActivityCategory[] categories)
-    {
-        var rows = Grid.Rows
-            .Where(r => categories.Contains(r.Activity.Category))
-            .OrderBy(r => Array.IndexOf(categories, r.Activity.Category))
-            .ToList();
-        return rows.Select((r, i) => (r, i > 0 && r.Activity.Category != rows[i - 1].Activity.Category)).ToList();
-    }
 
     private string RootClass => ReadOnly ? "l2p-grid-scroll l2p-glass l2p-grid-readonly" : "l2p-grid-scroll l2p-glass";
 
