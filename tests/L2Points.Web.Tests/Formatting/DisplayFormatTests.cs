@@ -32,7 +32,9 @@ public class DisplayFormatTests
     [InlineData(79.4, "mid")]
     [InlineData(50.0, "mid")]
     [InlineData(49.4, "low")]
-    [InlineData(0.0, "low")]
+    [InlineData(0.5, "low")]
+    [InlineData(0.4, "zero")]
+    [InlineData(0.0, "zero")]
     public void PercentTone_follows_the_shown_number(double value, string expected) =>
         Assert.Equal(expected, DisplayFormat.PercentTone(value));
 

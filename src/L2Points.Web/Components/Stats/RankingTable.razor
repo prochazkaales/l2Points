@@ -9,12 +9,12 @@
 <div class="l2p-rank-table">
     <MudTable T="LeaderboardRow" Items="Rows" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" RowClassFunc="RowClass">
         <HeaderContent>
-            <MudTh Class="l2p-rank-cell"></MudTh>
+            <MudTh Class="l2p-rank-cell"><span class="mud-sr-only">Pořadí</span></MudTh>
             <MudTh Class="l2p-nick-cell">Hráč</MudTh>
             @SortHeader(Columns[0])
             @if (ShowBar)
             {
-                <MudTh Class="l2p-rank-bar-cell"></MudTh>
+                <MudTh Class="l2p-rank-bar-cell" aria-hidden="true"></MudTh>
             }
             @foreach (var column in Columns.Skip(1))
             {
@@ -32,7 +32,7 @@
             <MudTd Class="l2p-stat-points">@DisplayFormat.Points(Period(context).Points)</MudTd>
             @if (ShowBar)
             {
-                <MudTd Class="l2p-rank-bar-cell">
+                <MudTd Class="l2p-rank-bar-cell" aria-hidden="true">
                     <div class="l2p-rank-bar"><span style="@BarStyle(Period(context).Points)"></span></div>
                 </MudTd>
             }

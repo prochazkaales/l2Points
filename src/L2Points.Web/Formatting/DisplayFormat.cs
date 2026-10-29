@@ -18,7 +18,7 @@ public static class DisplayFormat
             : $"{Math.Round(value.Value, MidpointRounding.AwayFromZero).ToString("0", CultureInfo.InvariantCulture)} %";
 
     /// <summary>
-    /// Colour band of a participation percentage: "high" from 80 %, "mid" from 50 %, otherwise "low"; null when missing.
+    /// Colour band of a participation percentage: "high" from 80 %, "mid" from 50 %, "zero" for a shown 0 % (neutral, not a failure), otherwise "low"; null when missing.
     /// The rounded value decides, so the band matches the shown number.
     /// </summary>
     public static string? PercentTone(double? value) => (value is null ? (double?)null : Math.Round(value.Value, MidpointRounding.AwayFromZero)) switch
@@ -26,6 +26,7 @@ public static class DisplayFormat
         null => null,
         >= 80 => "high",
         >= 50 => "mid",
+        0 => "zero",
         _ => "low",
     };
 

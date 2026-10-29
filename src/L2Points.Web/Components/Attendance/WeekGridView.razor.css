@@ -248,7 +248,7 @@
 }
 
 .l2p-grid-check ::deep .mud-checkbox .mud-icon-button:has(.mud-checkbox-input:focus-visible)::before {
-    outline: 2px solid var(--l2p-primary);
+    outline: 2px solid var(--l2p-focus-ring);
     outline-offset: 2px;
 }
 

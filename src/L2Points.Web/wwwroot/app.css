@@ -812,7 +812,7 @@ td.l2p-nick-cell .l2p-nick-chip {
 }
 
 .l2p-view-label:focus-visible {
-    outline: 2px solid var(--l2p-primary);
+    outline: 2px solid var(--l2p-focus-ring);
     outline-offset: 2px;
     border-radius: 6px;
 }
@@ -843,6 +843,75 @@ td.l2p-nick-cell .l2p-nick-chip {
 .l2p-tone-low {
     color: var(--l2p-tone-low);
     background: color-mix(in srgb, var(--l2p-tone-low) 16%, transparent);
+}
+
+/* A shown 0 % is neutral (not started), not a failure: grey text, no fill. */
+.l2p-tone-zero {
+    color: var(--l2p-muted);
+    background: transparent;
+}
+
+/* One visible keyboard focus ring for every interactive element, in the theme's focus colour. Outline follows the
+   element's own border-radius, so round icon buttons and chips stay round; only plain links and list-like items get
+   the shared radius. */
+.mud-button-root:focus-visible,
+.mud-nav-link:focus-visible,
+a:focus-visible,
+.mud-chip.mud-clickable:focus-visible,
+.mud-list-item-clickable:focus-visible,
+.mud-menu-item:focus-visible,
+.l2p-wk-day:focus-visible {
+    outline: 2px solid var(--l2p-focus-ring);
+    outline-offset: 2px;
+}
+
+a:not(.mud-button-root):focus-visible,
+.mud-nav-link:focus-visible,
+.mud-list-item-clickable:focus-visible,
+.mud-menu-item:focus-visible,
+.l2p-wk-day:focus-visible {
+    border-radius: var(--l2p-radius-md, 8px);
+}
+
+/* Cards clip their content (overflow: clip), so inside tables, grids and menus the ring is drawn inward and is not cut. */
+.mud-table .mud-button-root:focus-visible,
+.mud-table a:focus-visible,
+.l2p-grid :focus-visible,
+.l2p-wk-grid :focus-visible,
+.mud-menu-item:focus-visible,
+.mud-popover .mud-list-item-clickable:focus-visible,
+.l2p-kpi-value a:focus-visible {
+    outline-offset: -2px;
+}
+
+/* A switch hides its native input, so the ring goes on the visible track. */
+.mud-switch:has(.mud-switch-input:focus-visible) .mud-switch-span {
+    outline: 2px solid var(--l2p-focus-ring);
+    outline-offset: 2px;
+    border-radius: 999px;
+}
+
+/* Reduced motion: the indeterminate loading bar becomes a static stripe and the click ripple is removed.
+   MudBlazor 9.11 DOM: .mud-progress-linear.mud-progress-indeterminate.horizontal > .mud-progress-linear-bars >
+   two plain .mud-progress-linear-bar elements, animated by library rules on .mud-progress-linear-bar:first-child /
+   :last-child (specificity 0,5,0, hence the longer selectors here). The ripple is the injected .mud-ripple-effect
+   element (and .mud-ripple-icon::after); .mud-ripple::after is already display: none in the library. */
+@media (prefers-reduced-motion: reduce) {
+    .mud-progress-linear.mud-progress-indeterminate.horizontal .mud-progress-linear-bars .mud-progress-linear-bar:first-child {
+        animation: none;
+        left: 0;
+        right: auto;
+        width: 30%;
+    }
+
+    .mud-progress-linear.mud-progress-indeterminate.horizontal .mud-progress-linear-bars .mud-progress-linear-bar:last-child:not(:first-child) {
+        display: none;
+    }
+
+    .mud-ripple-effect,
+    .mud-ripple-icon::after {
+        display: none;
+    }
 }
 
 /* Gold, silver and bronze by the shared place, so a tie gets the same colour. */
