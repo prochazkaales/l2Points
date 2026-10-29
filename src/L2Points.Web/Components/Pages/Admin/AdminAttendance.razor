@@ -1,0 +1,226 @@
+@page "/admin/attendance"
+@attribute [Authorize(Roles = Roles.Admin)]
+@using L2Points.Domain.Stats
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Attendance
+@using L2Points.Web.Formatting
+@inject PlayerAdminService PlayerAdmin
+@inject PlayerStatsService PlayerStats
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<AppUser> UserManager
+@inject NavigationManager Navigation
+@inject TimeProvider Time
+@inject ILogger<AdminAttendance> Logger
+@implements IDisposable
+
+<PageTitle>Účast hráčů – Admin – L2Points</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Účast hráčů</MudText>
+
+@if (_playersError)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Hráče se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="RetryPlayersAsync">Zkusit znovu</MudButton>
+}
+else if (_players is null || _actorId is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    <MudSelect T="string" Label="Hráč" Variant="Variant.Outlined" Value="_selectedId"
+               ValueChanged="OnPlayerChanged" Class="mb-3" Style="max-width: 24rem;">
+        @foreach (var player in _players)
+        {
+            <MudSelectItem T="string" Value="@player.UserId">@PlayerText(player)</MudSelectItem>
+        }
+    </MudSelect>
+
+    @if (SelectedPlayer is { } selected)
+    {
+        <div class="mb-2">
+            <MudLink Href="@DisplayFormat.PlayerUrl(selected.UserId)">Detail hráče @selected.Nick</MudLink>
+        </div>
+
+        <div class="mb-3">
+            <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
+        </div>
+
+        <div class="mb-4">
+            @if (_summaryError)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-3">Souhrn týdne se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadSummaryAsync">Zkusit znovu</MudButton>
+            }
+            else if (_summary is null)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+            }
+            else
+            {
+                <WeekSummaryCard Summary="_summary" Title="@($"Souhrn týdne – {selected.Nick}")" />
+            }
+        </div>
+
+        <EditableWeekGrid ActorUserId="@_actorId" ActorIsAdmin="true" TargetUserId="@selected.UserId"
+                          Week="_week" Today="_today" OnChanged="LoadSummaryAsync" />
+    }
+}
+
+@code {
+    private readonly CancellationTokenSource _disposed = new();
+
+    private IReadOnlyList<AdminPlayer>? _players;
+    private PlayerSummary? _summary;
+    private DateOnly _today;
+    private Week _week;
+    private string? _actorId;
+    private string? _selectedId;
+    private bool _playersError;
+    private bool _summaryError;
+    // Only the result of the latest summary request is applied.
+    private int _summaryVersion;
+
+    [SupplyParameterFromQuery(Name = "player")]
+    public string? PlayerParameter { get; set; }
+
+    [SupplyParameterFromQuery(Name = "week")]
+    public string? WeekParameter { get; set; }
+
+    private AdminPlayer? SelectedPlayer =>
+        _players?.FirstOrDefault(p => p.UserId == _selectedId);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Identity comes only from the authenticated principal, never from the URL.
+        if (_actorId is null)
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _actorId = UserManager.GetUserId(state.User);
+        }
+
+        if (_players is null && !_playersError)
+        {
+            await LoadPlayersAsync();
+        }
+
+        await ApplyParametersAsync(force: false);
+    }
+
+    private async Task ApplyParametersAsync(bool force)
+    {
+        _today = AppTime.TodayInPrague(Time);
+        var week = Week.ParseOrCurrent(WeekParameter, _today);
+        // The id comes from the URL; an unknown id selects nothing.
+        var selectedId = _players?.Any(p => p.UserId == PlayerParameter) == true ? PlayerParameter : null;
+
+        var changed = force || week != _week || selectedId != _selectedId;
+        _week = week;
+        _selectedId = selectedId;
+
+        if (!changed)
+        {
+            return;
+        }
+
+        _summary = null;
+        _summaryError = false;
+        // Invalidates a summary request that is still running for the previous player or week.
+        _summaryVersion++;
+        if (_selectedId is not null)
+        {
+            await LoadSummaryAsync();
+        }
+    }
+
+    private static string PlayerText(AdminPlayer player) =>
+        player.IsActive ? player.Nick : $"{player.Nick} (neaktivní)";
+
+    // Both query parameters are kept when either one changes; the current week is omitted from the URL.
+    private string PageUrl(string? playerId, Week week)
+    {
+        var query = new List<string>();
+        if (!string.IsNullOrEmpty(playerId))
+        {
+            query.Add($"player={Uri.EscapeDataString(playerId)}");
+        }
+
+        if (week != Week.Containing(_today))
+        {
+            query.Add($"week={week.Monday:yyyy-MM-dd}");
+        }
+
+        return query.Count == 0 ? "/admin/attendance" : $"/admin/attendance?{string.Join('&', query)}";
+    }
+
+    private void OnPlayerChanged(string? userId) => Navigation.NavigateTo(PageUrl(userId, _week));
+
+    private void OnWeekChanged(Week week) => Navigation.NavigateTo(PageUrl(_selectedId, week));
+
+    private async Task LoadPlayersAsync()
+    {
+        _playersError = false;
+        try
+        {
+            _players = await PlayerAdmin.GetPlayersAsync(_disposed.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading players failed");
+            _players = null;
+            _playersError = true;
+        }
+    }
+
+    private async Task RetryPlayersAsync()
+    {
+        await LoadPlayersAsync();
+        await ApplyParametersAsync(force: true);
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        var userId = _selectedId;
+        if (userId is null)
+        {
+            return;
+        }
+
+        var version = ++_summaryVersion;
+        var week = _week;
+        _summaryError = false;
+        try
+        {
+            var summary = await PlayerStats.GetWeekSummaryAsync(userId, week, _disposed.Token);
+            if (version == _summaryVersion)
+            {
+                _summary = summary;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading the summary of player {PlayerId} for week {Week} failed", userId, week.Monday);
+            if (version == _summaryVersion)
+            {
+                // Never keep showing numbers that may not match the saved attendance.
+                _summary = null;
+                _summaryError = true;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}
