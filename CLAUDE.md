@@ -4,7 +4,7 @@ Webová aplikace pro CP partu (command channel) hrající Lineage II (server L2R
 
 - Spec (zdroj pravdy pro doménová pravidla): `docs/superpowers/specs/2026-10-28-l2points-design.md`
 - Roadmapa částí implementace: `docs/superpowers/plans/2026-10-28-00-roadmap.md`
-- Stav: hotové části 1 až 7 (kostra, doména a persistence, stránka Můj týden, přehledy: Přehled, Týden – všichni, Detail hráče, šperky: galerie a admin přiřazení, admin: hráči, oprava účasti, aktivity a body, rozpis, nastavení, Azure: Bicep, `deploy.ps1`, CI/CD, health live/ready, šifrované Data Protection klíče). Rollout do Azure ještě čeká: první push na GitHub, první běh workflow a první zřízení v Azure zatím neproběhly.
+- Stav: hotové části 1 až 7 (kostra, doména a persistence, stránka Můj týden, přehledy: Přehled, Týden – všichni, Detail hráče, šperky: galerie a admin přiřazení, admin: hráči, oprava účasti, aktivity a body, rozpis, nastavení, Azure: Bicep, `deploy.ps1`, CI/CD, health live/ready, šifrované Data Protection klíče). Rollout do Azure: kód je na GitHubu a první běh CI (build, testy, smoke test image, push do GHCR) prošel; první zřízení v Azure (`deploy.ps1`) a první nasazení z CI zatím neproběhly.
 
 ## Struktura solution
 
@@ -42,7 +42,7 @@ dotnet ef migrations add <Name> -p src/L2Points.Infrastructure -s src/L2Points.W
 
 Migrace se aplikují automaticky při startu aplikace (`DatabaseInitializer`), ručně `database update` není potřeba.
 
-Docker (Docker na vývojovém stroji zatím není nainstalovaný, image proto poprvé sestaví a ověří CI):
+Docker (Docker na vývojovém stroji není nainstalovaný, image sestavuje a smoke testem ověřuje CI):
 
 ```bash
 cp .env.example .env              # upravit hesla
@@ -106,5 +106,4 @@ Superpowers: spec → plán části → implementace. Každá část z roadmapy 
 
 ## Známé TODO / pozor
 
-- Dockerfile a docker-compose zatím nebyly spuštěny. Image má ověřit smoke test v CI (`scripts/smoke-test.sh`), který zatím neběžel; po prvním zeleném běhu tuto položku odstranit.
-- Rollout do Azure čeká (první push na GitHub, první běh CI, `deploy.ps1`, GitHub variables); do té doby jsou `infra/` a workflow neověřené proti reálnému Azure.
+- Rollout do Azure čeká (`deploy.ps1`, GitHub variables, první nasazení z CI); do té doby jsou `infra/` a deploy job neověřené proti reálnému Azure.

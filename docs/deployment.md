@@ -56,7 +56,7 @@ Co je potřeba: účet s rolí Owner (nebo ekvivalentem, skript vytváří role 
    git push --force -u origin main
    ```
    Workflow `CI/CD` na `main` sestaví a otestuje řešení, sestaví image, projede ho smoke testem (`scripts/smoke-test.sh`) a pushne `ghcr.io/prochazkaales/l2points:sha-<commit>` i `:latest`. Job `deploy` se přeskočí (zelený), dokud neexistují GitHub variables z kroku 5. Průběh je na záložce Actions.
-3. **Zveřejnit balíček v GHCR.** Po prvním pushi je balíček soukromý. Na GitHubu: profil > Packages > `l2points` > Package settings > Change visibility > Public. Container App pak image stahuje bez přihlašovacích údajů. `deploy.ps1` to při prvním zřízení anonymně ověří a pokud balíček není veřejný, skončí s návodem dřív, než nasadí šablonu. Do té doby ale už zaregistroval resource providery a vytvořil prázdnou resource group, jiné prostředky nevzniknou.
+3. **Zkontrolovat, že balíček v GHCR je veřejný.** U veřejného repa převzal balíček při prvním pushi viditelnost repa a byl rovnou veřejný (ověřeno 29. 10. 2026). Pokud by byl soukromý, na GitHubu: profil > Packages > `l2points` > Package settings > Change visibility > Public. Container App pak image stahuje bez přihlašovacích údajů. `deploy.ps1` to při prvním zřízení anonymně ověří a pokud balíček není veřejný, skončí s návodem dřív, než nasadí šablonu. Do té doby ale už zaregistroval resource providery a vytvořil prázdnou resource group, jiné prostředky nevzniknou.
 4. **Zřídit Azure.** V terminálu:
    ```powershell
    az login
