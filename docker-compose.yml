@@ -14,6 +14,8 @@ services:
       start_period: 20s
 
   web:
+    # CI runs the smoke test against a pre-built image (L2POINTS_IMAGE + --no-build); locally `build: .` still works.
+    image: ${L2POINTS_IMAGE:-l2points:local}
     build: .
     ports:
       - "8080:8080"
