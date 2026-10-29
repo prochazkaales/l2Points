@@ -104,6 +104,13 @@ code="$(curl -sS -o /dev/null -D "$headers_file" -w '%{http_code}' --max-time 10
 grep -qiE '^content-type: *image/png' "$headers_file" || fail "/images/jewels/AntharasEarring.png is not served as image/png"
 echo "OK: /images/jewels/AntharasEarring.png -> 200 image/png"
 
+# Self-hosted font (case-sensitive name; the latin-ext subset carries the Czech diacritics).
+headers_file="$WORK_DIR/font-headers.txt"
+code="$(curl -sS -o /dev/null -D "$headers_file" -w '%{http_code}' --max-time 10 "$BASE_URL/fonts/outfit-latin-ext-wght-normal.woff2")"
+[[ "$code" == "200" ]] || fail "/fonts/outfit-latin-ext-wght-normal.woff2 returned $code"
+grep -qiE '^content-type: *font/woff2' "$headers_file" || fail "/fonts/outfit-latin-ext-wght-normal.woff2 is not served as font/woff2"
+echo "OK: /fonts/outfit-latin-ext-wght-normal.woff2 -> 200 font/woff2"
+
 # Blazor framework script (missing when the framework web assets were not restored).
 headers_file="$WORK_DIR/blazor-headers.txt"
 code="$(curl -sS -o /dev/null -D "$headers_file" -w '%{http_code}' --max-time 10 "$BASE_URL/_framework/blazor.web.js")"

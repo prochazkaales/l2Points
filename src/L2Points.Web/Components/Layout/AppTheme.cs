@@ -4,8 +4,8 @@ namespace L2Points.Web.Components.Layout;
 
 public static class AppTheme
 {
-    // System font stack (no external font CDN); Roboto is used when installed locally.
-    private static readonly string[] FontFamily = ["Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"];
+    // Self-hosted Outfit (wwwroot/fonts, declared in app.css) with the system font stack as fallback; no external font CDN.
+    private static readonly string[] FontFamily = ["Outfit", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"];
 
     public static readonly MudTheme Theme = new()
     {

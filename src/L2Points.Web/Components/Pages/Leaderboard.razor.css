@@ -61,7 +61,7 @@
 
 .l2p-podium ::deep .l2p-podium-points {
     font-size: 1.75rem;
-    font-weight: 700;
+    font-weight: 300;
     line-height: 1.2;
     color: var(--mud-palette-primary);
     font-variant-numeric: tabular-nums;
