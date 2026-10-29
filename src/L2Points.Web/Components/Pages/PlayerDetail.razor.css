@@ -38,7 +38,7 @@
     left: 0;
     z-index: 2;
     background: var(--l2p-surface-solid);
-    border-right: 1px solid var(--mud-palette-lines-default);
+    border-right: 1px solid var(--l2p-glass-edge);
 }
 
 /* Scroll target of the history links; keeps the heading clear of the fixed app bar. */

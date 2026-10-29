@@ -66,7 +66,7 @@ else
 
     <section class="mb-4">
         <div class="l2p-section-head">
-            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title">Hráči</MudText>
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title"><MudIcon Icon="@Icons.Material.Outlined.Groups" Size="Size.Small" />Hráči</MudText>
         </div>
         <MudPaper Outlined="true">
             <RankingTable Rows="_overview.Players" Ranks="_weekRanks" Jewels="_overview.Jewels" UserId="@_userId" Weekly="true" NickWeek="_week" />
@@ -75,7 +75,7 @@ else
 
     <section>
         <div class="l2p-section-head l2p-wk-events-head">
-            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title">Události týdne</MudText>
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title"><MudIcon Icon="@Icons.Material.Outlined.Event" Size="Size.Small" />Události týdne</MudText>
             @* A switch between the two views; the labels on both sides also pick a view. *@
             <div class="l2p-view-switch">
                 <button type="button" class="@ViewLabelClass(EventView.Cards)" @onclick="() => _view = EventView.Cards">Karty</button>

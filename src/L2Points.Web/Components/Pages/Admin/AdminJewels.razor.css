@@ -6,7 +6,7 @@
 }
 
 .l2p-admin-jewel-row + .l2p-admin-jewel-row {
-    border-top: 1px solid var(--mud-palette-lines-default);
+    border-top: 1px solid var(--l2p-glass-edge);
 }
 
 /* JewelIcon renders the <img>, so reach it via ::deep from this page's row. */

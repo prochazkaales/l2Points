@@ -28,7 +28,9 @@
     --l2p-glow-2: rgba(199, 125, 255, 0.14);
     --l2p-glass: rgba(255, 255, 255, 0.045);
     --l2p-glass-strong: rgba(255, 255, 255, 0.06);
-    --l2p-glass-edge: rgba(255, 255, 255, 0.09);
+    /* Edges and lines are a light violet in the dark theme too, the same hue as the light theme's lines, so cards,
+       tables, chips and pinned-column dividers all read as one set of lines. */
+    --l2p-glass-edge: rgba(185, 166, 255, 0.16);
     --l2p-glass-hi: rgba(255, 255, 255, 0.12);
     --l2p-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     --l2p-surface-solid: #16132A;
@@ -42,7 +44,7 @@
     --l2p-text: #F4F2FF;
     --l2p-text-2: #B9B5D6;
     --l2p-muted: #A8A4CA;
-    --l2p-divider: rgba(255, 255, 255, 0.06);
+    --l2p-divider: rgba(185, 166, 255, 0.08);
     --l2p-cat-normal: #6E9BFF;
     --l2p-cat-evening: #FF9F4A;
     --l2p-cat-morning: #3DBFF2;
@@ -207,10 +209,17 @@ h1:focus {
 .mud-main-content .mud-table-outlined {
     background: var(--l2p-glass);
     border: 1px solid var(--l2p-glass-edge);
-    border-radius: 20px;
+    border-radius: 12px;
     box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
     backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Cards clip their content to the rounded corners, so opaque pinned cells in a corner (the "Počet" row of the /week
+   grid) do not stick out. clip, not hidden: it does not make the card a scroll container. */
+.mud-main-content .mud-paper-outlined,
+.mud-main-content .mud-table-outlined {
+    overflow: clip;
 }
 
 /* Tables live inside the card and must not paint over it. An outlined table is itself the card (bare MudTable on
@@ -218,7 +227,6 @@ h1:focus {
 .mud-main-content .mud-table:not(.mud-table-outlined),
 .mud-main-content .mud-table-container,
 .mud-main-content .mud-table-head,
-.mud-main-content .mud-table-head .mud-table-cell,
 .mud-main-content .mud-table-body .mud-table-cell,
 .mud-main-content .mud-table-foot .mud-table-cell {
     background: transparent;
@@ -233,6 +241,28 @@ h1:focus {
 .mud-main-content .mud-table .mud-table-cell.l2p-nick-cell,
 .mud-main-content .mud-table .mud-table-cell.l2p-pd-week {
     background: var(--l2p-row-bg, var(--l2p-surface-solid));
+}
+
+/* Table header row: one opaque tinted band in every cell, pinned ones included (the same style as the attendance grid
+   tables), so the pinned header cell does not read as a separate box. */
+.mud-main-content .mud-table-head .mud-table-cell,
+.mud-main-content .mud-table-head .mud-table-cell.l2p-nick-cell,
+.mud-main-content .mud-table-head .mud-table-cell.l2p-pd-week {
+    background: var(--l2p-table-head);
+    font-weight: 600;
+    color: var(--l2p-text);
+    border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
+}
+
+/* The pinned-column divider starts under the header band, as in the attendance grid. */
+.mud-main-content .mud-table-head .mud-table-cell.l2p-nick-cell,
+.mud-main-content .mud-table-head .mud-table-cell.l2p-pd-week {
+    border-right-color: transparent;
+}
+
+/* Chips (attendees, "neaktivní", "admin") with the same small radius as the rest. */
+.mud-main-content .mud-chip {
+    border-radius: 8px;
 }
 
 .mud-main-content .mud-table-outlined {
@@ -254,7 +284,7 @@ h1:focus {
 .mud-main-content .l2p-podium-card,
 .mud-main-content .l2p-wk-card {
     background: var(--l2p-glass-strong);
-    border-radius: 14px;
+    border-radius: 10px;
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -303,7 +333,7 @@ h1:focus {
 
 .mud-drawer .mud-navmenu .mud-nav-link {
     margin: 4px 8px;
-    border-radius: 12px;
+    border-radius: 8px;
     color: var(--l2p-text-2);
 }
 
@@ -404,7 +434,7 @@ h1:focus {
     box-sizing: border-box;
     background: var(--account-card);
     border: 1px solid var(--account-border);
-    border-radius: 20px;
+    border-radius: 12px;
     box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
     backdrop-filter: blur(20px) saturate(140%);
@@ -546,7 +576,7 @@ h1:focus {
     white-space: nowrap;
     /* Opaque, otherwise the scrolled cells show through the pinned column. */
     background: var(--l2p-row-bg, var(--l2p-surface-solid));
-    border-right: 1px solid var(--mud-palette-lines-default);
+    border-right: 1px solid var(--l2p-glass-edge);
 }
 
 td.l2p-nick-cell .l2p-nick-chip {
@@ -643,6 +673,16 @@ td.l2p-nick-cell .l2p-nick-chip {
     color: var(--l2p-text);
 }
 
+.l2p-section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.l2p-section-title .mud-icon-root {
+    color: var(--l2p-primary-text);
+}
+
 /* "Karty [switch] Mřížka": the labels pick a view too; the active one is primary text. */
 .l2p-view-switch {
     display: inline-flex;
@@ -682,7 +722,7 @@ td.l2p-nick-cell .l2p-nick-chip {
     display: inline-block;
     min-width: 3.25rem;
     padding: 0.05rem 0.5rem;
-    border-radius: 999px;
+    border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 600;
     text-align: center;

@@ -23,7 +23,7 @@
     padding: 0.9rem 0.5rem;
     min-width: 0;
     text-align: center;
-    border-color: var(--l2p-place-color, var(--mud-palette-lines-default));
+    border-color: var(--l2p-place-color, var(--l2p-glass-edge));
 }
 
 .l2p-podium ::deep .l2p-podium-1 {

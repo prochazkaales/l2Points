@@ -21,8 +21,8 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.2rem 0.4rem 0.2rem 0.75rem;
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: 999px;
+    border: 1px solid var(--l2p-glass-edge);
+    border-radius: 8px;
     background: transparent;
     color: var(--mud-palette-text-primary);
     font: inherit;
@@ -37,7 +37,7 @@
 .l2p-wk-day-count {
     min-width: 1.4rem;
     padding: 0 0.35rem;
-    border-radius: 999px;
+    border-radius: 6px;
     background: var(--mud-palette-action-disabled-background);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -178,10 +178,13 @@
     text-align: center;
 }
 
+/* Header row: the same opaque band as the other tables. */
 .l2p-wk-grid thead th {
     vertical-align: bottom;
     font-weight: 600;
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text);
+    background: var(--l2p-table-head);
+    border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
 }
 
 .l2p-wk-grid-boss {
@@ -202,7 +205,12 @@
     font-weight: 500;
     /* Opaque, so the scrolled cells do not show through the pinned column. */
     background: var(--l2p-surface-solid);
-    border-right: 1px solid var(--mud-palette-lines-default);
+    border-right: 1px solid var(--l2p-glass-edge);
+}
+
+.l2p-wk-grid thead th.l2p-wk-grid-nick {
+    background: var(--l2p-table-head);
+    border-right-color: transparent;
 }
 
 .l2p-wk-grid tr.l2p-wk-grid-me th,

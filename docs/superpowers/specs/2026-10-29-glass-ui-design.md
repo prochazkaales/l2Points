@@ -38,7 +38,7 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 | Záře 2 (levý horní roh) | `rgba(199,125,255,.14)` | `rgba(96,165,250,.20)` |
 | Sklo – výplň | `rgba(255,255,255,.045)` | `rgba(255,255,255,.58)` |
 | Sklo – silnější (řádky, vnořené plochy) | `rgba(255,255,255,.06)` | `rgba(109,74,224,.065)` (nádech primary, ne bělejší než karta, jinak dlaždice splývají) |
-| Sklo – hrana | `rgba(255,255,255,.09)` | `rgba(90,70,170,.16)` (bílá hrana na světlé stránce není vidět) |
+| Sklo – hrana (i okraje čipů, dnů a dělicí čára přilepeného sloupce) | `rgba(185,166,255,.16)` | `rgba(90,70,170,.16)` (bílá hrana na světlé stránce není vidět; v tmavém stejný fialový odstín, aby čáry v obou režimech působily stejně) |
 | Sklo – horní světlo (inset) | `rgba(255,255,255,.12)` | `rgba(255,255,255,.90)` |
 | Stín karty | `0 8px 32px rgba(0,0,0,.35)` | `0 10px 30px rgba(60,40,140,.14)` |
 | Primary | `#8B6CFF` | `#6D4AE0` |
@@ -49,7 +49,7 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 | Text | `#F4F2FF` | `#1D1838` |
 | Text 2 | `#B9B5D6` | `#4F4A6E` |
 | Tlumený | `#A8A4CA` | `#625D84` |
-| Dělicí čára | `rgba(255,255,255,.06)` | `rgba(60,40,140,.08)` |
+| Dělicí čára | `rgba(185,166,255,.08)` | `rgba(60,40,140,.08)` |
 | Neprůhledný povrch (popovery, dialogy, sticky buňky) | `#16132A` | `#F8F8FD` |
 
 Barvy kategorií (tečka, pruh, obrys; nikdy velká plocha):
@@ -69,7 +69,7 @@ Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní polo
 
 ## Sklo
 
-- Globální třída `.l2p-glass`: výplň, 1px hrana, `inset 0 1px 0` horní světlo, stín, `border-radius: 20px`, `backdrop-filter: blur(20px) saturate(140%)` (s `-webkit-` prefixem).
+- Globální třída `.l2p-glass`: výplň, 1px hrana, `inset 0 1px 0` horní světlo, stín, `border-radius: 12px`, `backdrop-filter: blur(20px) saturate(140%)` (s `-webkit-` prefixem). Karty (outlined `MudPaper`/`MudTable`) mají `overflow: clip`, aby neprůhledné přilepené buňky v rohu nevyčnívaly přes zaoblení. Zaoblení je střídmé: karta 12 px, vnořená plocha 10 px, položka draweru, čip a výběr dne 8 px, štítek procent 6 px. Hlavička každé tabulky (MudTable i vlastní tabulky) je stejný neprůhledný pruh `--l2p-table-head` s popisky v barvě textu a váze 600; nadpisy sekcí nad kartami mají před sebou ikonu v `--l2p-primary-text`.
 - Blur jen na velkých kontejnerech: app bar, drawer, karty sekcí. Nikdy na řádcích, buňkách, chipech (výkon na mobilu). Vnořené plochy uvnitř karty používají jen „silnější sklo“ bez blur.
 - Popovery, menu, select, autocomplete, dialogy, tooltipy, snackbary a přilepené buňky tabulek mají **neprůhledný povrch** z tabulky výše. MudBlazor `Surface` v paletě zůstává neprůhledný (tím se tohle zajistí automaticky); sklo se dává jen třídou na vybrané kontejnery.
 - Fallback: `@supports not (backdrop-filter: blur(1px))` a `@media (prefers-reduced-transparency: reduce)` → karty dostanou neprůhledný povrch.
@@ -85,7 +85,7 @@ Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní polo
 ## Shell (MainLayout)
 
 - App bar: sklo s blur, bez elevace, výška beze změny. Vlevo logo (favicona `favicon.svg` jako `<img>` 32 px) + „L2Points“, vpravo nick, přepínač tématu, odhlášení jako dnes.
-- Drawer: sklo, položky s ikonou a textem jako dnes; aktivní položka má plnou primary výplň a bílý text, zaoblení 12 px, ostatní text 2 a při hoveru silnější sklo.
+- Drawer: sklo, položky s ikonou a textem jako dnes; aktivní položka má plnou primary výplň a bílý text, zaoblení 8 px, ostatní text 2 a při hoveru silnější sklo.
 - Obsah: `MudContainer` beze změny šířky; pozadí stránky je záře, ne `Background` barva palety (ta zůstává pro případ, kdy CSS záře nenačte).
 - Načítací placeholder `.l2p-loading` a pozadí před připojením circuitu odpovídají novému pozadí v obou režimech.
 - Přebliknutí tématu se odstraní (rozhodnutí návrhu; dnes `MainLayout` začíná tmavě a uloženou volbu z `l2pTheme` načte až po prvním renderu, placeholder se řídí jen OS):

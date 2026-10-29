@@ -73,8 +73,7 @@
     white-space: nowrap;
     color: var(--l2p-text);
     background-color: var(--l2p-surface-solid);
-    /* Text-based line: visible in both themes (glass-edge is white, which disappears on the light surface). */
-    border-right: 1px solid color-mix(in srgb, var(--l2p-text) 14%, transparent);
+    border-right: 1px solid var(--l2p-glass-edge);
 }
 
 /* Rows without any event this week (Valakas on an off week) keep the height of a row with one checkbox
