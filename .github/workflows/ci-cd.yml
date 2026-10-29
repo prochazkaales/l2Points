@@ -1,0 +1,118 @@
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ghcr.io/prochazkaales/l2points
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build -c Release
+
+      - name: Test
+        run: dotnet test -c Release --no-build
+
+  image:
+    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: scripts/smoke-test.sh "$IMAGE_NAME:sha-$GITHUB_SHA"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Push exactly the image that passed the smoke test (no rebuild).
+      - name: Push image
+        run: |
+          docker tag "$IMAGE_NAME:sha-$GITHUB_SHA" "$IMAGE_NAME:latest"
+          docker push "$IMAGE_NAME:sha-$GITHUB_SHA"
+          docker push "$IMAGE_NAME:latest"
+
+  deploy:
+    needs: image
+    # Skipped (green) until the Azure infrastructure and the repository variables exist.
+    if: vars.AZURE_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      RESOURCE_GROUP: rg-l2points
+      CONTAINER_APP: ca-l2points
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update container app
+        run: |
+          az containerapp update \
+            -g "$RESOURCE_GROUP" \
+            -n "$CONTAINER_APP" \
+            --image "$IMAGE_NAME:sha-$GITHUB_SHA" \
+            --only-show-errors \
+            --output none
+
+      - name: Wait for readiness
+        run: |
+          fqdn="$(az containerapp show -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" \
+            --query properties.configuration.ingress.fqdn -o tsv)"
+          if [ -z "$fqdn" ]; then
+            echo "Container app has no ingress FQDN" >&2
+            exit 1
+          fi
+          url="https://$fqdn/health/ready"
+          deadline=$(( SECONDS + 300 ))
+          while true; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$url" || true)"
+            if [ "$code" = "200" ]; then
+              echo "OK: $url -> 200"
+              exit 0
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "$url did not return 200 within 300s (last: $code)" >&2
+              exit 1
+            fi
+            sleep 5
+          done
