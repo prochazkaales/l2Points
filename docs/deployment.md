@@ -17,7 +17,7 @@ Všechno leží v jedné resource group `rg-l2points`, výchozí region je Polan
 | Key Vault | `kv-l2points-<suffix>` | RBAC režim; tajemství `sql-connection-string` a `admin-password`, klíč `dataprotection` pro šifrování Data Protection klíčů |
 | Log Analytics | `log-l2points` | retence 30 dní, denní strop ingestu 0,1 GB |
 | Identita aplikace | `id-l2points-app` | user-assigned; role Key Vault Secrets User a Key Vault Crypto User na Key Vaultu |
-| Identita GitHub Actions | `id-l2points-github` | federované přihlášení (OIDC, žádný klientský secret) jen pro `repo:prochazkaales/l2Points:ref:refs/heads/main`; role Contributor jen na `rg-l2points` |
+| Identita GitHub Actions | `id-l2points-github` | federované přihlášení (OIDC, žádný klientský secret) jen pro větev `main` repa `prochazkaales/l2Points` (subject `repo:prochazkaales@142387925/l2Points@1437856239:ref:refs/heads/main`); role Contributor jen na `rg-l2points` |
 | Budget | `budget-l2points` | 20 měsíčně (v měně fakturace předplatného, u předplatných Visual Studio typicky EUR nebo USD), e-mail při 80 % a 100 % skutečné útraty a při prognóze 100 % |
 
 Aplikace čte hesla z Key Vaultu přes svou identitu (Container Apps secrets odkazují na tajemství bez verze). Do repa ani do logů Actions se žádné tajemství nedostane.
@@ -211,5 +211,5 @@ Po novém zřízení se vytvoří nová identita GitHub Actions, takže je potř
 | Skript nenajde přihlášeného Entra uživatele | `az login` bez uživatelského účtu tenantu (osobní Microsoft účet, host). Přihlásit se `az login --tenant <tenant-id>` účtem z tenantu |
 | Nasazení selže na přístupu ke Key Vault tajemstvím i po automatickém opakování | Přidělení rolí se ještě nerozšířilo. Počkat pár minut a spustit skript znovu. Pokud Container App nevznikla, je to znovu první zřízení; pokud vznikla, jde o aktualizaci a opraví ji |
 | Selže vytvoření budgetu | Zbytek je nasazený. Další spuštění je aktualizace a budget přeskočí, vytvořit ho ručně v portálu (Cost Management > Budgets) |
-| `azure/login` v Actions odmítne token | Federované přihlášení vyžaduje přesný subject `repo:prochazkaales/l2Points:ref:refs/heads/main`. Zkontrolovat velikost písmen názvu repa a že workflow běží na větvi `main` |
+| `azure/login` v Actions odmítne token (`AADSTS700213: No matching federated identity record`) | Federované přihlášení vyžaduje přesně ten subject, který GitHub vydá; chybová hláška ho uvádí (`presented assertion subject '...'`). GitHub ho pro toto repo vydává s neměnnými ID vlastníka a repa (`repo:prochazkaales@142387925/l2Points@1437856239:ref:refs/heads/main`), ne jen `repo:prochazkaales/l2Points:...`. Hodnotu z hlášky dát do parametru `githubOidcRepository` v `main.bicep` (nebo rovnou `az identity federated-credential update -g rg-l2points --identity-name id-l2points-github -n github-main --subject '<subject>'`) a ověřit, že workflow běží na větvi `main` |
 | Krok „Wait for the new revision“ skončí chybou při dlouhé první migraci | Při dlouhém prvním startu může revize krátce hlásit stav Unhealthy, i když ještě běží startup probe. Pustit workflow znovu, případně zkontrolovat logy |

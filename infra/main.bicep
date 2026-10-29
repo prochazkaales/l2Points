@@ -48,8 +48,8 @@ param budgetAmount int = 20
 @description('First day of the budget, first day of a month (yyyy-MM-01). Used only when initialSetup is true.')
 param budgetStartDate string = ''
 
-@description('GitHub repository (owner/name) whose main branch may deploy the app.')
-param githubRepository string = 'prochazkaales/l2Points'
+@description('Repository part of the GitHub OIDC subject: GitHub issues it with immutable IDs (owner@ownerId/name@repositoryId), see the error AADSTS700213 in docs/deployment.md.')
+param githubOidcRepository string = 'prochazkaales@142387925/l2Points@1437856239'
 
 // Short suffix for globally unique names (Key Vault, SQL server).
 var suffix = substring(uniqueString(resourceGroup().id), 0, 6)
@@ -108,7 +108,7 @@ resource githubFederatedCredential 'Microsoft.ManagedIdentity/userAssignedIdenti
   name: 'github-main'
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
-    subject: 'repo:${githubRepository}:ref:refs/heads/main'
+    subject: 'repo:${githubOidcRepository}:ref:refs/heads/main'
     audiences: [
       'api://AzureADTokenExchange'
     ]
