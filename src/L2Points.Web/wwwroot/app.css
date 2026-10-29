@@ -24,7 +24,7 @@
 :root[data-theme="dark"] {
     color-scheme: dark;
     --l2p-bg: #0B0A1A;
-    --l2p-glow-1: rgba(124, 92, 250, 0.36);
+    --l2p-glow-1: rgba(124, 92, 250, 0.27);
     --l2p-glow-2: rgba(199, 125, 255, 0.14);
     --l2p-glass: rgba(255, 255, 255, 0.045);
     --l2p-glass-strong: rgba(255, 255, 255, 0.06);
@@ -33,11 +33,13 @@
     --l2p-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     --l2p-surface-solid: #16132A;
     --l2p-primary: #8B6CFF;
+    /* Primary used as text/outline colour: #8B6CFF is only ~3:1 over the glow, so text gets a lighter violet. */
+    --l2p-primary-text: #B9A6FF;
     --l2p-primary-2: #C77DFF;
     --l2p-on-primary: #0B0A1A;
     --l2p-text: #F4F2FF;
     --l2p-text-2: #B9B5D6;
-    --l2p-muted: #8B87AB;
+    --l2p-muted: #A8A4CA;
     --l2p-divider: rgba(255, 255, 255, 0.06);
     --l2p-cat-normal: #6E9BFF;
     --l2p-cat-evening: #A78BFA;
@@ -67,6 +69,7 @@
     --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.10);
     --l2p-surface-solid: #F8F8FD;
     --l2p-primary: #6D4AE0;
+    --l2p-primary-text: #6D4AE0;
     --l2p-primary-2: #A855F7;
     --l2p-on-primary: #FFFFFF;
     --l2p-text: #1D1838;
@@ -168,6 +171,17 @@ h1:focus {
     .blazor-error-boundary::after {
         content: "Došlo k chybě."
     }
+
+/* Primary as text (MudText/MudLink/icons with Color.Primary, text and outlined buttons) uses the lighter text shade so it
+   stays >= 4.5:1 over the glow. Filled primary buttons keep the solid palette fill. */
+.mud-primary-text {
+    color: var(--l2p-primary-text) !important;
+}
+
+.mud-button-text-primary,
+.mud-button-outlined-primary {
+    color: var(--l2p-primary-text);
+}
 
 /* ---- Glass surfaces ----
    .l2p-glass is a section card; the outlined MudPaper and MudTable of the pages get the same look
@@ -330,8 +344,7 @@ h1:focus {
     --account-success-bg: rgba(63, 208, 176, 0.14);
     --account-success-text: #8EE6C2;
     --account-input-border: rgba(255, 255, 255, 0.34);
-    /* Primary is only ~3.2:1 on the lit corner of the glow, so the link is a lighter violet. */
-    --account-link: #B9A6FF;
+    --account-link: var(--l2p-primary-text);
 }
 
 :root[data-theme="light"] {
@@ -340,7 +353,7 @@ h1:focus {
     --account-success-bg: #DEF7EC;
     --account-success-text: #03543F;
     --account-input-border: rgba(60, 40, 140, 0.45);
-    --account-link: var(--l2p-primary);
+    --account-link: var(--l2p-primary-text);
 }
 
 :root {
