@@ -34,7 +34,7 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 | Token | Dark | Light |
 |---|---|---|
 | Pozadí | `#0B0A1A` | `#EEF0FA` |
-| Záře 1 (pravý dolní roh) | `rgba(124,92,250,.36)` | `rgba(124,92,250,.22)` |
+| Záře 1 (pravý dolní roh) | `rgba(124,92,250,.27)` | `rgba(124,92,250,.22)` |
 | Záře 2 (levý horní roh) | `rgba(199,125,255,.14)` | `rgba(96,165,250,.20)` |
 | Sklo – výplň | `rgba(255,255,255,.045)` | `rgba(255,255,255,.58)` |
 | Sklo – silnější (řádky, vnořené plochy) | `rgba(255,255,255,.06)` | `rgba(255,255,255,.70)` |
@@ -42,7 +42,7 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 | Sklo – horní světlo (inset) | `rgba(255,255,255,.12)` | `rgba(255,255,255,.90)` |
 | Stín karty | `0 8px 32px rgba(0,0,0,.35)` | `0 10px 30px rgba(60,40,140,.10)` |
 | Primary | `#8B6CFF` | `#6D4AE0` |
-| Primary jako text (`--l2p-primary-text`) | `#B9A6FF` | `#6D4AE0` |
+| Primary jako text (`--l2p-primary-text`) | `#B9A6FF` | `#5B39CC` |
 | Primary 2 (konec přechodu) | `#C77DFF` | `#A855F7` |
 | Text na primary | `#0B0A1A` | `#FFFFFF` |
 | Secondary | `#FF9A3C` (beze změny) | `#C2410C` (beze změny) |
@@ -63,7 +63,7 @@ Barvy kategorií (tečka, pruh, obrys; nikdy velká plocha):
 
 Pásma procent (`.l2p-tone-*`) a místa 1–3 (`.l2p-place-*`) zůstávají významově stejná, odstíny se doladí tak, aby měly kontrast 4,5:1 na skle v obou režimech.
 
-Text na plné primary (rozhodnutí návrhu): v tmavém režimu tmavý `#0B0A1A`, protože bílá na `#8B6CFF` má jen ~3,7:1; tmavá na ní má ~5,3:1 a stejně to už dnes dělají účtové stránky (`--account-accent-text`). Primary `#8B6CFF` jako text má na tmavém pozadí ~4,9:1, ale nad září v pravém dolním rohu jen ~3:1, proto text používá světlejší `--l2p-primary-text` (`#B9A6FF`, >= 5,3:1); zář `--l2p-glow-1` má v tmavém režimu .27 a tlumený text `#A8A4CA` (>= 5,3:1 na kartě nad zářím). Ve světlém režimu bílá na `#6D4AE0` (~5,6:1). Kde se níže píše „bílý text/fajfka na primary“, platí tato barva.
+Text na plné primary (rozhodnutí návrhu): v tmavém režimu tmavý `#0B0A1A`, protože bílá na `#8B6CFF` má jen ~3,7:1; tmavá na ní má ~5,3:1 a stejně to už dnes dělají účtové stránky (`--account-accent-text`). Primary `#8B6CFF` jako text má na tmavém pozadí ~4,9:1, ale nad září v pravém dolním rohu jen ~3:1, proto text používá světlejší `--l2p-primary-text` (`#B9A6FF`, nad září na kartě >= 5:1); zář `--l2p-glow-1` má v tmavém režimu .27 a tlumený text `#A8A4CA` (>= 4,5:1 i na vnořeném silnějším skle v maximu záře, na kartě nad zářím ~5,4:1). Ve světlém režimu bílá na `#6D4AE0` (~5,6:1). Kde se níže píše „bílý text/fajfka na primary“, platí tato barva.
 
 Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní položka navigace, zvolený přepínač, zaškrtnutá buňka, hlavní tlačítko). Přechod primary → primary 2 jen na pruhu bodů v žebříčku.
 

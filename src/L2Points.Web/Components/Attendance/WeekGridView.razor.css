@@ -118,7 +118,7 @@
 
 .l2p-grid thead th.l2p-grid-today,
 .l2p-grid-group .l2p-grid-group-day.l2p-grid-today {
-    color: var(--l2p-primary);
+    color: var(--l2p-primary-text);
 }
 
 .l2p-grid thead th.l2p-grid-locked {

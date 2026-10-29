@@ -69,7 +69,7 @@
     --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.10);
     --l2p-surface-solid: #F8F8FD;
     --l2p-primary: #6D4AE0;
-    --l2p-primary-text: #6D4AE0;
+    --l2p-primary-text: #5B39CC;
     --l2p-primary-2: #A855F7;
     --l2p-on-primary: #FFFFFF;
     --l2p-text: #1D1838;
@@ -178,8 +178,9 @@ h1:focus {
     color: var(--l2p-primary-text) !important;
 }
 
-.mud-button-text-primary,
-.mud-button-outlined-primary {
+/* MudBlazor declares these at two-class specificity, so the selectors must match it. */
+.mud-button-text.mud-button-text-primary,
+.mud-button-outlined.mud-button-outlined-primary {
     color: var(--l2p-primary-text);
 }
 
