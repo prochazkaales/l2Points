@@ -1,0 +1,327 @@
+@page "/admin/schedule"
+@attribute [Authorize(Roles = Roles.Admin)]
+@using L2Points.Domain.Activities
+@using L2Points.Domain.Schedule
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Formatting
+@inject CatalogAdminService CatalogAdmin
+@inject TimeProvider Time
+@inject ISnackbar Snackbar
+@inject ILogger<AdminSchedule> Logger
+@implements IDisposable
+
+<PageTitle>Rozpis – Admin – L2Points</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Rozpis</MudText>
+<MudAlert Severity="Severity.Info" Class="mb-3">
+    Časy spawnů jsou v UTC stejně jako na stránce serveru, pod každým polem je čas v Praze.
+    Změna rozpisu platí zpětně pro procenta.
+</MudAlert>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Rozpis se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadAsync">Zkusit znovu</MudButton>
+}
+else if (_activities is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    @if (_activities.Any(a => a.Code == AntharasCode))
+    {
+        <MudPaper Outlined="true" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Antharas / Valakas</MudText>
+            <MudText Typo="Typo.body2">Tento týden: <b>@BiweeklyIn(_thisWeek)</b></MudText>
+            <MudText Typo="Typo.body2" Class="mb-3">Příští týden: <b>@BiweeklyIn(_thisWeek.Next())</b></MudText>
+            <div class="l2p-sch-anchor">
+                <MudDatePicker @bind-Date="_anchor" Label="Neděle s Antharasem" Variant="Variant.Outlined"
+                               DateFormat="d. M. yyyy" IsDateDisabledFunc="@(d => d.DayOfWeek != DayOfWeek.Sunday)"
+                               HelperText="Valakas bude o týden později." Disabled="_saving" Class="mb-3" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_saving || _anchor is null)"
+                           OnClick="SaveAnchorAsync">Uložit</MudButton>
+            </div>
+        </MudPaper>
+    }
+
+    @foreach (var activity in _activities.Where(a => a.ScheduleType == ScheduleType.Slotted))
+    {
+        var id = activity.Id;
+        var hasErrors = HasErrors(id);
+        <MudPaper Outlined="true" Class="pa-4 mb-4">
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudText Typo="Typo.h6">@activity.Name</MudText>
+                @if (!activity.IsActive)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
+                }
+            </div>
+            <div class="l2p-sch-days">
+                @foreach (var day in Days)
+                {
+                    <div class="l2p-sch-day">
+                        <MudText Typo="Typo.subtitle2" Class="mb-1">@DayNames[day]</MudText>
+                        <div class="l2p-sch-slots">
+                            @foreach (var slot in Slots)
+                            {
+                                var text = _inputs[id][(day, slot)];
+                                var error = InputError(text);
+                                <MudTextField T="string" Value="@text" ValueChanged="@(v => _inputs[id][(day, slot)] = v ?? "")"
+                                              Immediate="true" Label="@DisplayFormat.SlotLabel(slot)" Placeholder="HH:mm UTC"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="_saving"
+                                              HelperText="@PragueHint(day, text)" Error="@(error is not null)" ErrorText="@error" />
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_saving || hasErrors)"
+                           OnClick="@(() => SaveSpawnsAsync(id))">Uložit rozpis</MudButton>
+                <MudButton Variant="Variant.Outlined" Disabled="@(_saving || !IsDirty(id))"
+                           OnClick="@(() => Revert(id))">Vrátit</MudButton>
+            </div>
+        </MudPaper>
+    }
+}
+
+@code {
+    private const string AntharasCode = "Antharas";
+
+    private static readonly DayOfWeek[] Days =
+    [
+        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday,
+        DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday,
+    ];
+
+    private static readonly EventSlot[] Slots = [EventSlot.Evening, EventSlot.Morning];
+
+    private static readonly Dictionary<DayOfWeek, string> DayNames = new()
+    {
+        [DayOfWeek.Monday] = "Pondělí",
+        [DayOfWeek.Tuesday] = "Úterý",
+        [DayOfWeek.Wednesday] = "Středa",
+        [DayOfWeek.Thursday] = "Čtvrtek",
+        [DayOfWeek.Friday] = "Pátek",
+        [DayOfWeek.Saturday] = "Sobota",
+        [DayOfWeek.Sunday] = "Neděle",
+    };
+
+    private readonly CancellationTokenSource _disposed = new();
+
+    // Per slotted activity: typed text and the stored value for each (day, slot); empty = no spawn.
+    private readonly Dictionary<int, Dictionary<(DayOfWeek, EventSlot), string>> _inputs = [];
+    private readonly Dictionary<int, Dictionary<(DayOfWeek, EventSlot), string>> _stored = [];
+
+    private IReadOnlyList<Activity>? _activities;
+    private DateOnly _today;
+    private Week _thisWeek;
+    private DateTime? _anchor;
+    private bool _error;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    /// <summary>Name of the biweekly boss (Antharas or Valakas) scheduled in the week, or a dash.</summary>
+    private string BiweeklyIn(Week week)
+    {
+        var names = ScheduleCalculator.GetFixedOccurrences(_activities!, week.Range)
+            .Where(o => o.Activity.ScheduleType == ScheduleType.Biweekly)
+            .Select(o => $"{o.Activity.Name} ({DisplayFormat.DayHeader(o.Date)})")
+            .ToList();
+        return names.Count == 0 ? "–" : string.Join(", ", names);
+    }
+
+    private static string? InputError(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        if (!TimeInput.TryParse(text, out var time))
+        {
+            return "Zadej čas ve formátu HH:mm.";
+        }
+
+        return time >= CatalogRules.SpawnTimeLimitUtc ? "Čas musí být před 22:00 UTC." : null;
+    }
+
+    /// <summary>Prague time of the nearest occurrence (today or later) of that weekday, so the offset matches the season.</summary>
+    private string PragueHint(DayOfWeek day, string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return "Bez spawnu";
+        }
+
+        if (!TimeInput.TryParse(text, out var time) || time >= CatalogRules.SpawnTimeLimitUtc)
+        {
+            return "";
+        }
+
+        var date = _today.AddDays(((int)day - (int)_today.DayOfWeek + 7) % 7);
+        var prague = AppTime.ToPragueTime(date, time);
+        return $"Praha {TimeInput.Format(TimeOnly.FromDateTime(prague))} ({DisplayFormat.DayHeader(date)})";
+    }
+
+    private bool HasErrors(int activityId) => _inputs[activityId].Values.Any(t => InputError(t) is not null);
+
+    private bool IsDirty(int activityId) =>
+        _inputs[activityId].Any(kv => kv.Value.Trim() != _stored[activityId][kv.Key]);
+
+    private void Revert(int activityId) => _inputs[activityId] = new(_stored[activityId]);
+
+    private async Task SaveSpawnsAsync(int activityId)
+    {
+        if (_saving || HasErrors(activityId))
+        {
+            return;
+        }
+
+        var spawns = new List<SpawnInput>();
+        foreach (var ((day, slot), text) in _inputs[activityId])
+        {
+            if (TimeInput.TryParse(text, out var time))
+            {
+                spawns.Add(new SpawnInput(day, slot, time));
+            }
+        }
+
+        // Captured up front: reading Token from a disposed source throws.
+        var ct = _disposed.Token;
+        _saving = true;
+        var saved = false;
+        try
+        {
+            var outcome = await CatalogAdmin.SaveSpawnsAsync(activityId, spawns, ct);
+            saved = outcome == CatalogChangeResult.Ok;
+            Snackbar.Add(DisplayFormat.CatalogMessage(outcome), saved ? Severity.Success : Severity.Warning);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The component was disposed while saving.
+            _saving = false;
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Saving spawns of activity {ActivityId} failed", activityId);
+            Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+        }
+
+        // Reload from the server; a failed save keeps the typed values so they can be fixed and saved again.
+        await ReloadAsync(saved ? activityId : null, ct);
+    }
+
+    private async Task SaveAnchorAsync()
+    {
+        if (_saving || _anchor is not { } anchor)
+        {
+            return;
+        }
+
+        var ct = _disposed.Token;
+        _saving = true;
+        try
+        {
+            var outcome = await CatalogAdmin.SetAntharasValakasAnchorAsync(DateOnly.FromDateTime(anchor), ct);
+            Snackbar.Add(DisplayFormat.CatalogMessage(outcome),
+                outcome == CatalogChangeResult.Ok ? Severity.Success : Severity.Warning);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            _saving = false;
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Saving Antharas/Valakas anchor failed");
+            Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+        }
+
+        await ReloadAsync(null, ct);
+    }
+
+    /// <summary>
+    /// Reloads the catalog after a save. Unsaved edits of other activities are kept;
+    /// the inputs of <paramref name="resetActivityId"/> are replaced by the stored spawns.
+    /// </summary>
+    private async Task ReloadAsync(int? resetActivityId, CancellationToken ct)
+    {
+        try
+        {
+            Apply(await CatalogAdmin.GetActivitiesAsync(ct), resetActivityId);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Reloading schedule failed");
+            _activities = null;
+            _error = true;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        try
+        {
+            _inputs.Clear();
+            Apply(await CatalogAdmin.GetActivitiesAsync(_disposed.Token), null);
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading schedule failed");
+            _activities = null;
+            _error = true;
+        }
+    }
+
+    private void Apply(IReadOnlyList<Activity> activities, int? resetActivityId)
+    {
+        _today = AppTime.TodayInPrague(Time);
+        _thisWeek = Week.Containing(_today);
+        _anchor = activities.FirstOrDefault(a => a.Code == AntharasCode)?.BiweeklyAnchorDate?.ToDateTime(TimeOnly.MinValue);
+
+        foreach (var activity in activities.Where(a => a.ScheduleType == ScheduleType.Slotted))
+        {
+            var stored = new Dictionary<(DayOfWeek, EventSlot), string>();
+            foreach (var day in Days)
+            {
+                foreach (var slot in Slots)
+                {
+                    var spawn = activity.Spawns.FirstOrDefault(s => s.DayOfWeek == day && s.Slot == slot);
+                    stored[(day, slot)] = spawn is null ? "" : TimeInput.Format(spawn.TimeUtc);
+                }
+            }
+
+            _stored[activity.Id] = stored;
+            if (activity.Id == resetActivityId || !_inputs.ContainsKey(activity.Id))
+            {
+                _inputs[activity.Id] = new(stored);
+            }
+        }
+
+        _activities = activities;
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

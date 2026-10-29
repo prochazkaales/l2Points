@@ -1,0 +1,22 @@
+.l2p-sch-anchor {
+    max-width: 24rem;
+}
+
+/* One column of days on phones, as many as fit on wider screens. */
+.l2p-sch-days {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 600px) {
+    .l2p-sch-days {
+        grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    }
+}
+
+.l2p-sch-slots {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
