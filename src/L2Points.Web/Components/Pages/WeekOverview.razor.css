@@ -3,10 +3,6 @@
     height: 4px;
 }
 
-.l2p-wk-events-head {
-    justify-content: space-between;
-}
-
 /* Day picker: one button per day with the number of events; wraps on phones. */
 .l2p-wk-days {
     display: flex;

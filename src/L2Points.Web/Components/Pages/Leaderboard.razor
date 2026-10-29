@@ -17,11 +17,10 @@
 
 <PageTitle>Přehled – L2Points</PageTitle>
 
-<div class="l2p-lb-head mb-3">
-    <MudText Typo="Typo.h4">Přehled</MudText>
+<PageHeader Title="Přehled">
     <MudSwitch T="bool" Value="_includeInactive" ValueChanged="OnInactiveChanged" Color="Color.Primary"
                Label="Zobrazit neaktivní" />
-</div>
+</PageHeader>
 
 @if (_error)
 {
@@ -90,19 +89,16 @@ else
     }
 
     <section class="mb-4">
-        <div class="l2p-section-head">
-            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title"><MudIcon Icon="@Icons.Material.Outlined.EmojiEvents" Size="Size.Small" />Celkově</MudText>
-        </div>
+        <SectionTitle Text="Celkově" Icon="@Icons.Material.Outlined.EmojiEvents" />
         <MudPaper Outlined="true">
             <RankingTable Rows="_rows" Ranks="_summary.Ranks" Jewels="_jewels" UserId="@_userId" ShowBar="true" />
         </MudPaper>
     </section>
 
     <section>
-        <div class="l2p-section-head">
-            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title"><MudIcon Icon="@Icons.Material.Outlined.DateRange" Size="Size.Small" />Týden</MudText>
+        <SectionTitle Text="Týden" Icon="@Icons.Material.Outlined.DateRange">
             <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
-        </div>
+        </SectionTitle>
         <MudPaper Outlined="true" Style="position: relative">
             <div class="l2p-lb-week-loading">
                 @if (_loading == LoadScope.Week)

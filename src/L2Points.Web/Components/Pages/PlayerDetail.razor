@@ -20,37 +20,36 @@
 
 @if (_detailError)
 {
-    <MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
+    <PageHeader Title="Detail hráče" />
     <MudAlert Severity="Severity.Error" Class="mb-3">Detail hráče se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
     <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ReloadAsync">Zkusit znovu</MudButton>
 }
 else if (!_detailLoaded)
 {
-    <MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
+    <PageHeader Title="Detail hráče" />
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
 }
 else if (_detail is null)
 {
-    <MudText Typo="Typo.h4" GutterBottom="true">Detail hráče</MudText>
+    <PageHeader Title="Detail hráče" />
     <MudAlert Severity="Severity.Warning" Class="mb-3">Hráč nenalezen.</MudAlert>
     <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/leaderboard">Zpět na Přehled</MudButton>
 }
 else
 {
-    <div class="l2p-pd-head mb-3">
-        <MudText Typo="Typo.h4">@_detail.Player.Nick</MudText>
+    <PageHeader Title="@_detail.Player.Nick">
         @if (!_detail.Player.IsActive)
         {
             <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
         }
-    </div>
+    </PageHeader>
 
     <div class="l2p-pd-summaries mb-4">
         <WeekSummaryCard Summary="_detail.Overall" Title="Celkově" PointsLabel="Body celkem" />
         <WeekSummaryCard Summary="_detail.CurrentWeek" Title="Aktuální týden" />
     </div>
 
-    <MudText Typo="Typo.h5" Class="mb-2">Šperky</MudText>
+    <SectionTitle Text="Šperky" Icon="@Icons.Material.Outlined.Diamond" />
     @if (_detail.Jewels.Count == 0)
     {
         <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">Zatím žádný šperk.</MudText>
@@ -72,7 +71,7 @@ else
         </div>
     }
 
-    <MudText Typo="Typo.h5" Class="mb-2">Historie po týdnech</MudText>
+    <SectionTitle Text="Historie po týdnech" Icon="@Icons.Material.Outlined.History" />
     @if (_detail.History.Count == 0)
     {
         <MudAlert Severity="Severity.Normal" Class="mb-4">Zatím tu žádná historie není.</MudAlert>
@@ -103,7 +102,7 @@ else
     }
 
     <div id="@GridSectionId" class="l2p-pd-grid-anchor">
-        <MudText Typo="Typo.h5" Class="mb-2">Účast v týdnu</MudText>
+        <SectionTitle Text="Účast v týdnu" Icon="@Icons.Material.Outlined.EventAvailable" />
     </div>
     <div class="mb-3">
         <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />

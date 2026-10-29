@@ -8,7 +8,7 @@
 
 <PageTitle>Body – L2Points</PageTitle>
 
-<MudText Typo="Typo.h4" GutterBottom="true">Body</MudText>
+<PageHeader Title="Body" />
 <MudText Typo="Typo.body2" Class="mb-3">Kolik bodů dostaneš za účast na jednotlivých událostech. Body nastavuje admin a změna platí zpětně i pro už zapsané účasti.</MudText>
 
 @if (_error)
@@ -22,7 +22,7 @@ else if (_activities is null)
 }
 else
 {
-    @foreach (var (category, title) in Groups)
+    @foreach (var (category, title, icon) in Groups)
     {
         var items = _activities.Where(a => a.Category == category && a.IsActive).ToList();
         if (items.Count == 0)
@@ -30,46 +30,48 @@ else
             continue;
         }
 
-        <MudText Typo="Typo.h6" Class="mt-4 mb-2">@title</MudText>
-        <div class="l2p-points">
-            <MudTable T="Activity" Items="items" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
-                <HeaderContent>
-                    <MudTh Class="l2p-nick-cell">Název</MudTh>
-                    @if (category == ActivityCategory.ChaoticEpic)
-                    {
-                        <MudTh Class="l2p-points-value">Večerní</MudTh>
-                        <MudTh Class="l2p-points-value">Ranní</MudTh>
-                    }
-                    else
-                    {
-                        <MudTh Class="l2p-points-value">Body</MudTh>
-                    }
-                    <MudTh>Rozpis</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd Class="l2p-nick-cell">@context.Name</MudTd>
-                    @if (category == ActivityCategory.ChaoticEpic)
-                    {
-                        <MudTd Class="l2p-points-value">@SlotPoints(context, EventSlot.Evening)</MudTd>
-                        <MudTd Class="l2p-points-value">@SlotPoints(context, EventSlot.Morning)</MudTd>
-                    }
-                    else
-                    {
-                        <MudTd Class="l2p-points-value">@context.Points</MudTd>
-                    }
-                    <MudTd>@DisplayFormat.ScheduleLabel(context)</MudTd>
-                </RowTemplate>
-            </MudTable>
-        </div>
+        <section class="mb-4">
+            <SectionTitle Text="@title" Icon="@icon" />
+            <div class="l2p-points">
+                <MudTable T="Activity" Items="items" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
+                    <HeaderContent>
+                        <MudTh Class="l2p-nick-cell">Název</MudTh>
+                        @if (category == ActivityCategory.ChaoticEpic)
+                        {
+                            <MudTh Class="l2p-points-value">Večerní</MudTh>
+                            <MudTh Class="l2p-points-value">Ranní</MudTh>
+                        }
+                        else
+                        {
+                            <MudTh Class="l2p-points-value">Body</MudTh>
+                        }
+                        <MudTh>Rozpis</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="l2p-nick-cell">@context.Name</MudTd>
+                        @if (category == ActivityCategory.ChaoticEpic)
+                        {
+                            <MudTd Class="l2p-points-value">@SlotPoints(context, EventSlot.Evening)</MudTd>
+                            <MudTd Class="l2p-points-value">@SlotPoints(context, EventSlot.Morning)</MudTd>
+                        }
+                        else
+                        {
+                            <MudTd Class="l2p-points-value">@context.Points</MudTd>
+                        }
+                        <MudTd>@DisplayFormat.ScheduleLabel(context)</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+        </section>
     }
 }
 
 @code {
-    private static readonly (ActivityCategory Category, string Title)[] Groups =
+    private static readonly (ActivityCategory Category, string Title, string Icon)[] Groups =
     [
-        (ActivityCategory.NormalEpic, "Normal epicy"),
-        (ActivityCategory.ChaoticEpic, "Chaotic epicy"),
-        (ActivityCategory.CastleSiege, "Castle Siege"),
+        (ActivityCategory.NormalEpic, "Normal epicy", Icons.Material.Outlined.LocalFireDepartment),
+        (ActivityCategory.ChaoticEpic, "Chaotic epicy", Icons.Material.Outlined.Bolt),
+        (ActivityCategory.CastleSiege, "Castle Siege", Icons.Material.Outlined.Castle),
     ];
 
     private readonly CancellationTokenSource _disposed = new();

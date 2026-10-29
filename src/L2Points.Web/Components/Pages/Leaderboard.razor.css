@@ -1,11 +1,3 @@
-.l2p-lb-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    column-gap: 1.5rem;
-}
-
 /* Podium: first place in the middle and raised, second on the left, third on the right. The cards stand on the page,
    so they are regular glass cards with the place colour as their edge. */
 .l2p-podium {

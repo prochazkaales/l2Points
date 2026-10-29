@@ -1,0 +1,11 @@
+@* Page title as the single h1 of the page; controls that belong to the whole page sit on the right. *@
+<div class="l2p-page-head">
+    <MudText Typo="Typo.h4" HtmlTag="h1" Class="l2p-page-title">@Title</MudText>
+    @ChildContent
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

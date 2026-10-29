@@ -5,17 +5,17 @@
     <div class="l2p-summary-head">
         @if (!string.IsNullOrEmpty(Title))
         {
-            <MudText Typo="Typo.subtitle1">@Title</MudText>
+            <MudText Typo="Typo.subtitle1" HtmlTag="p">@Title</MudText>
         }
         <div class="l2p-summary-points">
-            <MudText Typo="Typo.h4" Color="Color.Primary" Class="l2p-summary-points-value">@Summary.Points</MudText>
+            <MudText Typo="Typo.h4" HtmlTag="p" Color="Color.Primary" Class="l2p-summary-points-value">@Summary.Points</MudText>
             <MudText Typo="Typo.body2" Color="Color.Default" Class="l2p-summary-points-label">@PointsLabel</MudText>
         </div>
     </div>
     <div class="l2p-summary-grid">
         <div class="l2p-summary-tile l2p-summary-tile-total">
             <MudText Typo="Typo.caption" Color="Color.Default">Celkem</MudText>
-            <MudText Typo="Typo.h5">@DisplayFormat.Percent(Summary.Stats.Total.Percent)</MudText>
+            <MudText Typo="Typo.h5" HtmlTag="p">@DisplayFormat.Percent(Summary.Stats.Total.Percent)</MudText>
             <MudText Typo="Typo.caption" Color="Color.Default">@Ratio(Summary.Stats.Total)</MudText>
         </div>
         @foreach (var category in Categories)
@@ -25,7 +25,7 @@
                 <MudText Typo="Typo.caption" Color="Color.Default">
                     <span class="@($"l2p-cat-dot l2p-cat-dot-{DisplayFormat.StatCategoryKey(category)}")" aria-hidden="true"></span>@DisplayFormat.CategoryLabel(category)
                 </MudText>
-                <MudText Typo="Typo.h5">@DisplayFormat.Percent(stat.Percent)</MudText>
+                <MudText Typo="Typo.h5" HtmlTag="p">@DisplayFormat.Percent(stat.Percent)</MudText>
                 <MudText Typo="Typo.caption" Color="Color.Default">@Ratio(stat)</MudText>
             </div>
         }

@@ -750,8 +750,29 @@ td.l2p-nick-cell .l2p-nick-chip {
     color: var(--mud-palette-text-secondary);
 }
 
+/* Page header (Components/Common/PageHeader): the h1 title and the page-wide controls in one row. */
+.l2p-page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.mud-typography.l2p-page-title {
+    margin: 0;
+    font-weight: 500;
+}
+
+@media (max-width: 599.98px) {
+    .mud-typography.l2p-page-title {
+        font-size: 1.625rem;
+    }
+}
+
 /* Section heading above a glass card (not inside it): the title and optional controls (week navigator, view switch)
-   in one row. Same type as the table titles on "Můj týden". */
+   in one row. Components/Common/SectionTitle; the attendance grid titles use the same class. */
 .l2p-section-head {
     display: flex;
     flex-wrap: wrap;
@@ -763,9 +784,15 @@ td.l2p-nick-cell .l2p-nick-chip {
     padding: 0 0.25rem;
 }
 
+/* Title on the left, controls (view switch) pushed to the right. */
+.l2p-section-head-split {
+    justify-content: space-between;
+}
+
+.l2p-section-title,
 .mud-typography.l2p-section-title {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 1.125rem;
     font-weight: 600;
     line-height: 1.4;
     letter-spacing: normal;

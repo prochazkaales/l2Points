@@ -17,7 +17,7 @@
 
 <PageTitle>Týden – všichni – L2Points</PageTitle>
 
-<MudText Typo="Typo.h4" GutterBottom="true">Týden – všichni</MudText>
+<PageHeader Title="Týden – všichni" />
 
 <div class="mb-1">
     <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
@@ -65,17 +65,14 @@ else
     </div>
 
     <section class="mb-4">
-        <div class="l2p-section-head">
-            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title"><MudIcon Icon="@Icons.Material.Outlined.Groups" Size="Size.Small" />Hráči</MudText>
-        </div>
+        <SectionTitle Text="Hráči" Icon="@Icons.Material.Outlined.Groups" />
         <MudPaper Outlined="true">
             <RankingTable Rows="_overview.Players" Ranks="_weekRanks" Jewels="_overview.Jewels" UserId="@_userId" Weekly="true" ShowBar="true" NickWeek="_week" />
         </MudPaper>
     </section>
 
     <section>
-        <div class="l2p-section-head l2p-wk-events-head">
-            <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title"><MudIcon Icon="@Icons.Material.Outlined.Event" Size="Size.Small" />Události týdne</MudText>
+        <SectionTitle Text="Události týdne" Icon="@Icons.Material.Outlined.Event" Class="l2p-section-head-split">
             @* A switch between the two views; the labels on both sides also pick a view. *@
             <div class="l2p-view-switch">
                 <button type="button" class="@ViewLabelClass(EventView.Cards)" @onclick="() => _view = EventView.Cards">Karty</button>
@@ -83,7 +80,7 @@ else
                            Color="Color.Primary" UncheckedColor="Color.Primary" AriaLabel="Zobrazit události jako mřížku" />
                 <button type="button" class="@ViewLabelClass(EventView.Grid)" @onclick="() => _view = EventView.Grid">Mřížka</button>
             </div>
-        </div>
+        </SectionTitle>
 
         <MudPaper Outlined="true">
             <div class="l2p-wk-days">

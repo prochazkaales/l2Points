@@ -12,7 +12,7 @@
 
 <PageTitle>Aktivity a body – Admin – L2Points</PageTitle>
 
-<MudText Typo="Typo.h4" GutterBottom="true">Aktivity a body</MudText>
+<PageHeader Title="Aktivity a body" />
 <MudText Typo="Typo.body2" Class="mb-3">Změna bodů platí zpětně i pro už zapsané účasti.</MudText>
 
 @if (_error)
@@ -26,7 +26,7 @@ else if (_activities is null)
 }
 else
 {
-    @foreach (var (category, title) in Groups)
+    @foreach (var (category, title, icon) in Groups)
     {
         var items = _activities.Where(a => a.Category == category).ToList();
         if (items.Count == 0)
@@ -34,68 +34,70 @@ else
             continue;
         }
 
-        <MudText Typo="Typo.h6" Class="mt-4 mb-2">@title</MudText>
-        <div class="l2p-aa">
-            <MudTable T="Activity" Items="items" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
-                <HeaderContent>
-                    <MudTh Class="l2p-nick-cell">Název</MudTh>
-                    <MudTh>Rozpis</MudTh>
-                    <MudTh>Body</MudTh>
-                    @if (category == ActivityCategory.ChaoticEpic)
-                    {
-                        <MudTh>Večerní</MudTh>
-                        <MudTh>Ranní</MudTh>
-                    }
-                    @if (category == ActivityCategory.NormalEpic)
-                    {
-                        <MudTh>Očekáváno/týden</MudTh>
-                    }
-                    <MudTh>Aktivní</MudTh>
-                    <MudTh>Upravit</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    @{
-                        var activity = context;
-                    }
-                    <MudTd Class="l2p-nick-cell">@activity.Name</MudTd>
-                    <MudTd>@DisplayFormat.ScheduleLabel(activity)</MudTd>
-                    <MudTd>@activity.Points</MudTd>
-                    @if (category == ActivityCategory.ChaoticEpic)
-                    {
-                        <MudTd>@SlotPointsCell(activity, EventSlot.Evening)</MudTd>
-                        <MudTd>@SlotPointsCell(activity, EventSlot.Morning)</MudTd>
-                    }
-                    @if (category == ActivityCategory.NormalEpic)
-                    {
-                        <MudTd>@(activity.ScheduleType == ScheduleType.Flexible ? activity.ExpectedPerWeek?.ToString() : "")</MudTd>
-                    }
-                    <MudTd>
-                        @if (activity.IsActive)
+        <section class="mb-4">
+            <SectionTitle Text="@title" Icon="@icon" />
+            <div class="l2p-aa">
+                <MudTable T="Activity" Items="items" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
+                    <HeaderContent>
+                        <MudTh Class="l2p-nick-cell">Název</MudTh>
+                        <MudTh>Rozpis</MudTh>
+                        <MudTh>Body</MudTh>
+                        @if (category == ActivityCategory.ChaoticEpic)
                         {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">aktivní</MudChip>
+                            <MudTh>Večerní</MudTh>
+                            <MudTh>Ranní</MudTh>
                         }
-                        else
+                        @if (category == ActivityCategory.NormalEpic)
                         {
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
+                            <MudTh>Očekáváno/týden</MudTh>
                         }
-                    </MudTd>
-                    <MudTd>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" title="Upravit"
-                                       aria-label="@($"Upravit: {activity.Name}")" Disabled="_saving"
-                                       OnClick="@(() => EditAsync(activity))" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </div>
+                        <MudTh>Aktivní</MudTh>
+                        <MudTh>Upravit</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        @{
+                            var activity = context;
+                        }
+                        <MudTd Class="l2p-nick-cell">@activity.Name</MudTd>
+                        <MudTd>@DisplayFormat.ScheduleLabel(activity)</MudTd>
+                        <MudTd>@activity.Points</MudTd>
+                        @if (category == ActivityCategory.ChaoticEpic)
+                        {
+                            <MudTd>@SlotPointsCell(activity, EventSlot.Evening)</MudTd>
+                            <MudTd>@SlotPointsCell(activity, EventSlot.Morning)</MudTd>
+                        }
+                        @if (category == ActivityCategory.NormalEpic)
+                        {
+                            <MudTd>@(activity.ScheduleType == ScheduleType.Flexible ? activity.ExpectedPerWeek?.ToString() : "")</MudTd>
+                        }
+                        <MudTd>
+                            @if (activity.IsActive)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">aktivní</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" title="Upravit"
+                                           aria-label="@($"Upravit: {activity.Name}")" Disabled="_saving"
+                                           OnClick="@(() => EditAsync(activity))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+        </section>
     }
 }
 
 @code {
-    private static readonly (ActivityCategory Category, string Title)[] Groups =
+    private static readonly (ActivityCategory Category, string Title, string Icon)[] Groups =
     [
-        (ActivityCategory.NormalEpic, "Normal epicy"),
-        (ActivityCategory.ChaoticEpic, "Chaotic epicy"),
-        (ActivityCategory.CastleSiege, "Castle Siege"),
+        (ActivityCategory.NormalEpic, "Normal epicy", Icons.Material.Outlined.LocalFireDepartment),
+        (ActivityCategory.ChaoticEpic, "Chaotic epicy", Icons.Material.Outlined.Bolt),
+        (ActivityCategory.CastleSiege, "Castle Siege", Icons.Material.Outlined.Castle),
     ];
 
     private static readonly DialogOptions EditOptions = new()

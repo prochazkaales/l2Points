@@ -1,0 +1,21 @@
+@* Section heading (h2) above a glass card or a table; optional controls (week navigator, view switch) share its row. *@
+<div class="@(string.IsNullOrEmpty(Class) ? "l2p-section-head" : $"l2p-section-head {Class}")">
+    <MudText Typo="Typo.h6" HtmlTag="h2" Class="l2p-section-title">
+        @if (Icon is not null)
+        {
+            <MudIcon Icon="@Icon" Size="Size.Small" />
+        }
+        @Text
+    </MudText>
+    @ChildContent
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+
+    [Parameter] public string? Icon { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

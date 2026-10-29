@@ -13,7 +13,7 @@
 
 <PageTitle>Rozpis – Admin – L2Points</PageTitle>
 
-<MudText Typo="Typo.h4" GutterBottom="true">Rozpis</MudText>
+<PageHeader Title="Rozpis" />
 <MudAlert Severity="Severity.Info" Class="mb-3">
     Časy spawnů jsou v UTC stejně jako na stránce serveru, pod každým polem je čas v Praze.
     Změna rozpisu platí zpětně pro procenta.
@@ -33,7 +33,7 @@ else
     @if (_activities.Any(a => a.Code == AntharasCode))
     {
         <MudPaper Outlined="true" Class="pa-4 mb-4">
-            <MudText Typo="Typo.h6" Class="mb-2">Antharas / Valakas</MudText>
+            <MudText Typo="Typo.h6" HtmlTag="h2" Class="mb-2">Antharas / Valakas</MudText>
             <MudText Typo="Typo.body2">Tento týden: <b>@BiweeklyIn(_thisWeek)</b></MudText>
             <MudText Typo="Typo.body2" Class="mb-3">Příští týden: <b>@BiweeklyIn(_thisWeek.Next())</b></MudText>
             <div class="l2p-sch-anchor">
@@ -52,7 +52,7 @@ else
         var hasErrors = HasErrors(id);
         <MudPaper Outlined="true" Class="pa-4 mb-4">
             <div class="d-flex align-center gap-2 mb-2">
-                <MudText Typo="Typo.h6">@activity.Name</MudText>
+                <MudText Typo="Typo.h6" HtmlTag="h2">@activity.Name</MudText>
                 @if (!activity.IsActive)
                 {
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
