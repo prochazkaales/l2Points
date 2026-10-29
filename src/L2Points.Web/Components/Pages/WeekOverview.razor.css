@@ -13,7 +13,7 @@
     flex-wrap: wrap;
     gap: 0.4rem;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
+    border-bottom: 1px solid var(--l2p-divider);
 }
 
 .l2p-wk-day {
@@ -68,29 +68,31 @@
     color: var(--mud-palette-text-secondary);
 }
 
-/* Event kind badge (Normal / Večerní / Ranní / CS). */
+/* Event kind badge (Normal / Večerní / Ranní / CS): outline in the category colour, no fill. */
 .l2p-wk-kind {
     display: inline-block;
     padding: 0 0.4rem;
     border-radius: 0.25rem;
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.03em;
-    --l2p-kind: var(--mud-palette-info);
-    color: var(--l2p-kind);
-    background: color-mix(in srgb, var(--l2p-kind) 16%, transparent);
+    --l2p-kind: var(--l2p-cat-normal);
+    /* The category colour alone is too light for text on the light glass, so it is mixed with the text colour. */
+    color: color-mix(in srgb, var(--l2p-kind) 60%, var(--l2p-text));
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--l2p-kind) 45%, transparent);
 }
 
 .l2p-wk-kind-evening {
-    --l2p-kind: var(--mud-palette-secondary);
+    --l2p-kind: var(--l2p-cat-evening);
 }
 
 .l2p-wk-kind-morning {
-    --l2p-kind: var(--mud-palette-tertiary);
+    --l2p-kind: var(--l2p-cat-morning);
 }
 
 .l2p-wk-kind-cs {
-    --l2p-kind: var(--mud-palette-warning);
+    --l2p-kind: var(--l2p-cat-cs);
 }
 
 /* Cards view. */
@@ -172,8 +174,8 @@
 .l2p-wk-grid th,
 .l2p-wk-grid td {
     padding: 0.35rem 0.6rem;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
-    background: var(--mud-palette-surface);
+    border-bottom: 1px solid var(--l2p-divider);
+    background: transparent;
     text-align: center;
 }
 
@@ -199,12 +201,19 @@
     text-align: left;
     white-space: nowrap;
     font-weight: 500;
+    /* Opaque, so the scrolled cells do not show through the pinned column. */
+    background: var(--l2p-surface-solid);
     border-right: 1px solid var(--mud-palette-lines-default);
 }
 
 .l2p-wk-grid tr.l2p-wk-grid-me th,
 .l2p-wk-grid tr.l2p-wk-grid-me td {
-    background: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
+    background: color-mix(in srgb, var(--l2p-primary) 14%, transparent);
+}
+
+.l2p-wk-grid tr.l2p-wk-grid-me th.l2p-wk-grid-nick,
+.l2p-wk-grid tr.l2p-wk-grid-me td.l2p-wk-grid-nick {
+    background: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
 }
 
 .l2p-wk-grid tr.l2p-wk-grid-me .l2p-wk-grid-nick {

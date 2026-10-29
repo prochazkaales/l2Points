@@ -46,6 +46,13 @@
     --l2p-logo-tile: #1C1929;
     --l2p-logo-crown: #C7B3FF;
     --l2p-logo-pavilion: #9D7BFF;
+    --l2p-logo-tile-edge: #2E2A42;
+    --l2p-tone-high: #6FE3C8;
+    --l2p-tone-mid: #F5C15C;
+    --l2p-tone-low: #FF8A8A;
+    --l2p-place-1: #F5C15C;
+    --l2p-place-2: #C9CBE0;
+    --l2p-place-3: #E0915A;
 }
 
 :root[data-theme="light"] {
@@ -73,6 +80,13 @@
     --l2p-logo-tile: #6D4AE0;
     --l2p-logo-crown: #FFD27A;
     --l2p-logo-pavilion: #F5A524;
+    --l2p-logo-tile-edge: transparent;
+    --l2p-tone-high: #0A6F5A;
+    --l2p-tone-mid: #855900;
+    --l2p-tone-low: #B53325;
+    --l2p-place-1: #B7860B;
+    --l2p-place-2: #7D809C;
+    --l2p-place-3: #B4602A;
 }
 
 /* Page background: two glows over the base colour. It does not depend on MudThemeProvider, so it is right before
@@ -155,10 +169,151 @@ h1:focus {
         content: "Došlo k chybě."
     }
 
-/* App shell */
+/* ---- Glass surfaces ----
+   .l2p-glass is a section card; the outlined MudPaper and MudTable of the pages get the same look
+   (MudBlazor 9 gives them .mud-paper-outlined / .mud-table-outlined). Scoped to .mud-main-content so popovers,
+   dialogs, menus and tooltips (rendered outside of it) keep the opaque palette Surface. Blur only on these large
+   containers, never on rows, cells or chips. */
+.l2p-glass,
+.mud-main-content .mud-paper-outlined,
+.mud-main-content .mud-table-outlined {
+    background: var(--l2p-glass);
+    border: 1px solid var(--l2p-glass-edge);
+    border-radius: 20px;
+    box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Tables live inside the card and must not paint over it. */
+.mud-main-content .mud-table,
+.mud-main-content .mud-table-container,
+.mud-main-content .mud-table-head,
+.mud-main-content .mud-table-head .mud-table-cell,
+.mud-main-content .mud-table-body .mud-table-cell,
+.mud-main-content .mud-table-foot .mud-table-cell {
+    background: transparent;
+}
+
+.mud-main-content .mud-table-cell {
+    border-bottom-color: var(--l2p-divider);
+}
+
+/* The cell rule above is more specific than .l2p-nick-cell, so the pinned cells get their opaque surface back here:
+   the scrolled cells must not show through them. */
+.mud-main-content .mud-table .mud-table-cell.l2p-nick-cell,
+.mud-main-content .mud-table .mud-table-cell.l2p-pd-week {
+    background: var(--l2p-row-bg, var(--l2p-surface-solid));
+}
+
+.mud-main-content .mud-table-outlined {
+    overflow: hidden;
+}
+
+/* Surfaces nested in a card: stronger glass, no blur (a blurred layer inside a blurred layer is slow and muddy).
+   .l2p-glass-strong is the explicit class for such a surface. */
+.l2p-glass-strong {
+    border: 1px solid var(--l2p-glass-edge);
+}
+
+.l2p-glass-strong,
+.l2p-glass .l2p-glass,
+.l2p-glass .mud-paper-outlined,
+.l2p-glass .mud-table-outlined,
+.mud-main-content .mud-paper-outlined .mud-paper-outlined,
+.mud-main-content .mud-paper-outlined .mud-table-outlined,
+.mud-main-content .l2p-podium-card,
+.mud-main-content .l2p-wk-card {
+    background: var(--l2p-glass-strong);
+    border-radius: 14px;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+/* Popovers, menus, dialogs, tooltips and snackbars are rendered outside .mud-main-content and use the opaque palette
+   Surface (#16132A / #F8F8FD), checked in the running app, so they need no override here. */
+
+/* No blur support, or the user asked for less transparency: cards become opaque. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .l2p-glass,
+    .mud-main-content .mud-paper-outlined,
+    .mud-main-content .mud-table-outlined,
+    .mud-appbar,
+    .mud-drawer {
+        background: var(--l2p-surface-solid) !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .l2p-glass,
+    .mud-main-content .mud-paper-outlined,
+    .mud-main-content .mud-table-outlined,
+    .mud-appbar,
+    .mud-drawer {
+        background: var(--l2p-surface-solid) !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+/* ---- App shell ---- */
 .l2p-brand {
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.l2p-logo {
+    flex: none;
+    display: block;
+}
+
+/* App bar and drawer are glass with blur; MudBlazor sets their background on the root, so the override needs !important. */
+.mud-appbar,
+.mud-drawer {
+    background-color: var(--l2p-glass) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: none;
+}
+
+.mud-appbar {
+    border-bottom: 1px solid var(--l2p-glass-edge);
+}
+
+.mud-drawer {
+    border-right: 1px solid var(--l2p-glass-edge);
+}
+
+/* A drawer that slides over the content on a phone is a menu, so it is opaque. */
+@media (max-width: 959.98px) {
+    .mud-drawer {
+        background-color: var(--l2p-surface-solid) !important;
+    }
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link {
+    margin: 4px 8px;
+    border-radius: 12px;
+    color: var(--l2p-text-2);
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link:hover:not(.mud-nav-link-disabled) {
+    background-color: var(--l2p-glass-strong);
+    color: var(--l2p-text);
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled),
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled):hover {
+    background-color: var(--l2p-primary);
+    color: var(--l2p-on-primary);
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-icon,
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-text {
+    color: var(--l2p-on-primary);
 }
 
 .l2p-logout-form {
@@ -333,7 +488,8 @@ h1:focus {
     left: 0;
     z-index: 2;
     white-space: nowrap;
-    background: var(--l2p-row-bg, var(--mud-palette-surface));
+    /* Opaque, otherwise the scrolled cells show through the pinned column. */
+    background: var(--l2p-row-bg, var(--l2p-surface-solid));
     border-right: 1px solid var(--mud-palette-lines-default);
 }
 
@@ -408,7 +564,7 @@ td.l2p-nick-cell .l2p-nick-chip {
     color: var(--mud-palette-text-secondary);
 }
 
-/* A paper section with an uppercase title and optional controls in its head row. */
+/* A glass section with a title and optional controls in its head row. */
 .l2p-section-head {
     display: flex;
     flex-wrap: wrap;
@@ -416,14 +572,15 @@ td.l2p-nick-cell .l2p-nick-chip {
     column-gap: 1rem;
     row-gap: 0.25rem;
     padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
+    border-bottom: 1px solid var(--l2p-divider);
 }
 
 .l2p-section-title {
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--mud-palette-primary);
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--l2p-text);
 }
 
 /* Percentage badges by band (DisplayFormat.PercentTone). */
@@ -437,32 +594,36 @@ td.l2p-nick-cell .l2p-nick-chip {
     text-align: center;
 }
 
+/* Outline and coloured text, no fill. The light shades are darker than the palette ones to keep 4.5:1 on the glass. */
 .l2p-tone-high {
-    color: var(--mud-palette-success);
-    background: color-mix(in srgb, var(--mud-palette-success) 16%, transparent);
+    color: var(--l2p-tone-high);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--l2p-tone-high) 45%, transparent);
 }
 
 .l2p-tone-mid {
-    color: var(--mud-palette-warning);
-    background: color-mix(in srgb, var(--mud-palette-warning) 16%, transparent);
+    color: var(--l2p-tone-mid);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--l2p-tone-mid) 45%, transparent);
 }
 
 .l2p-tone-low {
-    color: var(--mud-palette-error);
-    background: color-mix(in srgb, var(--mud-palette-error) 16%, transparent);
+    color: var(--l2p-tone-low);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--l2p-tone-low) 45%, transparent);
 }
 
 /* Gold, silver and bronze by the shared place, so a tie gets the same colour. */
 .l2p-place-1 {
-    --l2p-place-color: #e8b923;
+    --l2p-place-color: var(--l2p-place-1);
 }
 
 .l2p-place-2 {
-    --l2p-place-color: #a8b2bf;
+    --l2p-place-color: var(--l2p-place-2);
 }
 
 .l2p-place-3 {
-    --l2p-place-color: #c87f45;
+    --l2p-place-color: var(--l2p-place-3);
 }
 
 @media (max-width: 959.98px) {
@@ -494,4 +655,23 @@ td.l2p-nick-cell .l2p-nick-chip {
 .mud-table-cell,
 .l2p-grid {
     font-variant-numeric: tabular-nums;
+}
+
+/* Segmented switch (MudToggleGroup): stronger glass track, the chosen item is the one full primary fill. */
+.mud-main-content .mud-toggle-group {
+    background: var(--l2p-glass-strong);
+    border: 1px solid var(--l2p-glass-edge);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.mud-main-content .mud-toggle-group .mud-toggle-item {
+    border-radius: 0;
+    color: var(--l2p-text-2);
+}
+
+.mud-main-content .mud-toggle-group .mud-toggle-item.mud-toggle-item-selected,
+.mud-main-content .mud-toggle-group .mud-toggle-item.mud-toggle-item-selected:hover {
+    background: var(--l2p-primary);
+    color: var(--l2p-on-primary);
 }
