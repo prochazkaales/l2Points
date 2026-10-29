@@ -1,4 +1,5 @@
 using L2Points.Domain.Activities;
+using L2Points.Domain.Stats;
 using L2Points.Domain.Time;
 using L2Points.Web.Formatting;
 
@@ -13,6 +14,14 @@ public class DisplayFormatTests
     [InlineData(100.0, "100 %")]
     public void Percent_rounds_half_away_from_zero(double value, string expected) =>
         Assert.Equal(expected, DisplayFormat.Percent(value));
+
+    [Theory]
+    [InlineData(StatCategory.Normal, "normal")]
+    [InlineData(StatCategory.Evening, "evening")]
+    [InlineData(StatCategory.Morning, "morning")]
+    [InlineData(StatCategory.CastleSiege, "cs")]
+    public void StatCategoryKey_matches_the_event_kind_keys(StatCategory category, string expected) =>
+        Assert.Equal(expected, DisplayFormat.StatCategoryKey(category));
 
     [Fact]
     public void Percent_null_is_dash() => Assert.Equal("–", DisplayFormat.Percent(null));

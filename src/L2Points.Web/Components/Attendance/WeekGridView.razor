@@ -3,7 +3,7 @@
 @using L2Points.Domain.Time
 @using L2Points.Web.Formatting
 
-<div class="l2p-grid-scroll">
+<div class="@RootClass">
     <table class="l2p-grid">
         <thead>
             <tr>
@@ -17,6 +17,10 @@
                             <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="l2p-grid-lock"
                                      Title="Den je zamčený" />
                         }
+                        @if (day == Today)
+                        {
+                            <span class="l2p-today-pill">Dnes</span>
+                        }
                     </th>
                 }
             </tr>
@@ -25,7 +29,13 @@
             @foreach (var (group, index) in Groups.Select((g, i) => (g, i)))
             {
                 <tr class="l2p-grid-group">
-                    <th class="l2p-grid-boss" scope="rowgroup">@group.Title</th>
+                    <th class="l2p-grid-boss" scope="rowgroup">
+                        @foreach (var key in group.DotKeys)
+                        {
+                            <span class="@($"l2p-grid-dot l2p-grid-dot-{key}")" aria-hidden="true"></span>
+                        }
+                        @group.Title
+                    </th>
                     @if (index == 0)
                     {
                         <th colspan="@Days.Count"></th>
@@ -60,18 +70,30 @@
     </table>
 </div>
 
+@if (ShowLegend)
+{
+    <ul class="l2p-grid-legend" aria-label="Legenda mřížky">
+        <li><span class="l2p-legend-box l2p-legend-checked" aria-hidden="true"></span>zaškrtnuto</li>
+        <li><span class="l2p-legend-box l2p-legend-unchecked" aria-hidden="true"></span>nezaškrtnuto</li>
+        <li><span class="l2p-legend-box l2p-legend-locked" aria-hidden="true"></span>zamčeno</li>
+        <li><span class="l2p-legend-box l2p-legend-blocked" aria-hidden="true"></span>nejde přidat (mimo rozpis, limit)</li>
+        <li><span class="l2p-grid-dot l2p-grid-dot-evening" aria-hidden="true"></span>V – Večerní</li>
+        <li><span class="l2p-grid-dot l2p-grid-dot-morning" aria-hidden="true"></span>R – Ranní</li>
+    </ul>
+}
+
 @code {
-    private static readonly (ActivityCategory Category, string Title)[] GroupOrder =
+    private static readonly (ActivityCategory Category, string Title, string[] DotKeys)[] GroupOrder =
     [
-        (ActivityCategory.NormalEpic, "Normal epicy"),
-        (ActivityCategory.ChaoticEpic, "Chaotic epicy"),
-        (ActivityCategory.CastleSiege, "Castle Siege"),
+        (ActivityCategory.NormalEpic, "Normal epicy", ["normal"]),
+        (ActivityCategory.ChaoticEpic, "Chaotic epicy", ["evening", "morning"]),
+        (ActivityCategory.CastleSiege, "Castle Siege", ["cs"]),
     ];
 
     [Parameter, EditorRequired]
     public WeekGrid Grid { get; set; } = default!;
 
-    /// <summary>All checkboxes are disabled and no lock icons are shown.</summary>
+    /// <summary>All checkboxes are inert (drawn like normal cells, not dimmed) and no lock icons are shown.</summary>
     [Parameter]
     public bool ReadOnly { get; set; }
 
@@ -79,28 +101,61 @@
     [Parameter]
     public DateOnly? Today { get; set; }
 
+    /// <summary>Shows a short legend of the cell states under the grid.</summary>
+    [Parameter]
+    public bool ShowLegend { get; set; }
+
     [Parameter]
     public EventCallback<WeekGridCellToggle> OnToggle { get; set; }
 
     private IReadOnlyList<DateOnly> Days => Grid.Week.Days.ToList();
 
-    private IEnumerable<(string Title, IEnumerable<WeekGridRow> Rows)> Groups =>
+    private IEnumerable<(string Title, string[] DotKeys, IEnumerable<WeekGridRow> Rows)> Groups =>
         GroupOrder
-            .Select(g => (g.Title, Rows: Grid.Rows.Where(r => r.Activity.Category == g.Category).ToList().AsEnumerable()))
+            .Select(g => (g.Title, g.DotKeys, Rows: Grid.Rows.Where(r => r.Activity.Category == g.Category).ToList().AsEnumerable()))
             .Where(g => g.Rows.Any());
 
-    private string DayClass(DateOnly day) => day == Today ? "l2p-grid-today" : "";
+    private string RootClass => ReadOnly ? "l2p-grid-scroll l2p-glass l2p-grid-readonly" : "l2p-grid-scroll l2p-glass";
+
+    private static string CheckClass(GridCellState state, WeekGridCell cell)
+    {
+        var css = "l2p-grid-check";
+        if (state == GridCellState.Blocked)
+        {
+            css += " l2p-cell-blocked";
+        }
+
+        return cell.Slot switch
+        {
+            EventSlot.Evening => css + " l2p-slot-evening",
+            EventSlot.Morning => css + " l2p-slot-morning",
+            _ => css,
+        };
+    }
+
+    private HashSet<DateOnly> _lockedDays = [];
+
+    protected override void OnParametersSet() => _lockedDays = ComputeLockedDays();
+
+    private string DayClass(DateOnly day) =>
+        (day == Today ? "l2p-grid-today" : "") + (IsLocked(day) ? " l2p-grid-locked" : "");
+
+    private bool IsLocked(DateOnly day) => _lockedDays.Contains(day);
 
     /// <summary>A day is locked when it has cells but none of them can be edited.</summary>
-    private bool IsLocked(DateOnly day)
+    private HashSet<DateOnly> ComputeLockedDays()
     {
         if (ReadOnly)
         {
-            return false;
+            return [];
         }
 
-        var cells = Grid.Rows.SelectMany(r => r.Cells).Where(c => c.Date == day).ToList();
-        return cells.Count > 0 && cells.All(c => !c.IsEditable);
+        return Grid.Rows
+            .SelectMany(r => r.Cells)
+            .GroupBy(c => c.Date)
+            .Where(g => g.All(c => !c.IsEditable))
+            .Select(g => g.Key)
+            .ToHashSet();
     }
 
     private static string? CellLabel(WeekGridCell cell)
@@ -124,9 +179,10 @@
         // The same holds once a flexible boss has its weekly count checked; it is computed from the shown state,
         // so it follows optimistic toggles without waiting for a reload.
         var blockedByLimit = limitReached && !cell.IsChecked;
-        var disabled = ReadOnly || !cell.IsEditable || (!cell.IsScheduled && !cell.IsChecked) || blockedByLimit;
+        var state = GridCellStates.For(ReadOnly, cell, limitReached);
+        var disabled = state != GridCellState.Editable;
 
-        <div class="l2p-grid-check">
+        <div class="@CheckClass(state, cell)">
             @if (blockedByLimit && cell.IsEditable && !ReadOnly)
             {
                 <MudTooltip Text="@($"Za týden už je zaškrtnuto {AttendanceRules.WeeklyLimit(activity)}×, víc výskytů se nečeká.")">

@@ -1,7 +1,7 @@
 @using L2Points.Domain.Stats
 @using L2Points.Web.Formatting
 
-<MudPaper Outlined="true" Class="pa-4">
+<MudPaper Outlined="true" Class="pa-4 l2p-glass">
     <div class="l2p-summary-head">
         @if (!string.IsNullOrEmpty(Title))
         {
@@ -22,7 +22,9 @@
         {
             var stat = Summary.Stats[category];
             <div class="l2p-summary-tile">
-                <MudText Typo="Typo.caption" Color="Color.Default">@DisplayFormat.CategoryLabel(category)</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Default">
+                    <span class="@($"l2p-cat-dot l2p-cat-dot-{DisplayFormat.StatCategoryKey(category)}")" aria-hidden="true"></span>@DisplayFormat.CategoryLabel(category)
+                </MudText>
                 <MudText Typo="Typo.h5">@DisplayFormat.Percent(stat.Percent)</MudText>
                 <MudText Typo="Typo.caption" Color="Color.Default">@Ratio(stat)</MudText>
             </div>

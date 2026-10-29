@@ -1,9 +1,7 @@
-/* The wrapper scrolls horizontally on narrow screens; the first column stays pinned. */
+/* The grid is one glass card (.l2p-glass from app.css); the wrapper scrolls horizontally on narrow screens and the
+   first column stays pinned. Rows have no blur of their own. */
 .l2p-grid-scroll {
     overflow-x: auto;
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: var(--mud-default-borderradius);
-    background: var(--mud-palette-surface);
 }
 
 .l2p-grid {
@@ -11,21 +9,23 @@
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.875rem;
-    color: var(--mud-palette-text-primary);
+    color: var(--l2p-text);
 }
 
+/* Cells are transparent so the glass shows through; only the pinned boss column is opaque (see below). */
 .l2p-grid th,
 .l2p-grid td {
     padding: 0.25rem 0.5rem;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
-    background: var(--mud-palette-surface);
+    border-bottom: 1px solid var(--l2p-divider);
+    background-color: transparent;
 }
 
 .l2p-grid thead th {
-    font-weight: 600;
+    font-weight: 500;
     text-align: center;
     white-space: nowrap;
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
+    border-bottom-color: var(--l2p-glass-edge);
 }
 
 .l2p-grid-day,
@@ -34,6 +34,7 @@
     text-align: center;
 }
 
+/* Pinned first column: opaque, otherwise the scrolled cells would show through it. */
 .l2p-grid .l2p-grid-boss {
     position: sticky;
     left: 0;
@@ -42,32 +43,56 @@
     text-align: left;
     font-weight: 500;
     white-space: nowrap;
-    border-right: 1px solid var(--mud-palette-lines-default);
+    color: var(--l2p-text);
+    background-color: var(--l2p-surface-solid);
+    border-right: 1px solid var(--l2p-divider);
 }
 
+.l2p-grid thead th.l2p-grid-boss {
+    color: var(--l2p-text-2);
+}
+
+/* Group rows: a category dot and a heavier title, no fill. */
 .l2p-grid-group th {
-    padding-top: 0.6rem;
-    padding-bottom: 0.2rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    padding-top: 0.7rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
     text-align: left;
-    color: var(--mud-palette-primary);
-    background: color-mix(in srgb, var(--mud-palette-primary) 7%, var(--mud-palette-surface));
+    color: var(--l2p-text);
 }
 
 .l2p-grid-group .l2p-grid-group-day {
-    font-weight: 600;
-    letter-spacing: normal;
-    text-transform: none;
+    font-weight: 500;
     text-align: center;
     white-space: nowrap;
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
 }
 
-.l2p-grid-group .l2p-grid-group-day.l2p-grid-today {
-    color: var(--mud-palette-primary);
+.l2p-grid-group .l2p-grid-group-day.l2p-grid-locked {
+    color: var(--l2p-muted);
+}
+
+.l2p-grid-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    vertical-align: middle;
+    background: var(--l2p-cat-normal);
+}
+
+.l2p-grid-dot-evening {
+    background: var(--l2p-cat-evening);
+}
+
+.l2p-grid-dot-morning {
+    background: var(--l2p-cat-morning);
+}
+
+.l2p-grid-dot-cs {
+    background: var(--l2p-cat-cs);
 }
 
 .l2p-grid tbody tr:last-child th,
@@ -75,20 +100,57 @@
     border-bottom: none;
 }
 
-.l2p-grid .l2p-grid-today,
-.l2p-grid thead th.l2p-grid-today {
-    background: color-mix(in srgb, var(--mud-palette-primary) 12%, var(--mud-palette-surface));
+/* Today: the whole column is tinted, the header gets a pill. The pinned column is never tinted. */
+.l2p-grid td.l2p-grid-today,
+.l2p-grid th.l2p-grid-today {
+    background-color: color-mix(in srgb, var(--l2p-primary) 10%, transparent);
 }
 
-.l2p-grid thead th.l2p-grid-today {
-    color: var(--mud-palette-primary);
-    box-shadow: inset 0 -2px 0 var(--mud-palette-primary);
+.l2p-grid thead th.l2p-grid-today,
+.l2p-grid-group .l2p-grid-group-day.l2p-grid-today {
+    color: var(--l2p-primary);
 }
 
+.l2p-grid thead th.l2p-grid-locked {
+    color: var(--l2p-muted);
+}
+
+.l2p-today-pill {
+    display: block;
+    width: fit-content;
+    margin: 0.15rem auto 0;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.1rem;
+    color: var(--l2p-on-primary);
+    background: var(--l2p-primary);
+}
+
+.l2p-grid ::deep .l2p-grid-lock {
+    vertical-align: middle;
+    margin-left: 0.15rem;
+    opacity: 0.8;
+}
+
+/* Hover (desktop): the whole row gets a stronger glass so a row can be followed across seven days. */
+@media (hover: hover) {
+    .l2p-grid tbody tr:not(.l2p-grid-group):hover > th,
+    .l2p-grid tbody tr:not(.l2p-grid-group):hover > td {
+        background-image: linear-gradient(var(--l2p-glass-strong), var(--l2p-glass-strong));
+    }
+}
+
+/* ---- Cells ---- */
 .l2p-grid-check {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.l2p-grid-check ::deep .mud-input-control {
+    margin: 0;
 }
 
 .l2p-grid-check ::deep .mud-checkbox {
@@ -98,12 +160,170 @@
 .l2p-grid-check ::deep .mud-checkbox .mud-typography {
     font-size: 0.8rem;
     white-space: nowrap;
+    color: var(--l2p-text-2);
 }
 
-.l2p-grid ::deep .l2p-grid-lock {
+/* Slot dot before the "V 21:00" / "R 05:30" label. */
+.l2p-slot-evening ::deep .mud-checkbox .mud-typography::before,
+.l2p-slot-morning ::deep .mud-checkbox .mud-typography::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 0.3rem;
+    border-radius: 50%;
     vertical-align: middle;
-    margin-left: 0.15rem;
-    opacity: 0.7;
+}
+
+.l2p-slot-evening ::deep .mud-checkbox .mud-typography::before {
+    background: var(--l2p-cat-evening);
+}
+
+.l2p-slot-morning ::deep .mud-checkbox .mud-typography::before {
+    background: var(--l2p-cat-morning);
+}
+
+/* The checkbox box is drawn here (the MudBlazor svg is hidden): an outline with enough contrast when empty,
+   a solid primary box with a tick when checked. The icon button itself stays the hit area. */
+.l2p-grid-check ::deep .mud-checkbox .mud-icon-button {
+    position: relative;
+    padding: 6px;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    color: var(--l2p-primary);
+}
+
+.l2p-grid-check ::deep .mud-checkbox .mud-icon-button .mud-icon-root {
+    display: none;
+}
+
+.l2p-grid-check ::deep .mud-checkbox .mud-icon-button::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--l2p-muted);
+    border-radius: 6px;
+    background: transparent;
+}
+
+.l2p-grid-check ::deep .mud-checkbox .mud-checkbox-true::before {
+    border-color: var(--l2p-primary);
+    background: var(--l2p-primary);
+}
+
+.l2p-grid-check ::deep .mud-checkbox .mud-checkbox-true::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 10px;
+    box-sizing: border-box;
+    border: solid var(--l2p-on-primary);
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -64%) rotate(45deg);
+}
+
+.l2p-grid-check ::deep .mud-checkbox .mud-icon-button:has(.mud-checkbox-input:focus-visible)::before {
+    outline: 2px solid var(--l2p-primary);
+    outline-offset: 2px;
+}
+
+@media (hover: hover) {
+    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid-check:not(.l2p-cell-blocked) ::deep .mud-checkbox .mud-icon-button:hover::before {
+        border-color: var(--l2p-primary);
+    }
+}
+
+/* Cannot be changed here (locked day, outside the schedule, weekly limit): diluted. */
+.l2p-cell-blocked ::deep .mud-checkbox,
+.l2p-cell-blocked ::deep .mud-checkbox .mud-icon-button {
+    opacity: 1;
+    cursor: default;
+}
+
+.l2p-cell-blocked ::deep .mud-checkbox .mud-icon-button::before {
+    border: 1.5px dashed color-mix(in srgb, var(--l2p-muted) 50%, transparent);
+}
+
+.l2p-cell-blocked ::deep .mud-checkbox .mud-checkbox-true::before {
+    border: 1.5px solid transparent;
+    background: color-mix(in srgb, var(--l2p-primary) 55%, var(--l2p-surface-solid));
+}
+
+/* The diluted fill is a mid tone in both themes, so the tick takes the text colour (about 7:1) instead of on-primary
+   (about 2.5:1). */
+.l2p-cell-blocked ::deep .mud-checkbox .mud-checkbox-true::after {
+    border-color: var(--l2p-text);
+}
+
+.l2p-cell-blocked ::deep .mud-checkbox .mud-typography {
+    color: var(--l2p-muted);
+}
+
+/* A view-only grid (player detail, or while the grid reloads) is not diluted: only the interaction is gone. */
+.l2p-grid-readonly .l2p-grid-check ::deep .mud-checkbox,
+.l2p-grid-readonly .l2p-grid-check ::deep .mud-checkbox .mud-icon-button,
+.l2p-grid-readonly .l2p-grid-check ::deep .mud-checkbox .mud-typography {
+    opacity: 1;
+    cursor: default;
+}
+
+.l2p-grid-readonly .l2p-grid-check ::deep .mud-checkbox .mud-typography {
+    color: var(--l2p-text-2);
+}
+
+/* ---- Legend ---- */
+.l2p-grid-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.25rem;
+    margin: 0.75rem 0 0;
+    padding: 0 0.25rem;
+    list-style: none;
+    font-size: 0.8125rem;
+    color: var(--l2p-text-2);
+}
+
+.l2p-grid-legend li {
+    display: inline-flex;
+    align-items: center;
+}
+
+.l2p-grid-legend .l2p-grid-dot {
+    width: 6px;
+    height: 6px;
+}
+
+.l2p-legend-box {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 0.4rem;
+    box-sizing: border-box;
+    border-radius: 4px;
+}
+
+.l2p-legend-checked {
+    background: var(--l2p-primary);
+}
+
+.l2p-legend-unchecked {
+    border: 1.5px solid var(--l2p-muted);
+}
+
+.l2p-legend-locked {
+    background: color-mix(in srgb, var(--l2p-primary) 55%, var(--l2p-surface-solid));
+}
+
+.l2p-legend-blocked {
+    border: 1.5px dashed color-mix(in srgb, var(--l2p-muted) 50%, transparent);
 }
 
 @media (max-width: 599.98px) {
@@ -114,5 +334,12 @@
         padding-left: 0.5rem;
         padding-right: 0.35rem;
         line-height: 1.2;
+    }
+
+    /* Touch target of at least 40x40 px around the 20px box. */
+    .l2p-grid-check ::deep .mud-checkbox .mud-icon-button {
+        width: 40px;
+        height: 40px;
+        padding: 10px;
     }
 }

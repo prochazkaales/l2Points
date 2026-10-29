@@ -28,12 +28,39 @@
     display: flex;
     flex-direction: column;
     padding: 0.5rem 0.75rem;
-    border-radius: var(--mud-default-borderradius);
-    background: color-mix(in srgb, var(--mud-palette-primary) 8%, var(--mud-palette-surface));
+    border: 1px solid transparent;
+    border-radius: 14px;
+    background: var(--l2p-glass-strong);
 }
 
+/* Total is picked out by an outline, not by a heavier fill. */
 .l2p-summary-tile-total {
-    background: color-mix(in srgb, var(--mud-palette-primary) 18%, var(--mud-palette-surface));
+    border-color: var(--l2p-primary);
+}
+
+.l2p-cat-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 0.4rem;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.l2p-cat-dot-normal {
+    background: var(--l2p-cat-normal);
+}
+
+.l2p-cat-dot-evening {
+    background: var(--l2p-cat-evening);
+}
+
+.l2p-cat-dot-morning {
+    background: var(--l2p-cat-morning);
+}
+
+.l2p-cat-dot-cs {
+    background: var(--l2p-cat-cs);
 }
 
 @media (max-width: 599.98px) {
