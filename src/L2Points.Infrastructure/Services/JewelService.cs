@@ -40,8 +40,7 @@ public sealed class JewelService(IDbContextFactory<AppDbContext> dbFactory)
             return check;
 
         db.UserJewels.Add(new UserJewel { UserId = userId, JewelTypeId = jewelTypeId });
-        await db.SaveChangesAsync(ct);
-        return JewelChangeResult.Ok;
+        return await SaveAsync(db, userId, ct);
     }
 
     /// <summary>Removes a single piece (the one with the lowest id) of the jewel type from the player.</summary>
@@ -61,8 +60,24 @@ public sealed class JewelService(IDbContextFactory<AppDbContext> dbFactory)
             return JewelChangeResult.NotHeld;
 
         db.UserJewels.Remove(piece);
-        await db.SaveChangesAsync(ct);
-        return JewelChangeResult.Ok;
+        return await SaveAsync(db, userId, ct);
+    }
+
+    /// <summary>The player may be deleted by another admin between the check and the save.</summary>
+    private async Task<JewelChangeResult> SaveAsync(AppDbContext db, string userId, CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return JewelChangeResult.Ok;
+        }
+        catch (DbUpdateException)
+        {
+            await using var fresh = await dbFactory.CreateDbContextAsync(ct);
+            if (!await fresh.Users.AnyAsync(u => u.Id == userId, ct))
+                return JewelChangeResult.UnknownPlayer;
+            throw;
+        }
     }
 
     private static async Task<JewelChangeResult> CheckAsync(AppDbContext db, string userId, int jewelTypeId, CancellationToken ct)

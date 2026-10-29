@@ -129,6 +129,73 @@ public sealed class PlayerAdminService(
         return new PlayerAdminResult(PlayerAdminStatus.Ok, Password: password);
     }
 
+    /// <summary>
+    /// Deactivates (today in Prague becomes DeactivatedAt, the security stamp rotates so sessions end)
+    /// or reactivates the player. Setting the current state again changes nothing.
+    /// </summary>
+    public async Task<PlayerAdminResult> SetActiveAsync(string actorUserId, string userId, bool active, CancellationToken ct = default)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
+        if (!active && actorUserId == userId)
+            return new PlayerAdminResult(PlayerAdminStatus.CannotChangeSelf);
+        if (user.IsActive == active)
+            return new PlayerAdminResult(PlayerAdminStatus.Ok);
+
+        user.IsActive = active;
+        user.DeactivatedAt = active ? null : AppTime.TodayInPrague(time);
+        // UpdateSecurityStampAsync saves the other changes too.
+        var saved = active ? await users.UpdateAsync(user) : await users.UpdateSecurityStampAsync(user);
+        return saved.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(saved);
+    }
+
+    /// <summary>
+    /// Grants or revokes the Admin role. The security stamp rotates, so the player is signed out
+    /// and gets the new roles on the next sign-in.
+    /// </summary>
+    public async Task<PlayerAdminResult> SetAdminAsync(string actorUserId, string userId, bool isAdmin, CancellationToken ct = default)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
+        if (!isAdmin && actorUserId == userId)
+            return new PlayerAdminResult(PlayerAdminStatus.CannotChangeSelf);
+        if (await users.IsInRoleAsync(user, Roles.Admin) == isAdmin)
+            return new PlayerAdminResult(PlayerAdminStatus.Ok);
+
+        var changed = isAdmin
+            ? await users.AddToRoleAsync(user, Roles.Admin)
+            : await users.RemoveFromRoleAsync(user, Roles.Admin);
+        if (!changed.Succeeded)
+            return FromIdentityErrors(changed);
+
+        var stamp = await users.UpdateSecurityStampAsync(user);
+        return stamp.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(stamp);
+    }
+
+    /// <summary>Deletes the player; attendance and jewels go with it (cascading foreign keys).</summary>
+    public async Task<PlayerAdminResult> DeleteAsync(string actorUserId, string userId, CancellationToken ct = default)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
+        if (actorUserId == userId)
+            return new PlayerAdminResult(PlayerAdminStatus.CannotChangeSelf);
+
+        var deleted = await users.DeleteAsync(user);
+        return deleted.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(deleted);
+    }
+
     private static string? ValidateNick(string nick)
     {
         if (nick.Length == 0)

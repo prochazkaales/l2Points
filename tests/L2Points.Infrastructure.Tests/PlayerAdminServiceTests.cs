@@ -1,3 +1,4 @@
+using L2Points.Domain.Jewels;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Infrastructure.Services;
@@ -12,7 +13,7 @@ public class PlayerAdminServiceTests
 {
     private static readonly DateOnly Monday = new(2026, 10, 26);
 
-    private sealed record Arranged(ServiceProvider Provider, PlayerAdminService Service, AppUser Admin) : IAsyncDisposable
+    private sealed record Arranged(ServiceProvider Provider, PlayerAdminService Service, AppUser Admin, FakeTimeProvider Time) : IAsyncDisposable
     {
         public ValueTask DisposeAsync() => Provider.DisposeAsync();
 
@@ -55,6 +56,13 @@ public class PlayerAdminServiceTests
             user.Nick = nick;
             Assert.True((await users.UpdateAsync(user)).Succeeded);
         }
+
+        public async Task<string> StampOfAsync(string userId)
+        {
+            using var scope = Provider.CreateScope();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            return (await users.GetSecurityStampAsync((await users.FindByIdAsync(userId))!))!;
+        }
     }
 
     private static async Task<Arranged> ArrangeAsync()
@@ -83,7 +91,7 @@ public class PlayerAdminServiceTests
             provider.GetRequiredService<IServiceScopeFactory>(),
             provider.GetRequiredService<IDbContextFactory<AppDbContext>>(),
             time);
-        return new Arranged(provider, service, admin);
+        return new Arranged(provider, service, admin, time);
     }
 
     [Fact]
@@ -199,7 +207,12 @@ public class PlayerAdminServiceTests
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var tracked = (await users.FindByIdAsync(bob.Id))!;
-            await users.SetLockoutEndDateAsync(tracked, DateTimeOffset.UtcNow.AddHours(1));
+            // Lock out through failed attempts: UserManager compares lockout against the system clock, not TimeProvider.
+            for (var i = 0; i < 5; i++)
+            {
+                Assert.True((await users.AccessFailedAsync(tracked)).Succeeded);
+            }
+            Assert.True(await users.IsLockedOutAsync(tracked));
             oldStamp = (await users.GetSecurityStampAsync(tracked))!;
         }
 
@@ -247,5 +260,125 @@ public class PlayerAdminServiceTests
         Assert.False(carl.IsActive);
         Assert.Equal(new DateOnly(2026, 10, 28), carl.DeactivatedAt);
         Assert.Equal(Monday, carl.ActiveFrom);
+    }
+
+    [Fact]
+    public async Task Deactivate_sets_date_and_rotates_stamp()
+    {
+        await using var arranged = await ArrangeAsync();
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        var oldStamp = await arranged.StampOfAsync(bob.Id);
+
+        var result = await arranged.Service.SetActiveAsync(arranged.Admin.Id, bob.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        var stored = await arranged.FindByIdAsync(bob.Id);
+        Assert.False(stored.IsActive);
+        Assert.Equal(new DateOnly(2026, 10, 29), stored.DeactivatedAt);
+        Assert.NotEqual(oldStamp, await arranged.StampOfAsync(bob.Id));
+
+        arranged.Time.SetUtcNow(DateTimeOffset.Parse("2026-11-03T12:00:00Z"));
+        var again = await arranged.Service.SetActiveAsync(arranged.Admin.Id, bob.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, again.Status);
+        Assert.Equal(new DateOnly(2026, 10, 29), (await arranged.FindByIdAsync(bob.Id)).DeactivatedAt);
+    }
+
+    [Fact]
+    public async Task Reactivate_clears_deactivated_at()
+    {
+        await using var arranged = await ArrangeAsync();
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        await arranged.Service.SetActiveAsync(arranged.Admin.Id, bob.Id, false);
+
+        var result = await arranged.Service.SetActiveAsync(arranged.Admin.Id, bob.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        var stored = await arranged.FindByIdAsync(bob.Id);
+        Assert.True(stored.IsActive);
+        Assert.Null(stored.DeactivatedAt);
+    }
+
+    [Fact]
+    public async Task Admin_cannot_restrict_self()
+    {
+        await using var arranged = await ArrangeAsync();
+        var adminId = arranged.Admin.Id;
+        var oldStamp = await arranged.StampOfAsync(adminId);
+
+        Assert.Equal(PlayerAdminStatus.CannotChangeSelf, (await arranged.Service.SetActiveAsync(adminId, adminId, false)).Status);
+        Assert.Equal(PlayerAdminStatus.CannotChangeSelf, (await arranged.Service.SetAdminAsync(adminId, adminId, false)).Status);
+        Assert.Equal(PlayerAdminStatus.CannotChangeSelf, (await arranged.Service.DeleteAsync(adminId, adminId)).Status);
+
+        var stored = await arranged.FindByIdAsync(adminId);
+        Assert.True(stored.IsActive);
+        Assert.Null(stored.DeactivatedAt);
+        Assert.Contains(Roles.Admin, await arranged.RolesOfAsync(stored));
+        Assert.Equal(oldStamp, await arranged.StampOfAsync(adminId));
+
+        Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.SetActiveAsync(adminId, adminId, true)).Status);
+    }
+
+    [Fact]
+    public async Task Set_admin_grants_and_revokes_role()
+    {
+        await using var arranged = await ArrangeAsync();
+        var created = await arranged.Service.CreateAsync("bob", "Bob", null);
+        var bob = (await arranged.FindAsync("bob"))!;
+        Assert.Equal(PlayerAdminStatus.Ok, created.Status);
+        var oldStamp = await arranged.StampOfAsync(bob.Id);
+
+        var granted = await arranged.Service.SetAdminAsync(arranged.Admin.Id, bob.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.Ok, granted.Status);
+        Assert.Equal([Roles.Admin, Roles.Player], (await arranged.RolesOfAsync(bob)).Order().ToArray());
+        var grantedStamp = await arranged.StampOfAsync(bob.Id);
+        Assert.NotEqual(oldStamp, grantedStamp);
+
+        var revoked = await arranged.Service.SetAdminAsync(arranged.Admin.Id, bob.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, revoked.Status);
+        Assert.Equal([Roles.Player], await arranged.RolesOfAsync(bob));
+        Assert.NotEqual(grantedStamp, await arranged.StampOfAsync(bob.Id));
+    }
+
+    [Fact]
+    public async Task Delete_removes_player_with_attendance_and_jewels()
+    {
+        await using var arranged = await ArrangeAsync();
+        await TestData.SeedCatalogAsync(arranged.Provider);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        await TestData.AddAttendanceAsync(arranged.Provider, bob.Id, "QueenAnt", Monday);
+        var factory = arranged.Provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        int jewelTypes;
+        await using (var db = await factory.CreateDbContextAsync())
+        {
+            var baium = await db.JewelTypes.Where(t => t.Code == "BaiumRing").Select(t => t.Id).SingleAsync();
+            db.UserJewels.Add(new UserJewel { UserId = bob.Id, JewelTypeId = baium });
+            await db.SaveChangesAsync();
+            jewelTypes = await db.JewelTypes.CountAsync();
+        }
+
+        var result = await arranged.Service.DeleteAsync(arranged.Admin.Id, bob.Id);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        Assert.Null(await arranged.FindAsync("bob"));
+        await using (var db = await factory.CreateDbContextAsync())
+        {
+            Assert.False(await db.Attendances.AnyAsync(a => a.UserId == bob.Id));
+            Assert.False(await db.UserJewels.AnyAsync(j => j.UserId == bob.Id));
+            Assert.Equal(jewelTypes, await db.JewelTypes.CountAsync());
+        }
+    }
+
+    [Fact]
+    public async Task Lifecycle_on_unknown_player()
+    {
+        await using var arranged = await ArrangeAsync();
+        var adminId = arranged.Admin.Id;
+
+        Assert.Equal(PlayerAdminStatus.UnknownPlayer, (await arranged.Service.SetActiveAsync(adminId, "nobody", false)).Status);
+        Assert.Equal(PlayerAdminStatus.UnknownPlayer, (await arranged.Service.SetAdminAsync(adminId, "nobody", true)).Status);
+        Assert.Equal(PlayerAdminStatus.UnknownPlayer, (await arranged.Service.DeleteAsync(adminId, "nobody")).Status);
     }
 }
