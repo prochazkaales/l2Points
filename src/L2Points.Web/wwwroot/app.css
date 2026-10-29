@@ -199,8 +199,9 @@ h1:focus {
     backdrop-filter: blur(20px) saturate(140%);
 }
 
-/* Tables live inside the card and must not paint over it. */
-.mud-main-content .mud-table,
+/* Tables live inside the card and must not paint over it. An outlined table is itself the card (bare MudTable on
+   /points, /admin/*), so it keeps the glass fill from the rule above. */
+.mud-main-content .mud-table:not(.mud-table-outlined),
 .mud-main-content .mud-table-container,
 .mud-main-content .mud-table-head,
 .mud-main-content .mud-table-head .mud-table-cell,
