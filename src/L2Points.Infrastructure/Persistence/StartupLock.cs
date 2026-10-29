@@ -1,6 +1,9 @@
 using System.Data;
 using System.Data.Common;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace L2Points.Infrastructure.Persistence;
 
@@ -10,6 +13,9 @@ namespace L2Points.Infrastructure.Persistence;
 internal static class StartupLock
 {
     public const string ResourceName = "L2Points.DatabaseInitializer";
+
+    // SQL Server error "Database already exists".
+    private const int DatabaseAlreadyExistsError = 1801;
 
     /// <summary>
     /// Runs <paramref name="action"/> while holding the lock. The lock is session-scoped, so the connection of
@@ -24,6 +30,10 @@ internal static class StartupLock
             await action();
             return;
         }
+
+        // The lock needs an open connection to the app database, which fails (error 4060) on a brand new server
+        // where MigrateAsync has not created it yet (docker compose, CI smoke test). Create the empty database first.
+        await EnsureDatabaseExistsAsync(db, ct);
 
         await db.Database.OpenConnectionAsync(ct);
         try
@@ -51,6 +61,24 @@ internal static class StartupLock
         finally
         {
             await db.Database.CloseConnectionAsync();
+        }
+    }
+
+    private static async Task EnsureDatabaseExistsAsync(AppDbContext db, CancellationToken ct)
+    {
+        var creator = db.GetService<IRelationalDatabaseCreator>();
+        if (await creator.ExistsAsync(ct))
+        {
+            return;
+        }
+
+        try
+        {
+            await creator.CreateAsync(ct);
+        }
+        catch (SqlException ex) when (ex.Number == DatabaseAlreadyExistsError)
+        {
+            // Another instance created it in the meantime.
         }
     }
 

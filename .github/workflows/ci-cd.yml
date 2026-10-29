@@ -94,6 +94,48 @@ jobs:
             --only-show-errors \
             --output none
 
+      # In single revision mode the old revision keeps serving until the new one is ready, so /health/ready alone
+      # would pass even if the new image fails to pull, crashes in migrations or fails its probes.
+      - name: Wait for the new revision
+        run: |
+          expected="$IMAGE_NAME:sha-$GITHUB_SHA"
+          app_value() {
+            az containerapp show -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --query "$1" -o tsv 2>/dev/null || true
+          }
+          revision_value() {
+            az containerapp revision show -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" --revision "$1" \
+              --query "$2" -o tsv 2>/dev/null || true
+          }
+          # A first start can wait up to 3 min on the startup lock plus the migrations.
+          deadline=$(( SECONDS + 600 ))
+          while true; do
+            latest="$(app_value properties.latestRevisionName)"
+            ready="$(app_value properties.latestReadyRevisionName)"
+            if [ -n "$latest" ]; then
+              image="$(revision_value "$latest" "properties.template.containers[0].image")"
+              health="$(revision_value "$latest" properties.healthState)"
+              provisioning="$(revision_value "$latest" properties.provisioningState)"
+              echo "latest=$latest ready=$ready image=$image health=$health provisioning=$provisioning"
+              if [ "$provisioning" = "Failed" ] || [ "$health" = "Unhealthy" ]; then
+                echo "Revision $latest failed (provisioning=$provisioning, health=$health)" >&2
+                exit 1
+              fi
+              if [ "$latest" = "$ready" ] && [ -n "$image" ]; then
+                if [ "$image" != "$expected" ]; then
+                  echo "Latest revision $latest runs $image, expected $expected" >&2
+                  exit 1
+                fi
+                echo "OK: revision $latest is ready with $expected"
+                break
+              fi
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "Revision did not become ready within 600s" >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
       - name: Wait for readiness
         run: |
           fqdn="$(az containerapp show -g "$RESOURCE_GROUP" -n "$CONTAINER_APP" \
