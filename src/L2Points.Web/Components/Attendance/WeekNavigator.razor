@@ -7,8 +7,7 @@
     <MudText Typo="Typo.h6" Class="l2p-week-nav-label">@DisplayFormat.WeekLabel(Week)</MudText>
     <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" aria-label="Další týden"
                    OnClick="() => WeekChanged.InvokeAsync(Week.Next())" />
-    <MudButton Variant="Variant.Text" Size="Size.Small" Color="Color.Primary" Class="ml-2 l2p-week-nav-current"
-               Disabled="@IsCurrentWeek"
+    <MudButton Variant="Variant.Text" Size="Size.Small" Color="Color.Primary" Class="@CurrentWeekClass"
                OnClick="() => WeekChanged.InvokeAsync(Week.Containing(Today))">Tento týden</MudButton>
 </div>
 
@@ -23,4 +22,8 @@
     public EventCallback<Week> WeekChanged { get; set; }
 
     private bool IsCurrentWeek => Week == Week.Containing(Today);
+
+    // In the current week the button is hidden, not disabled: it keeps its space (the arrows do not jump) and leaves
+    // both the tab order and the accessibility tree.
+    private string CurrentWeekClass => IsCurrentWeek ? "ml-2 l2p-week-nav-current l2p-invisible" : "ml-2 l2p-week-nav-current";
 }

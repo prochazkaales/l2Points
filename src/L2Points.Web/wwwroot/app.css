@@ -199,14 +199,19 @@ h1:focus {
 }
 
 .validation-message {
-    color: #e50000;
+    color: var(--l2p-danger);
+}
+
+/* Hidden but still in the layout, so neighbours do not move; also out of the tab order and the accessibility tree. */
+.l2p-invisible {
+    visibility: hidden;
 }
 
 /* Blazor unhandled exception banner */
 #blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
-    color: #1f1b2e;
+    background: var(--l2p-surface-solid);
+    color: var(--l2p-text);
+    border-left: 4px solid var(--l2p-danger);
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;

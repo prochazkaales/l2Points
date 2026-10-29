@@ -44,7 +44,7 @@
     text-align: right;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
 }
 
 .l2p-rank-table ::deep .l2p-rank-cell span[class^="l2p-place-"] {
@@ -73,13 +73,13 @@
 
 .l2p-rank-table ::deep tr.l2p-rank-me {
     /* The pinned nick cell needs an opaque colour (--l2p-row-bg); the rest of the row is a translucent tint. */
-    --l2p-row-bg: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
-    background: color-mix(in srgb, var(--l2p-primary) 14%, transparent);
+    --l2p-row-bg: var(--l2p-row-me-solid);
+    background: var(--l2p-row-me);
 }
 
 /* The marker sits on the place cell, which is the row's first cell. */
 .l2p-rank-table ::deep tr.l2p-rank-me td.l2p-rank-cell {
-    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+    box-shadow: inset 3px 0 0 var(--l2p-primary);
 }
 
 .l2p-rank-table ::deep tr.l2p-rank-me td.l2p-nick-cell {
@@ -88,7 +88,7 @@
 
 /* Dimmed via colour (not opacity) so the pinned cell stays opaque. */
 .l2p-rank-table ::deep tr.l2p-rank-inactive td {
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
 }
 
 @media (max-width: 599.98px) {

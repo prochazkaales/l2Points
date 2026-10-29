@@ -69,7 +69,7 @@
 
 .l2p-wk-muted,
 .l2p-wk-empty {
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
 }
 
 /* Event kind badge (Normal / Večerní / Ranní / CS): tinted fill in the category colour, no outline. */
@@ -81,21 +81,25 @@
     font-weight: 600;
     letter-spacing: 0.03em;
     --l2p-kind: var(--l2p-cat-normal);
-    /* The category colour alone is too light for text on the light glass, so it is mixed with the text colour. */
-    color: color-mix(in srgb, var(--l2p-kind) 60%, var(--l2p-text));
+    /* The category colour alone is too light for text on the light glass; the text variant has its own token. */
+    --l2p-kind-text: var(--l2p-cat-normal-text);
+    color: var(--l2p-kind-text);
     background: color-mix(in srgb, var(--l2p-kind) 16%, transparent);
 }
 
 .l2p-wk-kind-evening {
     --l2p-kind: var(--l2p-cat-evening);
+    --l2p-kind-text: var(--l2p-cat-evening-text);
 }
 
 .l2p-wk-kind-morning {
     --l2p-kind: var(--l2p-cat-morning);
+    --l2p-kind-text: var(--l2p-cat-morning-text);
 }
 
 .l2p-wk-kind-cs {
     --l2p-kind: var(--l2p-cat-cs);
+    --l2p-kind-text: var(--l2p-cat-cs-text);
 }
 
 /* Cards view. */
@@ -122,7 +126,7 @@
 .l2p-wk-time {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
 }
 
 .l2p-wk-card-title {
@@ -149,7 +153,7 @@
 .l2p-wk-meter span {
     display: block;
     height: 100%;
-    background: var(--mud-palette-primary);
+    background: var(--l2p-primary);
 }
 
 .l2p-wk-attendees {
@@ -196,7 +200,7 @@
     min-width: 5.5rem;
     max-width: 8rem;
     margin: 0.15rem auto 0;
-    color: var(--mud-palette-text-primary);
+    color: var(--l2p-text);
     line-height: 1.2;
 }
 
@@ -220,32 +224,32 @@
 
 .l2p-wk-grid tr.l2p-wk-grid-me th,
 .l2p-wk-grid tr.l2p-wk-grid-me td {
-    background: color-mix(in srgb, var(--l2p-primary) 14%, transparent);
+    background: var(--l2p-row-me);
 }
 
 .l2p-wk-grid tr.l2p-wk-grid-me th.l2p-wk-grid-nick,
 .l2p-wk-grid tr.l2p-wk-grid-me td.l2p-wk-grid-nick {
-    background: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
+    background: var(--l2p-row-me-solid);
 }
 
 .l2p-wk-grid tr.l2p-wk-grid-me .l2p-wk-grid-nick {
-    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+    box-shadow: inset 3px 0 0 var(--l2p-primary);
     font-weight: 600;
 }
 
 .l2p-wk-grid ::deep .l2p-wk-yes {
-    color: var(--mud-palette-success);
+    color: var(--l2p-success);
     vertical-align: middle;
 }
 
 .l2p-wk-no {
-    color: var(--mud-palette-text-disabled);
+    color: var(--l2p-muted);
 }
 
 .l2p-wk-grid-sum {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--mud-palette-text-secondary);
+    color: var(--l2p-text-2);
 }
 
 .l2p-wk-grid tfoot th,
