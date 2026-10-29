@@ -68,7 +68,7 @@
     color: var(--mud-palette-text-secondary);
 }
 
-/* Event kind badge (Normal / Večerní / Ranní / CS): outline in the category colour, no fill. */
+/* Event kind badge (Normal / Večerní / Ranní / CS): tinted fill in the category colour, no outline. */
 .l2p-wk-kind {
     display: inline-block;
     padding: 0 0.4rem;
@@ -79,8 +79,7 @@
     --l2p-kind: var(--l2p-cat-normal);
     /* The category colour alone is too light for text on the light glass, so it is mixed with the text colour. */
     color: color-mix(in srgb, var(--l2p-kind) 60%, var(--l2p-text));
-    background: transparent;
-    border: 1px solid color-mix(in srgb, var(--l2p-kind) 45%, transparent);
+    background: color-mix(in srgb, var(--l2p-kind) 16%, transparent);
 }
 
 .l2p-wk-kind-evening {

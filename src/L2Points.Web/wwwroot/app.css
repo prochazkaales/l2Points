@@ -53,7 +53,7 @@
     --l2p-logo-tile-edge: #2E2A42;
     --l2p-tone-high: #6FE3C8;
     --l2p-tone-mid: #F5C15C;
-    --l2p-tone-low: #FF8A8A;
+    --l2p-tone-low: #FFA3A3;
     --l2p-place-1: #F5C15C;
     --l2p-place-2: #C9CBE0;
     --l2p-place-3: #E0915A;
@@ -90,9 +90,9 @@
     --l2p-logo-crown: #FFD27A;
     --l2p-logo-pavilion: #F5A524;
     --l2p-logo-tile-edge: transparent;
-    --l2p-tone-high: #0A6F5A;
-    --l2p-tone-mid: #855900;
-    --l2p-tone-low: #B53325;
+    --l2p-tone-high: #06604E;
+    --l2p-tone-mid: #714B00;
+    --l2p-tone-low: #9F2A1D;
     --l2p-place-1: #755600;
     --l2p-place-2: #575A78;
     --l2p-place-3: #8F4817;
@@ -650,23 +650,21 @@ td.l2p-nick-cell .l2p-nick-chip {
     text-align: center;
 }
 
-/* Outline and coloured text, no fill. The light shades are darker than the palette ones to keep 4.5:1 on the glass. */
+/* Tinted fill and coloured text by band, so the band reads at a glance down a long column. The light shades are
+   darker than the palette ones to keep 4.5:1 on the tinted fill over the glass. */
 .l2p-tone-high {
     color: var(--l2p-tone-high);
-    background: transparent;
-    border: 1px solid color-mix(in srgb, var(--l2p-tone-high) 45%, transparent);
+    background: color-mix(in srgb, var(--l2p-tone-high) 16%, transparent);
 }
 
 .l2p-tone-mid {
     color: var(--l2p-tone-mid);
-    background: transparent;
-    border: 1px solid color-mix(in srgb, var(--l2p-tone-mid) 45%, transparent);
+    background: color-mix(in srgb, var(--l2p-tone-mid) 16%, transparent);
 }
 
 .l2p-tone-low {
     color: var(--l2p-tone-low);
-    background: transparent;
-    border: 1px solid color-mix(in srgb, var(--l2p-tone-low) 45%, transparent);
+    background: color-mix(in srgb, var(--l2p-tone-low) 16%, transparent);
 }
 
 /* Gold, silver and bronze by the shared place, so a tie gets the same colour. */
