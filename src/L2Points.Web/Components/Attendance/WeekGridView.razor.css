@@ -53,12 +53,8 @@
     text-align: center;
     white-space: nowrap;
     color: var(--l2p-text);
-    background-color: var(--l2p-grid-head-solid);
+    background-color: var(--l2p-table-head);
     border-bottom: 1px solid color-mix(in srgb, var(--l2p-primary) 35%, transparent);
-}
-
-.l2p-grid-scroll {
-    --l2p-grid-head-solid: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
 }
 
 .l2p-grid-day,
@@ -91,7 +87,7 @@
    column divider starts under the band. */
 .l2p-grid thead th.l2p-grid-boss {
     font-weight: 600;
-    background-color: var(--l2p-grid-head-solid);
+    background-color: var(--l2p-table-head);
     border-right-color: transparent;
 }
 

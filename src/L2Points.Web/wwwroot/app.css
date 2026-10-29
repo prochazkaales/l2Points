@@ -32,6 +32,8 @@
     --l2p-glass-hi: rgba(255, 255, 255, 0.12);
     --l2p-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     --l2p-surface-solid: #16132A;
+    /* Opaque header band of the attendance grid tables (opaque because the boss column is pinned). */
+    --l2p-table-head: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
     --l2p-primary: #8B6CFF;
     /* Primary used as text/outline colour: #8B6CFF is only ~3:1 over the glow, so text gets a lighter violet. */
     --l2p-primary-text: #B9A6FF;
@@ -70,6 +72,8 @@
     --l2p-glass-hi: rgba(255, 255, 255, 0.90);
     --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.14);
     --l2p-surface-solid: #F8F8FD;
+    /* Same faint tint as the nested surfaces; a stronger one reads as a dull grey-violet next to the white card. */
+    --l2p-table-head: color-mix(in srgb, var(--l2p-primary) 7%, var(--l2p-surface-solid));
     --l2p-primary: #6D4AE0;
     --l2p-primary-text: #5B39CC;
     --l2p-primary-2: #A855F7;
