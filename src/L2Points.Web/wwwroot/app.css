@@ -1,15 +1,76 @@
-/* Page background before the circuit connects (prerender is off): matches the theme background, dark by default.
-   Once MudThemeProvider defines --mud-palette-background it wins, so the chosen theme is respected. */
-html,
-body {
-    background-color: var(--mud-palette-background, #12101c);
+/* Glass UI tokens. The theme is chosen by data-theme on <html>, set before first paint (inline script in App.razor,
+   l2pTheme in js/theme.js); without the attribute (no JS) dark is used. */
+:root,
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --l2p-bg: #0B0A1A;
+    --l2p-glow-1: rgba(124, 92, 250, 0.36);
+    --l2p-glow-2: rgba(199, 125, 255, 0.14);
+    --l2p-glass: rgba(255, 255, 255, 0.045);
+    --l2p-glass-strong: rgba(255, 255, 255, 0.06);
+    --l2p-glass-edge: rgba(255, 255, 255, 0.09);
+    --l2p-glass-hi: rgba(255, 255, 255, 0.12);
+    --l2p-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --l2p-surface-solid: #16132A;
+    --l2p-primary: #8B6CFF;
+    --l2p-primary-2: #C77DFF;
+    --l2p-on-primary: #0B0A1A;
+    --l2p-text: #F4F2FF;
+    --l2p-text-2: #B9B5D6;
+    --l2p-muted: #8B87AB;
+    --l2p-divider: rgba(255, 255, 255, 0.06);
+    --l2p-cat-normal: #6E9BFF;
+    --l2p-cat-evening: #A78BFA;
+    --l2p-cat-morning: #F5B14C;
+    --l2p-cat-cs: #3FD0B0;
+    --l2p-logo-tile: #1C1929;
+    --l2p-logo-crown: #C7B3FF;
+    --l2p-logo-pavilion: #9D7BFF;
 }
 
-@media (prefers-color-scheme: light) {
-    html,
-    body {
-        background-color: var(--mud-palette-background, #f4f3f9);
-    }
+:root[data-theme="light"] {
+    color-scheme: light;
+    --l2p-bg: #EEF0FA;
+    --l2p-glow-1: rgba(124, 92, 250, 0.22);
+    --l2p-glow-2: rgba(96, 165, 250, 0.20);
+    --l2p-glass: rgba(255, 255, 255, 0.58);
+    --l2p-glass-strong: rgba(255, 255, 255, 0.70);
+    --l2p-glass-edge: rgba(255, 255, 255, 0.85);
+    --l2p-glass-hi: rgba(255, 255, 255, 0.90);
+    --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.10);
+    --l2p-surface-solid: #F8F8FD;
+    --l2p-primary: #6D4AE0;
+    --l2p-primary-2: #A855F7;
+    --l2p-on-primary: #FFFFFF;
+    --l2p-text: #1D1838;
+    --l2p-text-2: #4F4A6E;
+    --l2p-muted: #625D84;
+    --l2p-divider: rgba(60, 40, 140, 0.08);
+    --l2p-cat-normal: #2F6FE0;
+    --l2p-cat-evening: #7C5CFA;
+    --l2p-cat-morning: #C27A0E;
+    --l2p-cat-cs: #0F9A7D;
+    --l2p-logo-tile: #6D4AE0;
+    --l2p-logo-crown: #FFD27A;
+    --l2p-logo-pavilion: #F5A524;
+}
+
+/* Page background: two glows over the base colour. It does not depend on MudThemeProvider, so it is right before
+   the circuit connects. */
+html,
+body {
+    min-height: 100%;
+    background:
+        radial-gradient(1100px 620px at 88% 100%, var(--l2p-glow-1), transparent 62%),
+        radial-gradient(800px 480px at 0% 0%, var(--l2p-glow-2), transparent 60%),
+        var(--l2p-bg);
+    background-attachment: fixed;
+}
+
+/* Let the glows show through the MudBlazor layout. */
+.mud-layout,
+.mud-main-content {
+    background: transparent;
 }
 
 /* "Loading" placeholder of the interactive pages. It is rendered outside the Routes output, so it stays until
@@ -22,13 +83,7 @@ body {
     justify-content: center;
     pointer-events: none;
     font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #a8a3c2;
-}
-
-@media (prefers-color-scheme: light) {
-    .l2p-loading {
-        color: #5b5675;
-    }
+    color: var(--l2p-text-2);
 }
 
 body:has(.mud-layout) .l2p-loading {

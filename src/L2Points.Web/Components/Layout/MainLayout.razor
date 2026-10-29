@@ -3,7 +3,7 @@
 @inject UserManager<AppUser> UserManager
 @inject IJSRuntime JS
 
-<MudThemeProvider @ref="_themeProvider" Theme="AppTheme.Theme" @bind-IsDarkMode="_isDarkMode" />
+<MudThemeProvider Theme="AppTheme.Theme" @bind-IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -42,47 +42,29 @@
 </MudLayout>
 
 @code {
-    private MudThemeProvider? _themeProvider;
     private bool _drawerOpen = true;
-    // Dark is the default until the stored or system preference is known (after the first interactive render).
+    // Dark is the default; the real value comes from the data-theme attribute set before first paint (l2pTheme.current).
     private bool _isDarkMode = true;
     private string? _nick;
 
     protected override async Task OnInitializedAsync()
     {
+        // Prerender is off, so JS interop is available here and the first render already has the right theme.
+        try
+        {
+            _isDarkMode = await JS.InvokeAsync<string>("l2pTheme.current") != "light";
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, the default stays.
+        }
+
         // The user name claim holds the login, so the display nick is read from the database.
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (state.User.Identity?.IsAuthenticated == true)
         {
             var user = await UserManager.GetUserAsync(state.User);
             _nick = user?.Nick;
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-        {
-            return;
-        }
-
-        try
-        {
-            var stored = await JS.InvokeAsync<string?>("l2pTheme.get");
-            if (stored is "dark" or "light")
-            {
-                _isDarkMode = stored == "dark";
-            }
-            else if (_themeProvider is not null)
-            {
-                _isDarkMode = await _themeProvider.GetSystemDarkModeAsync();
-            }
-
-            StateHasChanged();
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, nothing to update.
         }
     }
 

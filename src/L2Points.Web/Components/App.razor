@@ -5,12 +5,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+    @* Sets data-theme before first paint so the stored (or OS) theme is used without a flash; same key as js/theme.js. *@
+    <script>
+        (function () {
+            var theme = null;
+            try { theme = window.localStorage.getItem("l2p-theme"); } catch (e) { }
+            if (theme !== "dark" && theme !== "light") {
+                theme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+            }
+            document.documentElement.dataset.theme = theme;
+        })();
+    </script>
     @* SVG switches to its dark variant via prefers-color-scheme; PNG/ICO are the light variant for older browsers. *@
     <link rel="icon" href="@Assets["favicon.svg"]" type="image/svg+xml" />
     <link rel="icon" href="@Assets["favicon-32.png"]" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="@Assets["apple-touch-icon.png"]" />
-    <meta name="theme-color" content="#4c2fb8" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1a1726" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#EEF0FA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0B0A1A" media="(prefers-color-scheme: dark)" />
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
