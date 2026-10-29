@@ -40,8 +40,8 @@ ENV
 on_exit() {
   local status=$?
   if [[ $status -ne 0 ]]; then
-    echo "Smoke test FAILED (exit $status). Web container logs:" >&2
-    compose logs --no-color web >&2 || true
+    echo "Smoke test FAILED (exit $status). Logs of all services:" >&2
+    compose logs --no-color --tail 200 >&2 || true
   fi
   compose down -v --remove-orphans >/dev/null 2>&1 || true
   rm -rf "$WORK_DIR"

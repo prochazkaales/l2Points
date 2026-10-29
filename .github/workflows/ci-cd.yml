@@ -7,6 +7,12 @@ on:
 permissions:
   contents: read
 
+# Runs on the same ref never overlap. On main they queue (a newer pending run replaces an older pending one, a running
+# deploy is never cancelled), so an older build cannot overtake a newer one. Other refs cancel superseded runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 env:
   IMAGE_NAME: ghcr.io/prochazkaales/l2points
 
@@ -72,9 +78,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
     env:
       RESOURCE_GROUP: rg-l2points
       CONTAINER_APP: ca-l2points
