@@ -57,8 +57,8 @@ Barvy kategorií (tečka, pruh, obrys; nikdy velká plocha):
 | Kategorie | Dark | Light |
 |---|---|---|
 | Normal epic | `#6E9BFF` | `#2F6FE0` |
-| Chaotic · Večerní | `#A78BFA` | `#7C5CFA` |
-| Chaotic · Ranní | `#F5B14C` | `#C27A0E` |
+| Chaotic · Večerní (oranžová jako dřív) | `#FF9F4A` | `#E2690F` |
+| Chaotic · Ranní (azurově modrá jako dřív) | `#3DBFF2` | `#1E8AD6` |
 | Castle Siege | `#3FD0B0` | `#0F9A7D` |
 
 Pásma procent (`.l2p-tone-*`) a místa 1–3 (`.l2p-place-*`) zůstávají významově stejná, odstíny se doladí tak, aby měly kontrast 4,5:1 na skle v obou režimech.
