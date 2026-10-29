@@ -22,11 +22,22 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var group in Groups)
+            @foreach (var (group, index) in Groups.Select((g, i) => (g, i)))
             {
                 <tr class="l2p-grid-group">
                     <th class="l2p-grid-boss" scope="rowgroup">@group.Title</th>
-                    <th colspan="@Days.Count"></th>
+                    @if (index == 0)
+                    {
+                        <th colspan="@Days.Count"></th>
+                    }
+                    else
+                    {
+                        @* Repeat the dates on lower groups: on small screens the table header is scrolled out of view. *@
+                        @foreach (var day in Days)
+                        {
+                            <th class="l2p-grid-group-day @DayClass(day)">@DisplayFormat.DayHeader(day)</th>
+                        }
+                    }
                 </tr>
                 @foreach (var row in group.Rows)
                 {

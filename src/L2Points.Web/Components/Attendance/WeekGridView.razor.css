@@ -57,6 +57,19 @@
     background: color-mix(in srgb, var(--mud-palette-primary) 7%, var(--mud-palette-surface));
 }
 
+.l2p-grid-group .l2p-grid-group-day {
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-grid-group .l2p-grid-group-day.l2p-grid-today {
+    color: var(--mud-palette-primary);
+}
+
 .l2p-grid tbody tr:last-child th,
 .l2p-grid tbody tr:last-child td {
     border-bottom: none;
