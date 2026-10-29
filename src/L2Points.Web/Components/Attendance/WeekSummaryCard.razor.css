@@ -14,8 +14,14 @@
 }
 
 .l2p-summary-points ::deep .l2p-summary-points-value {
-    font-weight: 200;
+    font-weight: 700;
     line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.l2p-summary-points ::deep .l2p-summary-points-label {
+    font-weight: 600;
+    color: var(--l2p-text);
 }
 
 .l2p-summary-grid {
