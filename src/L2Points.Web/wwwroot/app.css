@@ -322,35 +322,35 @@ h1:focus {
     margin: 0;
 }
 
-/* Account pages (static SSR, follow the system colour scheme) */
-:root {
-    --account-bg: #f4f3f9;
-    --account-card: #ffffff;
-    --account-text: #1f1b2e;
-    --account-muted: #5b5675;
-    --account-border: #cfcae0;
-    --account-accent: #6d4ae0;
-    --account-accent-text: #ffffff;
-    --account-error-bg: #fde8e8;
-    --account-error-text: #9b1c1c;
-    --account-success-bg: #def7ec;
-    --account-success-text: #03543f;
+/* Account pages (static SSR). Colours come from the glass tokens; data-theme is set on <html> before first paint. */
+:root,
+:root[data-theme="dark"] {
+    --account-error-bg: rgba(255, 138, 138, 0.14);
+    --account-error-text: #FFB4B4;
+    --account-success-bg: rgba(63, 208, 176, 0.14);
+    --account-success-text: #8EE6C2;
+    --account-input-border: rgba(255, 255, 255, 0.34);
+    /* Primary is only ~3.2:1 on the lit corner of the glow, so the link is a lighter violet. */
+    --account-link: #B9A6FF;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --account-bg: #12101c;
-        --account-card: #1c1929;
-        --account-text: #ece9f7;
-        --account-muted: #a8a3c2;
-        --account-border: #3a3552;
-        --account-accent: #9d7bff;
-        --account-accent-text: #12101c;
-        --account-error-bg: #3b1d24;
-        --account-error-text: #ffb4b4;
-        --account-success-bg: #12342b;
-        --account-success-text: #8ee6c2;
-    }
+:root[data-theme="light"] {
+    --account-error-bg: #FDE8E8;
+    --account-error-text: #9B1C1C;
+    --account-success-bg: #DEF7EC;
+    --account-success-text: #03543F;
+    --account-input-border: rgba(60, 40, 140, 0.45);
+    --account-link: var(--l2p-primary);
+}
+
+:root {
+    --account-bg: var(--l2p-bg);
+    --account-card: var(--l2p-glass);
+    --account-text: var(--l2p-text);
+    --account-muted: var(--l2p-text-2);
+    --account-border: var(--l2p-glass-edge);
+    --account-accent: var(--l2p-primary);
+    --account-accent-text: var(--l2p-on-primary);
 }
 
 .account-page {
@@ -360,7 +360,8 @@ h1:focus {
     justify-content: center;
     padding: 1rem;
     box-sizing: border-box;
-    background: var(--account-bg);
+    /* The glow is painted by html (same as body); --account-bg only backs it up. */
+    background: transparent;
     color: var(--account-text);
     font-family: "Outfit", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -372,16 +373,38 @@ h1:focus {
     box-sizing: border-box;
     background: var(--account-card);
     border: 1px solid var(--account-border);
-    border-radius: 12px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    border-radius: 20px;
+    box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Single card on the page, so the fallback is just an opaque surface (same conditions as .l2p-glass). */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .account-card {
+        background: var(--l2p-surface-solid);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .account-card {
+        background: var(--l2p-surface-solid);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }
 
 .account-brand {
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--account-accent);
-    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--account-text);
+    margin-bottom: 1.25rem;
 }
 
 .account-title {
@@ -411,9 +434,10 @@ h1:focus {
     font: inherit;
     padding: 0.6rem 0.75rem;
     color: var(--account-text);
-    background: transparent;
-    border: 1px solid var(--account-border);
-    border-radius: 6px;
+    background: var(--l2p-glass-strong);
+    /* The glass edge is too faint to outline a field, so inputs get their own border. */
+    border: 1px solid var(--account-input-border);
+    border-radius: 10px;
 }
 
 .account-field input:focus {
@@ -440,7 +464,7 @@ h1:focus {
     color: var(--account-accent-text);
     background: var(--account-accent);
     border: 0;
-    border-radius: 6px;
+    border-radius: 12px;
     cursor: pointer;
 }
 
@@ -469,7 +493,7 @@ h1:focus {
 .account-link {
     display: inline-block;
     margin-top: 1.25rem;
-    color: var(--account-accent);
+    color: var(--account-link);
 }
 
 .account-muted {
