@@ -269,3 +269,13 @@
         padding: var(--l2p-pad-card);
     }
 }
+
+@media (pointer: coarse), (max-width: 599.98px) {
+    .l2p-wk-days {
+        gap: var(--l2p-touch-gap);
+    }
+
+    .l2p-wk-day {
+        min-height: var(--l2p-touch);
+    }
+}

@@ -352,11 +352,17 @@
         padding-right: var(--l2p-cell-y);
         line-height: 1.2;
     }
+}
 
-    /* Touch target of 36x36 px around the 20px box. */
+/* Touch: the icon button is a 44x44 px hit area around the 20px box; stacked cells (V/R) keep a 4px gap. */
+@media (pointer: coarse), (max-width: 599.98px) {
     .l2p-grid-check ::deep .mud-checkbox .mud-icon-button {
-        width: 36px;
-        height: 36px;
-        padding: 8px;
+        width: var(--l2p-touch);
+        height: var(--l2p-touch);
+        padding: 12px;
+    }
+
+    .l2p-grid-check + .l2p-grid-check {
+        margin-top: 4px;
     }
 }

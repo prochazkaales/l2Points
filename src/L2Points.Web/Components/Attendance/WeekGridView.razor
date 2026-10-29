@@ -2,6 +2,7 @@
 @using L2Points.Domain.Attendances
 @using L2Points.Domain.Time
 @using L2Points.Web.Formatting
+@inject IJSRuntime JS
 
 <div class="l2p-grid-stack">
     @foreach (var table in Tables)
@@ -128,6 +129,28 @@
     private HashSet<DateOnly> _lockedDays = [];
 
     protected override void OnParametersSet() => _lockedDays = ComputeLockedDays();
+
+    // On phones the grid starts at today's column. Only a new week scrolls: a re-render of the same week (after a
+    // save, for example) must not move the grid the player is working in.
+    private Week? _scrolledWeek;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Grid.Week == _scrolledWeek)
+        {
+            return;
+        }
+
+        _scrolledWeek = Grid.Week;
+        try
+        {
+            await JS.InvokeVoidAsync("l2pScroll.gridsToToday");
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, nothing to scroll.
+        }
+    }
 
     private string DayClass(DateOnly day) =>
         (day == Today ? "l2p-grid-today" : "") + (IsLocked(day) ? " l2p-grid-locked" : "");

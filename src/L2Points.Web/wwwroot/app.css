@@ -673,12 +673,65 @@ h1:focus {
 
 .account-field input {
     font: inherit;
-    padding: 0.6rem 0.75rem;
+    padding: 0.75rem;
     color: var(--account-text);
     background: var(--l2p-glass-strong);
     /* The glass edge is too faint to outline a field, so inputs get their own border. */
     border: var(--l2p-line-width) solid var(--account-input-border);
     border-radius: var(--l2p-radius-md);
+}
+
+.account-password {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Room for the 44px toggle on the right. */
+.account-password input {
+    padding-right: var(--l2p-touch);
+}
+
+.account-password-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--l2p-touch);
+    height: var(--l2p-touch);
+    padding: 0;
+    border: none;
+    border-radius: var(--l2p-radius-md);
+    background: none;
+    color: var(--account-muted);
+    cursor: pointer;
+}
+
+.account-password-toggle:hover {
+    color: var(--account-text);
+}
+
+.account-password-toggle:focus-visible {
+    outline: 2px solid var(--account-accent);
+    outline-offset: -2px;
+}
+
+.account-password-toggle svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+/* The eye is crossed out while the password is shown. */
+.account-password-toggle .account-eye-off,
+.account-password-toggle[aria-pressed="true"] .account-eye-on {
+    display: none;
+}
+
+.account-password-toggle[aria-pressed="true"] .account-eye-off {
+    display: block;
 }
 
 .account-field input:focus {
@@ -1090,3 +1143,27 @@ a:not(.mud-button-root):focus-visible,
     font-variant-numeric: tabular-nums;
 }
 
+/* Touch targets of 44px on phones and touch screens (arrows, day picker and grid checkboxes are in their scoped CSS). */
+@media (pointer: coarse), (max-width: 599.98px) {
+    .mud-main-content .mud-switch {
+        min-height: var(--l2p-touch);
+    }
+
+    .l2p-view-label {
+        min-height: var(--l2p-touch);
+        padding-inline: var(--l2p-space-2);
+    }
+
+    .mud-main-content .mud-table tr > .mud-table-cell {
+        padding-block: 0.6rem;
+    }
+
+    .l2p-nick-cell a {
+        display: inline-block;
+        padding-block: 0.25rem;
+    }
+
+    .mud-drawer .mud-navmenu .mud-nav-link {
+        min-height: var(--l2p-touch);
+    }
+}
