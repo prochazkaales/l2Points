@@ -57,14 +57,18 @@
 
 /* Page background: two glows over the base colour. It does not depend on MudThemeProvider, so it is right before
    the circuit connects. */
-html,
-body {
-    min-height: 100%;
+html {
     background:
         radial-gradient(1100px 620px at 88% 100%, var(--l2p-glow-1), transparent 62%),
         radial-gradient(800px 480px at 0% 0%, var(--l2p-glow-2), transparent 60%),
         var(--l2p-bg);
     background-attachment: fixed;
+}
+
+/* Painted by html only (a second copy on body would double the glows and could show a seam on short pages). */
+body {
+    background: transparent;
+    min-height: 100vh;
 }
 
 /* Let the glows show through the MudBlazor layout. */
