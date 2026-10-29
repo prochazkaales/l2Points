@@ -14,6 +14,8 @@
             <MudTextField T="string" @bind-Value="_nick" Label="Nick" Variant="Variant.Outlined" Class="mb-3"
                           Required="true" RequiredError="Zadej nick." MaxLength="AppUser.NickMaxLength"
                           Counter="AppUser.NickMaxLength" />
+            <MudDatePicker @bind-Date="_activeFrom" Label="Aktivní od" Variant="Variant.Outlined"
+                           DateFormat="d. M. yyyy" Required="true" RequiredError="Zadej datum." />
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -23,11 +25,12 @@
 </MudDialog>
 
 @code {
-    public sealed record Values(string Login, string Nick);
+    public sealed record Values(string Login, string Nick, DateOnly ActiveFrom);
 
     private MudForm _form = default!;
     private string? _login;
     private string? _nick;
+    private DateTime? _activeFrom;
 
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
@@ -39,25 +42,30 @@
     [Parameter]
     public string Nick { get; set; } = string.Empty;
 
+    [Parameter]
+    public DateOnly ActiveFrom { get; set; }
+
     private bool IsCreate => Login is not null;
 
     protected override void OnInitialized()
     {
         _login = Login;
         _nick = Nick;
+        _activeFrom = ActiveFrom.ToDateTime(TimeOnly.MinValue);
     }
 
     private async Task SaveAsync()
     {
         await _form.ValidateAsync();
-        if (!_form.IsValid)
+        if (!_form.IsValid || _activeFrom is not { } activeFrom)
         {
             return;
         }
 
         MudDialog.Close(DialogResult.Ok(new Values(
             _login?.Trim() ?? string.Empty,
-            _nick?.Trim() ?? string.Empty)));
+            _nick?.Trim() ?? string.Empty,
+            DateOnly.FromDateTime(activeFrom))));
     }
 
     private void Cancel() => MudDialog.Cancel();

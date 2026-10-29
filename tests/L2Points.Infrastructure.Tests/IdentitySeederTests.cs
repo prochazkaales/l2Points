@@ -86,7 +86,7 @@ public class IdentitySeederTests
         {
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
             var created = await userManager.CreateAsync(
-                new AppUser { UserName = "admin", Nick = "Boss", CreatedAt = DateTime.UtcNow },
+                new AppUser { UserName = "admin", Nick = "Boss", ActiveFrom = DateOnly.FromDateTime(DateTime.UtcNow), CreatedAt = DateTime.UtcNow },
                 "Admin1234");
             Assert.True(created.Succeeded);
         }
@@ -116,7 +116,7 @@ public class IdentitySeederTests
     {
         using var scope = provider.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var other = new AppUser { UserName = userName, Nick = userName, IsActive = true, CreatedAt = DateTime.UtcNow };
+        var other = new AppUser { UserName = userName, Nick = userName, IsActive = true, ActiveFrom = new DateOnly(2026, 10, 26), CreatedAt = DateTime.UtcNow };
         Assert.True((await userManager.CreateAsync(other, "Admin1234")).Succeeded);
         Assert.True((await userManager.AddToRolesAsync(other, roles)).Succeeded);
         return other;
@@ -225,7 +225,7 @@ public class IdentitySeederTests
     }
 
     [Fact]
-    public async Task Seed_sets_created_at_from_time_provider()
+    public async Task Seed_sets_active_from_to_monday_in_prague()
     {
         var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero));
         await using var provider = TestServices.Create(FullAdmin(), timeProvider: time);
@@ -236,7 +236,7 @@ public class IdentitySeederTests
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var user = await userManager.FindByNameAsync("admin");
         Assert.NotNull(user);
-        Assert.Equal(new DateTime(2026, 10, 28, 10, 0, 0, DateTimeKind.Utc), user.CreatedAt);
+        Assert.Equal(new DateOnly(2026, 10, 26), user.ActiveFrom);
     }
 
     [Fact]

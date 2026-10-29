@@ -113,9 +113,9 @@ Zobrazovaná procenta, vždy **za vybraný týden** i **celkově**:
 Pravidla období *(moje volby)*:
 - Týden = pondělí–neděle v českém čase.
 - **Aktuální týden** se počítá jen do dneška včetně: chaotic/fixní výskyty s datem ≤ dnes. Flexibilní očekávaný počet se poměrně krátí podle uplynulých dnů (zaokrouhleno nahoru). Rozpracovaný týden tak neukazuje uměle nízké procento.
-- **Celkové i týdenní procento** se všem hráčům počítá od globálního začátku evidence, bez ohledu na to, kdy byl hráč založen. Datum „aktivní od“ neexistuje; hráč, který se přidal později, má celkové procento nižší, protože se mu počítají i výskyty před jeho založením. *(Změna na žádost uživatele.)*
+- **Celkové procento** se hráči počítá od jeho data „aktivní od“. Výchozí je pondělí týdne, kdy byl založen, admin ho může změnit. Hráč, který se přidal později, tak není penalizován za týdny předtím.
 - Globální **začátek evidence** je nastavení aplikace (výchozí: pondělí 26. 10. 2026). Nic před ním se nepočítá.
-- **Deaktivovaný hráč:** jmenovatel se mu počítá jen do data deaktivace (`DeactivatedAt`), takže mu procento dál neklesá. Při reaktivaci se `DeactivatedAt` vymaže a jmenovatel se mu znovu počítá od začátku evidence do dneška, včetně doby neaktivity. *(Moje volba, zjednodušení bez historie období.)*
+- **Deaktivovaný hráč:** jmenovatel se mu počítá jen do data deaktivace (`DeactivatedAt`), takže mu procento dál neklesá. Při reaktivaci se `DeactivatedAt` vymaže. Pokud se hráč vrací po delší době, admin mu posune „aktivní od“. *(Moje volba, zjednodušení bez historie období.)*
 - **Změny rozpisu a nastavení platí zpětně** stejně jako body. Vše se počítá z aktuální konfigurace, bez „platí od“. Účast na dni nebo slotu, který už v rozpisu není, dál nese body a zobrazuje se, ale do procent se započítá jen do výše očekávaného počtu. Změny serverového rozpisu jsou vzácné a jednoduchost má přednost. *(Moje volba.)*
 
 ### 3.5 Okno pro úpravy
@@ -140,7 +140,7 @@ Ring of Queen Ant, Ring of Core, Earring of Orfen, Earring of Zaken, Necklace of
 - Hráč si po přihlášení může heslo změnit.
 - Admin může: resetovat heslo (nové vygenerované), **deaktivovat** hráče (nemůže se přihlásit, historie zůstává, v žebříčku je skrytý s možností zobrazit neaktivní) a **smazat** hráče (smaže se i jeho účast a šperky, s potvrzením).
 - Admin z konfigurace (env proměnné `Admin__UserName`, `Admin__Password`, `Admin__Nick`) se vytvoří při startu, pokud neexistuje. Je to **super admin** (role SuperAdmin, právě jeden, v UI se nepřiděluje): při každém startu je aktivní a má role Admin, Player a SuperAdmin, jeho existující heslo se nemění. Při změně `Admin__UserName` přejde role SuperAdmin na nový účet.
-- **Admin je zároveň hráč** *(moje volba)*: má svůj týden, objevuje se v žebříčku a počítají se mu body. Role Admin je jen přídavek. Roli Admin uděluje a odebírá na stránce hráčů **jen super admin** *(změna na žádost uživatele)*. Admini na sebe navzájem nesahají: běžný admin nemůže jinému adminovi (ani super adminovi) deaktivovat účet, smazat ho ani resetovat heslo, super admina nemůže omezit nikdo. Super admin smí tyto akce u všech ostatních. Nick, účast a šperky může admin upravit komukoli *(změna na žádost uživatele)*. Žádný admin nemůže deaktivovat ani smazat sám sebe ani si odebrat roli Admin.
+- **Admin je zároveň hráč** *(moje volba)*: má svůj týden, objevuje se v žebříčku a počítají se mu body. Role Admin je jen přídavek. Roli Admin uděluje a odebírá na stránce hráčů **jen super admin** *(změna na žádost uživatele)*. Admini na sebe navzájem nesahají: běžný admin nemůže jinému adminovi (ani super adminovi) deaktivovat účet, smazat ho ani resetovat heslo, super admina nemůže omezit nikdo. Super admin smí tyto akce u všech ostatních. Nick, „aktivní od“, účast a šperky může admin upravit komukoli *(změna na žádost uživatele)*. Žádný admin nemůže deaktivovat ani smazat sám sebe ani si odebrat roli Admin.
 
 ## 4. Stránky
 
@@ -161,7 +161,7 @@ Celé UI je v češtině. V hlavičce je navigace, nick přihlášeného, odhlá
 6. **Šperky** – galerie typů s obrázkem, počtem kusů v partě a seznamem držitelů.
 7. **Profil** – změna hesla.
 8. **Admin**
-   - Hráči: seznam, založit, reset hesla, aktivovat/deaktivovat, smazat, upravit nick.
+   - Hráči: seznam, založit, reset hesla, aktivovat/deaktivovat, smazat, upravit nick a „aktivní od“.
    - Aktivity a body: bodové hodnoty, očekávané počty za týden, aktivní/neaktivní.
    - Chaotic rozpis: dny × sloty × časy UTC.
    - Antharas/Valakas: kotevní datum.
@@ -173,7 +173,7 @@ Celé UI je v češtině. V hlavičce je navigace, nick přihlášeného, odhlá
 
 - **.NET 10**, **Blazor Web App** s render módem **Interactive Server**. Login a logout jsou statické SSR stránky kvůli cookie.
 - **MudBlazor** jako UI knihovna (moderní Material vzhled, vestavěná podpora dark/light). Verzi kompatibilní s .NET 10 zvolí builder.
-- **ASP.NET Core Identity** s vlastním uživatelem (`UserName` = login, `Nick`, `IsActive`, `DeactivatedAt`). Cookie autentizace, role Admin/Player, bez e-mailu.
+- **ASP.NET Core Identity** s vlastním uživatelem (`UserName` = login, `Nick`, `IsActive`, `ActiveFrom`). Cookie autentizace, role Admin/Player, bez e-mailu.
 - **EF Core 10 + SQL Server**. Lokálně SQL Server v docker-compose, v Azure pak **Azure SQL** (free/serverless tier).
 - Migrace se aplikují automaticky při startu. Seed: aktivity, rozpis, sloty, typy šperků, první admin.
 - **Data Protection klíče** se ukládají do DB, aby přihlášení přežilo restart/redeploy kontejneru.
@@ -199,7 +199,7 @@ CLAUDE.md
 
 ### 5.2 Datový model (orientační)
 
-- **AppUser** (Identity): Id, UserName (login), Nick (unikátní), IsActive, DeactivatedAt (DateOnly?), CreatedAt
+- **AppUser** (Identity): Id, UserName (login), Nick (unikátní), IsActive, ActiveFrom (DateOnly), DeactivatedAt (DateOnly?), CreatedAt
 - **Activity**: Id, Code, Name, Category {NormalEpic, ChaoticEpic, CastleSiege}, ScheduleType {Flexible, Weekly, Biweekly, Slotted}, Points, ExpectedPerWeek?, WeeklyDay?, BiweeklyAnchorDate?, SortOrder, IsActive, JewelTypeId? (vazba boss → šperk, informativní)
 - **ChaoticSlot**: Id, Code (Evening / Morning), Name (Večerní / Ranní), SortOrder
 - **ActivitySlotPoints** (volitelné přepsání bodů pro slot): ActivityId, SlotId, Points

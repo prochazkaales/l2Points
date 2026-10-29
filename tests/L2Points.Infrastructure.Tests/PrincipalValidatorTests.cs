@@ -7,6 +7,8 @@ namespace L2Points.Infrastructure.Tests;
 
 public class PrincipalValidatorTests
 {
+    private static readonly DateOnly Monday = new(2026, 10, 26);
+
     private static async Task<ClaimsPrincipal> PrincipalOfAsync(ServiceProvider provider, string userId)
     {
         using var scope = provider.CreateScope();
@@ -34,7 +36,7 @@ public class PrincipalValidatorTests
     public async Task Valid_for_current_user()
     {
         await using var provider = TestServices.Create();
-        var bob = await TestData.CreatePlayerAsync(provider, "bob");
+        var bob = await TestData.CreatePlayerAsync(provider, "bob", Monday);
         var principal = await PrincipalOfAsync(provider, bob.Id);
 
         Assert.True(await IsStillValidAsync(provider, principal));
@@ -44,7 +46,7 @@ public class PrincipalValidatorTests
     public async Task Invalid_after_stamp_change()
     {
         await using var provider = TestServices.Create();
-        var bob = await TestData.CreatePlayerAsync(provider, "bob");
+        var bob = await TestData.CreatePlayerAsync(provider, "bob", Monday);
         var principal = await PrincipalOfAsync(provider, bob.Id);
 
         await ChangeUserAsync(provider, bob.Id, (users, user) => users.UpdateSecurityStampAsync(user));
@@ -56,8 +58,8 @@ public class PrincipalValidatorTests
     public async Task Invalid_for_deactivated_or_deleted_user()
     {
         await using var provider = TestServices.Create();
-        var bob = await TestData.CreatePlayerAsync(provider, "bob");
-        var carl = await TestData.CreatePlayerAsync(provider, "carl");
+        var bob = await TestData.CreatePlayerAsync(provider, "bob", Monday);
+        var carl = await TestData.CreatePlayerAsync(provider, "carl", Monday);
         var bobPrincipal = await PrincipalOfAsync(provider, bob.Id);
         var carlPrincipal = await PrincipalOfAsync(provider, carl.Id);
 

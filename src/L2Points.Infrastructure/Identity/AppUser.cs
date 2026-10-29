@@ -10,6 +10,8 @@ public class AppUser : IdentityUser
 
     public bool IsActive { get; set; } = true;
 
+    public DateOnly ActiveFrom { get; set; }
+
     public DateOnly? DeactivatedAt { get; set; }
 
     /// <summary>UTC timestamp of account creation.</summary>

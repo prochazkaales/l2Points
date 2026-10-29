@@ -26,9 +26,9 @@ public class OverviewServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-11-04T10:00:00Z"));
         var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var a = await TestData.CreatePlayerAsync(provider, "playerA");
-        var b = await TestData.CreatePlayerAsync(provider, "playerB");
-        var d = await TestData.CreatePlayerAsync(provider, "playerD", deactivatedAt: Tue);
+        var a = await TestData.CreatePlayerAsync(provider, "playerA", Mon);
+        var b = await TestData.CreatePlayerAsync(provider, "playerB", NextMon);
+        var d = await TestData.CreatePlayerAsync(provider, "playerD", Mon, deactivatedAt: Tue);
         await TestData.AddAttendanceAsync(provider, a.Id, "QueenAnt", Mon);
         await TestData.AddAttendanceAsync(provider, a.Id, "ChaoticCore", Tue, EventSlot.Evening);
         await TestData.AddAttendanceAsync(provider, a.Id, "CastleSiege", Sun);
@@ -76,7 +76,7 @@ public class OverviewServiceTests
 
         Assert.Empty((await service.GetLeaderboardAsync(week, includeInactive: true)).Rows);
 
-        await TestData.CreatePlayerAsync(provider, "lonely");
+        await TestData.CreatePlayerAsync(provider, "lonely", Mon);
         var row = Assert.Single((await service.GetLeaderboardAsync(week, includeInactive: false)).Rows);
         Assert.Equal(0, row.Overall.Points);
         Assert.Equal(0, row.Overall.Stats.Total.Percent);

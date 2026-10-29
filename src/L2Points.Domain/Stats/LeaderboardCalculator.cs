@@ -26,7 +26,7 @@ public static class LeaderboardCalculator
             .Select(player =>
             {
                 IReadOnlyCollection<AttendanceEntry> entries = byUser.GetValueOrDefault(player.UserId) ?? [];
-                var period = PlayerPeriod.Resolve(trackingStart, player.DeactivatedAt, today);
+                var period = PlayerPeriod.Resolve(trackingStart, player.ActiveFrom, player.DeactivatedAt, today);
                 var overall = overallWindow is { } window
                     ? PlayerSummaryCalculator.Calculate(activities, entries, window, period)
                     : PlayerSummary.Empty;

@@ -10,6 +10,7 @@ namespace L2Points.Infrastructure.Tests;
 
 public class AttendanceServiceTests
 {
+    private static readonly DateOnly Monday = new(2026, 10, 26);
     private static readonly DateOnly Tuesday = new(2026, 10, 27);
 
     private sealed record Fixture(ServiceProvider Provider, AttendanceService Service, string PlayerA, string PlayerB, string Admin) : IAsyncDisposable
@@ -25,9 +26,9 @@ public class AttendanceServiceTests
         var time = new FakeTimeProvider(DateTimeOffset.Parse(utcNow));
         var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
-        var a = await TestData.CreatePlayerAsync(provider, "playerA");
-        var b = await TestData.CreatePlayerAsync(provider, "playerB");
-        var admin = await TestData.CreatePlayerAsync(provider, "adminX");
+        var a = await TestData.CreatePlayerAsync(provider, "playerA", Monday);
+        var b = await TestData.CreatePlayerAsync(provider, "playerB", Monday);
+        var admin = await TestData.CreatePlayerAsync(provider, "adminX", Monday);
         var service = new AttendanceService(provider.GetRequiredService<IDbContextFactory<AppDbContext>>(), time);
         return new Fixture(provider, service, a.Id, b.Id, admin.Id);
     }

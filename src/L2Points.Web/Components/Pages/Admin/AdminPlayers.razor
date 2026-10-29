@@ -1,6 +1,7 @@
 @page "/admin/players"
 @attribute [Authorize(Roles = Roles.Admin)]
 @using System.Globalization
+@using L2Points.Domain.Time
 @using L2Points.Infrastructure.Services
 @using L2Points.Web.Components.Admin
 @using L2Points.Web.Formatting
@@ -9,6 +10,7 @@
 @inject UserManager<AppUser> UserManager
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject TimeProvider Time
 @inject ILogger<AdminPlayers> Logger
 @implements IDisposable
 
@@ -37,6 +39,7 @@ else
             <HeaderContent>
                 <MudTh Class="l2p-nick-cell">Nick</MudTh>
                 <MudTh>Login</MudTh>
+                <MudTh>Aktivní od</MudTh>
                 <MudTh>Stav</MudTh>
                 <MudTh>Admin</MudTh>
                 <MudTh>Akce</MudTh>
@@ -56,6 +59,7 @@ else
                     <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover">@player.Nick</MudLink>
                 </MudTd>
                 <MudTd>@player.Login</MudTd>
+                <MudTd>@FormatDate(player.ActiveFrom)</MudTd>
                 <MudTd>
                     @if (player.IsActive)
                     {
@@ -172,24 +176,25 @@ else
 
     private async Task CreateAsync()
     {
-        var values = await ShowEditDialogAsync(string.Empty, string.Empty);
+        var monday = Week.Containing(AppTime.TodayInPrague(Time)).Monday;
+        var values = await ShowEditDialogAsync(string.Empty, string.Empty, monday);
         if (values is null)
         {
             return;
         }
 
-        await ChangeAsync(ct => PlayerAdmin.CreateAsync(values.Login, values.Nick, ct), values.Nick);
+        await ChangeAsync(ct => PlayerAdmin.CreateAsync(values.Login, values.Nick, values.ActiveFrom, ct), values.Nick);
     }
 
     private async Task EditAsync(AdminPlayer player)
     {
-        var values = await ShowEditDialogAsync(null, player.Nick);
+        var values = await ShowEditDialogAsync(null, player.Nick, player.ActiveFrom);
         if (values is null)
         {
             return;
         }
 
-        await ChangeAsync(ct => PlayerAdmin.UpdateAsync(player.UserId, values.Nick, ct));
+        await ChangeAsync(ct => PlayerAdmin.UpdateAsync(player.UserId, values.Nick, values.ActiveFrom, ct));
     }
 
     private async Task ResetPasswordAsync(AdminPlayer player)
@@ -214,7 +219,7 @@ else
         var reactivated = await ChangeAsync(ct => PlayerAdmin.SetActiveAsync(_actorId!, player.UserId, active, ct));
         if (active && reactivated)
         {
-            Snackbar.Add("Hráč je znovu aktivní.", Severity.Info);
+            Snackbar.Add("Hráč je znovu aktivní. Pokud se vrací po delší době, posuň mu „aktivní od“.", Severity.Info);
         }
     }
 
@@ -240,12 +245,13 @@ else
         await ChangeAsync(ct => PlayerAdmin.DeleteAsync(_actorId!, player.UserId, ct));
     }
 
-    private async Task<PlayerEditDialog.Values?> ShowEditDialogAsync(string? login, string nick)
+    private async Task<PlayerEditDialog.Values?> ShowEditDialogAsync(string? login, string nick, DateOnly activeFrom)
     {
         var parameters = new DialogParameters<PlayerEditDialog>
         {
             { d => d.Login, login },
             { d => d.Nick, nick },
+            { d => d.ActiveFrom, activeFrom },
         };
         var dialog = await DialogService.ShowAsync<PlayerEditDialog>(parameters, EditOptions);
         var result = await dialog.Result;

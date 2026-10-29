@@ -27,6 +27,7 @@ public sealed class PlayerAdminService(
                 u.UserName ?? string.Empty,
                 u.Nick,
                 u.IsActive,
+                u.ActiveFrom,
                 u.DeactivatedAt,
                 db.UserRoles.Any(ur => ur.UserId == u.Id
                     && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.Admin)),
@@ -41,7 +42,7 @@ public sealed class PlayerAdminService(
     }
 
     /// <summary>Creates a player with a generated password (returned once in the result).</summary>
-    public async Task<PlayerAdminResult> CreateAsync(string login, string nick, CancellationToken ct = default)
+    public async Task<PlayerAdminResult> CreateAsync(string login, string nick, DateOnly? activeFrom, CancellationToken ct = default)
     {
         login = login.Trim();
         nick = nick.Trim();
@@ -61,6 +62,7 @@ public sealed class PlayerAdminService(
             UserName = login,
             Nick = nick,
             IsActive = true,
+            ActiveFrom = activeFrom ?? Week.Containing(AppTime.TodayInPrague(time)).Monday,
             CreatedAt = time.GetUtcNow().UtcDateTime,
         };
 
@@ -80,8 +82,8 @@ public sealed class PlayerAdminService(
         return new PlayerAdminResult(PlayerAdminStatus.Ok, Password: password);
     }
 
-    /// <summary>Changes the nick. The login stays as it was.</summary>
-    public async Task<PlayerAdminResult> UpdateAsync(string userId, string nick, CancellationToken ct = default)
+    /// <summary>Changes nick and the date from which the player is evaluated. The login stays as it was.</summary>
+    public async Task<PlayerAdminResult> UpdateAsync(string userId, string nick, DateOnly activeFrom, CancellationToken ct = default)
     {
         nick = nick.Trim();
 
@@ -100,6 +102,7 @@ public sealed class PlayerAdminService(
             return new PlayerAdminResult(PlayerAdminStatus.NickTaken);
 
         user.Nick = nick;
+        user.ActiveFrom = activeFrom;
         var updated = await users.UpdateAsync(user);
         return updated.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(updated);
     }

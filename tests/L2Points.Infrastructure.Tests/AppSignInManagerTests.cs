@@ -17,6 +17,7 @@ public class AppSignInManagerTests
             UserName = "player1",
             Nick = "Player1",
             IsActive = isActive,
+            ActiveFrom = DateOnly.FromDateTime(DateTime.UtcNow),
             CreatedAt = DateTime.UtcNow,
         };
         var result = await userManager.CreateAsync(user, "Password1");

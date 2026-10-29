@@ -5,6 +5,8 @@ namespace L2Points.Domain.Tests.Jewels;
 
 public class JewelCalculatorTests
 {
+    private static readonly DateOnly From = new(2026, 10, 26);
+
     private static readonly JewelType Ring = new() { Id = 10, Code = "Ring", Name = "Ring", SortOrder = 1 };
     private static readonly JewelType Earring = new() { Id = 20, Code = "Earring", Name = "Earring", SortOrder = 2 };
     private static readonly JewelType Necklace = new() { Id = 30, Code = "Necklace", Name = "Necklace", SortOrder = 3 };
@@ -12,9 +14,9 @@ public class JewelCalculatorTests
     // Deliberately unordered to prove the calculator orders by SortOrder.
     private static readonly IReadOnlyList<JewelType> Types = [Necklace, Ring, Earring];
 
-    private static readonly PlayerInfo Bob = new("bob", "bob", true, null);
-    private static readonly PlayerInfo Alice = new("alice", "Alice", true, null);
-    private static readonly PlayerInfo Carl = new("carl", "carl", false, new DateOnly(2026, 11, 1));
+    private static readonly PlayerInfo Bob = new("bob", "bob", true, From, null);
+    private static readonly PlayerInfo Alice = new("alice", "Alice", true, From, null);
+    private static readonly PlayerInfo Carl = new("carl", "carl", false, From, new DateOnly(2026, 11, 1));
 
     [Fact]
     public void ByPlayer_groups_same_type_and_orders_by_sort()
