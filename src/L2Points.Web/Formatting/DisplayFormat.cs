@@ -74,6 +74,15 @@ public static class DisplayFormat
         _ => "normal",
     };
 
+    /// <summary>CSS suffix of a stats category, same keys as <see cref="EventKindKey"/>: "normal", "evening", "morning" or "cs".</summary>
+    public static string StatCategoryKey(StatCategory c) => c switch
+    {
+        StatCategory.Evening => "evening",
+        StatCategory.Morning => "morning",
+        StatCategory.CastleSiege => "cs",
+        _ => "normal",
+    };
+
     /// <summary>Spawn time of an event in Prague ("19:00"), or null for an event without a fixed time.</summary>
     public static string? EventTime(DateOnly date, TimeOnly? timeUtc) =>
         timeUtc is { } time ? AppTime.ToPragueTime(date, time).ToString("HH:mm", CultureInfo.InvariantCulture) : null;

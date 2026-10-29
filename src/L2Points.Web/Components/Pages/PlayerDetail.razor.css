@@ -37,7 +37,7 @@
     position: sticky;
     left: 0;
     z-index: 2;
-    background: var(--mud-palette-surface);
+    background: var(--l2p-surface-solid);
     border-right: 1px solid var(--mud-palette-lines-default);
 }
 

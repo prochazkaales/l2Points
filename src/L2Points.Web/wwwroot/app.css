@@ -1,15 +1,117 @@
-/* Page background before the circuit connects (prerender is off): matches the theme background, dark by default.
-   Once MudThemeProvider defines --mud-palette-background it wins, so the chosen theme is respected. */
-html,
-body {
-    background-color: var(--mud-palette-background, #12101c);
+/* Self-hosted Outfit (variable weight, Fontsource @fontsource-variable/outfit 5.3.0, SIL OFL: fonts/OFL.txt).
+   Two subsets with the Fontsource unicode-range, so the browser loads latin-ext only when a page needs it (Czech diacritics). */
+@font-face {
+    font-family: "Outfit";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("fonts/outfit-latin-ext-wght-normal.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-@media (prefers-color-scheme: light) {
-    html,
-    body {
-        background-color: var(--mud-palette-background, #f4f3f9);
-    }
+@font-face {
+    font-family: "Outfit";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("fonts/outfit-latin-wght-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Glass UI tokens. The theme is chosen by data-theme on <html>, set before first paint by l2pTheme.apply (inline
+   script in App.razor) and re-applied after enhanced navigation (js/theme.js); without the attribute (no JS) dark is used. */
+:root,
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --l2p-bg: #0B0A1A;
+    --l2p-glow-1: rgba(124, 92, 250, 0.27);
+    --l2p-glow-2: rgba(199, 125, 255, 0.14);
+    --l2p-glass: rgba(255, 255, 255, 0.045);
+    --l2p-glass-strong: rgba(255, 255, 255, 0.06);
+    --l2p-glass-edge: rgba(255, 255, 255, 0.09);
+    --l2p-glass-hi: rgba(255, 255, 255, 0.12);
+    --l2p-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --l2p-surface-solid: #16132A;
+    --l2p-primary: #8B6CFF;
+    /* Primary used as text/outline colour: #8B6CFF is only ~3:1 over the glow, so text gets a lighter violet. */
+    --l2p-primary-text: #B9A6FF;
+    --l2p-primary-2: #C77DFF;
+    --l2p-on-primary: #0B0A1A;
+    --l2p-text: #F4F2FF;
+    --l2p-text-2: #B9B5D6;
+    --l2p-muted: #A8A4CA;
+    --l2p-divider: rgba(255, 255, 255, 0.06);
+    --l2p-cat-normal: #6E9BFF;
+    --l2p-cat-evening: #A78BFA;
+    --l2p-cat-morning: #F5B14C;
+    --l2p-cat-cs: #3FD0B0;
+    --l2p-logo-tile: #1C1929;
+    --l2p-logo-crown: #C7B3FF;
+    --l2p-logo-pavilion: #9D7BFF;
+    --l2p-logo-tile-edge: #2E2A42;
+    --l2p-tone-high: #6FE3C8;
+    --l2p-tone-mid: #F5C15C;
+    --l2p-tone-low: #FF8A8A;
+    --l2p-place-1: #F5C15C;
+    --l2p-place-2: #C9CBE0;
+    --l2p-place-3: #E0915A;
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+    --l2p-bg: #EEF0FA;
+    --l2p-glow-1: rgba(124, 92, 250, 0.22);
+    --l2p-glow-2: rgba(96, 165, 250, 0.20);
+    --l2p-glass: rgba(255, 255, 255, 0.58);
+    --l2p-glass-strong: rgba(255, 255, 255, 0.70);
+    --l2p-glass-edge: rgba(255, 255, 255, 0.85);
+    --l2p-glass-hi: rgba(255, 255, 255, 0.90);
+    --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.10);
+    --l2p-surface-solid: #F8F8FD;
+    --l2p-primary: #6D4AE0;
+    --l2p-primary-text: #5B39CC;
+    --l2p-primary-2: #A855F7;
+    --l2p-on-primary: #FFFFFF;
+    --l2p-text: #1D1838;
+    --l2p-text-2: #4F4A6E;
+    --l2p-muted: #625D84;
+    --l2p-divider: rgba(60, 40, 140, 0.08);
+    --l2p-cat-normal: #2F6FE0;
+    --l2p-cat-evening: #7C5CFA;
+    --l2p-cat-morning: #C27A0E;
+    --l2p-cat-cs: #0F9A7D;
+    --l2p-logo-tile: #6D4AE0;
+    --l2p-logo-crown: #FFD27A;
+    --l2p-logo-pavilion: #F5A524;
+    --l2p-logo-tile-edge: transparent;
+    --l2p-tone-high: #0A6F5A;
+    --l2p-tone-mid: #855900;
+    --l2p-tone-low: #B53325;
+    --l2p-place-1: #755600;
+    --l2p-place-2: #575A78;
+    --l2p-place-3: #8F4817;
+}
+
+/* Page background: two glows over the base colour. It does not depend on MudThemeProvider, so it is right before
+   the circuit connects. */
+html {
+    background:
+        radial-gradient(1100px 620px at 88% 100%, var(--l2p-glow-1), transparent 62%),
+        radial-gradient(800px 480px at 0% 0%, var(--l2p-glow-2), transparent 60%),
+        var(--l2p-bg);
+    background-attachment: fixed;
+}
+
+/* Painted by html only (a second copy on body would double the glows and could show a seam on short pages). */
+body {
+    background: transparent;
+    min-height: 100vh;
+}
+
+/* Let the glows show through the MudBlazor layout. */
+.mud-layout,
+.mud-main-content {
+    background: transparent;
 }
 
 /* "Loading" placeholder of the interactive pages. It is rendered outside the Routes output, so it stays until
@@ -21,14 +123,8 @@ body {
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #a8a3c2;
-}
-
-@media (prefers-color-scheme: light) {
-    .l2p-loading {
-        color: #5b5675;
-    }
+    font-family: "Outfit", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--l2p-text-2);
 }
 
 body:has(.mud-layout) .l2p-loading {
@@ -76,10 +172,175 @@ h1:focus {
         content: "Došlo k chybě."
     }
 
-/* App shell */
+/* Primary as text (MudText/MudLink/icons with Color.Primary, text and outlined buttons) uses the lighter text shade so it
+   stays >= 4.5:1 over the glow. Filled primary buttons keep the solid palette fill. */
+.mud-primary-text {
+    color: var(--l2p-primary-text) !important;
+}
+
+/* MudBlazor declares these at two-class specificity, so the selectors must match it. */
+.mud-button-text.mud-button-text-primary,
+.mud-button-outlined.mud-button-outlined-primary {
+    color: var(--l2p-primary-text);
+}
+
+/* Outlined and text primary chips (e.g. the "admin" chip): MudBlazor uses two classes, the extra .mud-chip out-ranks
+   it regardless of stylesheet order. The border keeps the palette primary. */
+.mud-chip.mud-chip-outlined.mud-chip-color-primary,
+.mud-chip.mud-chip-text.mud-chip-color-primary {
+    color: var(--l2p-primary-text);
+}
+
+/* ---- Glass surfaces ----
+   .l2p-glass is a section card; the outlined MudPaper and MudTable of the pages get the same look
+   (MudBlazor 9 gives them .mud-paper-outlined / .mud-table-outlined). Scoped to .mud-main-content so popovers,
+   dialogs, menus and tooltips (rendered outside of it) keep the opaque palette Surface. Blur only on these large
+   containers, never on rows, cells or chips. */
+.l2p-glass,
+.mud-main-content .mud-paper-outlined,
+.mud-main-content .mud-table-outlined {
+    background: var(--l2p-glass);
+    border: 1px solid var(--l2p-glass-edge);
+    border-radius: 20px;
+    box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Tables live inside the card and must not paint over it. An outlined table is itself the card (bare MudTable on
+   /points, /admin/*), so it keeps the glass fill from the rule above. */
+.mud-main-content .mud-table:not(.mud-table-outlined),
+.mud-main-content .mud-table-container,
+.mud-main-content .mud-table-head,
+.mud-main-content .mud-table-head .mud-table-cell,
+.mud-main-content .mud-table-body .mud-table-cell,
+.mud-main-content .mud-table-foot .mud-table-cell {
+    background: transparent;
+}
+
+.mud-main-content .mud-table-cell {
+    border-bottom-color: var(--l2p-divider);
+}
+
+/* The cell rule above is more specific than .l2p-nick-cell, so the pinned cells get their opaque surface back here:
+   the scrolled cells must not show through them. */
+.mud-main-content .mud-table .mud-table-cell.l2p-nick-cell,
+.mud-main-content .mud-table .mud-table-cell.l2p-pd-week {
+    background: var(--l2p-row-bg, var(--l2p-surface-solid));
+}
+
+.mud-main-content .mud-table-outlined {
+    overflow: hidden;
+}
+
+/* Surfaces nested in a card: stronger glass, no blur (a blurred layer inside a blurred layer is slow and muddy).
+   .l2p-glass-strong is the explicit class for such a surface. */
+.l2p-glass-strong {
+    border: 1px solid var(--l2p-glass-edge);
+}
+
+.l2p-glass-strong,
+.l2p-glass .l2p-glass,
+.l2p-glass .mud-paper-outlined,
+.l2p-glass .mud-table-outlined,
+.mud-main-content .mud-paper-outlined .mud-paper-outlined,
+.mud-main-content .mud-paper-outlined .mud-table-outlined,
+.mud-main-content .l2p-podium-card,
+.mud-main-content .l2p-wk-card {
+    background: var(--l2p-glass-strong);
+    border-radius: 14px;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+/* Popovers, menus, dialogs, tooltips and snackbars are rendered outside .mud-main-content and use the opaque palette
+   Surface (#16132A / #F8F8FD), checked in the running app, so they need no override here. */
+
+/* ---- App shell ---- */
 .l2p-brand {
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.l2p-logo {
+    flex: none;
+    display: block;
+}
+
+/* App bar and drawer are glass with blur (same specificity as MudBlazor's own single-class rule, app.css loads later). */
+.mud-appbar,
+.mud-drawer {
+    background-color: var(--l2p-glass);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: none;
+}
+
+.mud-appbar {
+    border-bottom: 1px solid var(--l2p-glass-edge);
+}
+
+.mud-drawer {
+    border-right: 1px solid var(--l2p-glass-edge);
+}
+
+/* A drawer that slides over the content on a phone is a menu, so it is opaque. */
+@media (max-width: 959.98px) {
+    .mud-drawer {
+        background-color: var(--l2p-surface-solid);
+        /* Nothing shows through an opaque fill, so the blur would only cost GPU time. */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link {
+    margin: 4px 8px;
+    border-radius: 12px;
+    color: var(--l2p-text-2);
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link:hover:not(.mud-nav-link-disabled) {
+    background-color: var(--l2p-glass-strong);
+    color: var(--l2p-text);
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled),
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled):hover {
+    background-color: var(--l2p-primary);
+    color: var(--l2p-on-primary);
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-icon,
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-text {
+    color: var(--l2p-on-primary);
+}
+
+/* No blur support, or the user asked for less transparency: cards, app bar and drawer become opaque. Kept after the
+   shell rules above on purpose: same specificity, so the later rule wins. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .l2p-glass,
+    .mud-main-content .mud-paper-outlined,
+    .mud-main-content .mud-table-outlined,
+    .mud-appbar,
+    .mud-drawer {
+        background: var(--l2p-surface-solid);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .l2p-glass,
+    .mud-main-content .mud-paper-outlined,
+    .mud-main-content .mud-table-outlined,
+    .mud-appbar,
+    .mud-drawer {
+        background: var(--l2p-surface-solid);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }
 
 .l2p-logout-form {
@@ -87,35 +348,34 @@ h1:focus {
     margin: 0;
 }
 
-/* Account pages (static SSR, follow the system colour scheme) */
-:root {
-    --account-bg: #f4f3f9;
-    --account-card: #ffffff;
-    --account-text: #1f1b2e;
-    --account-muted: #5b5675;
-    --account-border: #cfcae0;
-    --account-accent: #6d4ae0;
-    --account-accent-text: #ffffff;
-    --account-error-bg: #fde8e8;
-    --account-error-text: #9b1c1c;
-    --account-success-bg: #def7ec;
-    --account-success-text: #03543f;
+/* Account pages (static SSR). Colours come from the glass tokens; data-theme is set on <html> before first paint. */
+:root,
+:root[data-theme="dark"] {
+    --account-error-bg: rgba(255, 138, 138, 0.14);
+    --account-error-text: #FFB4B4;
+    --account-success-bg: rgba(63, 208, 176, 0.14);
+    --account-success-text: #8EE6C2;
+    --account-input-border: rgba(255, 255, 255, 0.34);
+    --account-link: var(--l2p-primary-text);
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --account-bg: #12101c;
-        --account-card: #1c1929;
-        --account-text: #ece9f7;
-        --account-muted: #a8a3c2;
-        --account-border: #3a3552;
-        --account-accent: #9d7bff;
-        --account-accent-text: #12101c;
-        --account-error-bg: #3b1d24;
-        --account-error-text: #ffb4b4;
-        --account-success-bg: #12342b;
-        --account-success-text: #8ee6c2;
-    }
+:root[data-theme="light"] {
+    --account-error-bg: #FDE8E8;
+    --account-error-text: #9B1C1C;
+    --account-success-bg: #DEF7EC;
+    --account-success-text: #03543F;
+    --account-input-border: rgba(60, 40, 140, 0.6);
+    --account-link: var(--l2p-primary-text);
+}
+
+:root {
+    --account-bg: var(--l2p-bg);
+    --account-card: var(--l2p-glass);
+    --account-text: var(--l2p-text);
+    --account-muted: var(--l2p-text-2);
+    --account-border: var(--l2p-glass-edge);
+    --account-accent: var(--l2p-primary);
+    --account-accent-text: var(--l2p-on-primary);
 }
 
 .account-page {
@@ -125,9 +385,10 @@ h1:focus {
     justify-content: center;
     padding: 1rem;
     box-sizing: border-box;
-    background: var(--account-bg);
+    /* The glow is painted by html (same as body); --account-bg only backs it up. */
+    background: transparent;
     color: var(--account-text);
-    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: "Outfit", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .account-card {
@@ -137,16 +398,38 @@ h1:focus {
     box-sizing: border-box;
     background: var(--account-card);
     border: 1px solid var(--account-border);
-    border-radius: 12px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    border-radius: 20px;
+    box-shadow: inset 0 1px 0 var(--l2p-glass-hi), var(--l2p-glass-shadow);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Single card on the page, so the fallback is just an opaque surface (same conditions as .l2p-glass). */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .account-card {
+        background: var(--l2p-surface-solid);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .account-card {
+        background: var(--l2p-surface-solid);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }
 
 .account-brand {
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--account-accent);
-    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--account-text);
+    margin-bottom: 1.25rem;
 }
 
 .account-title {
@@ -176,9 +459,10 @@ h1:focus {
     font: inherit;
     padding: 0.6rem 0.75rem;
     color: var(--account-text);
-    background: transparent;
-    border: 1px solid var(--account-border);
-    border-radius: 6px;
+    background: var(--l2p-glass-strong);
+    /* The glass edge is too faint to outline a field, so inputs get their own border. */
+    border: 1px solid var(--account-input-border);
+    border-radius: 10px;
 }
 
 .account-field input:focus {
@@ -205,7 +489,7 @@ h1:focus {
     color: var(--account-accent-text);
     background: var(--account-accent);
     border: 0;
-    border-radius: 6px;
+    border-radius: 12px;
     cursor: pointer;
 }
 
@@ -234,7 +518,7 @@ h1:focus {
 .account-link {
     display: inline-block;
     margin-top: 1.25rem;
-    color: var(--account-accent);
+    color: var(--account-link);
 }
 
 .account-muted {
@@ -254,7 +538,8 @@ h1:focus {
     left: 0;
     z-index: 2;
     white-space: nowrap;
-    background: var(--l2p-row-bg, var(--mud-palette-surface));
+    /* Opaque, otherwise the scrolled cells show through the pinned column. */
+    background: var(--l2p-row-bg, var(--l2p-surface-solid));
     border-right: 1px solid var(--mud-palette-lines-default);
 }
 
@@ -314,8 +599,8 @@ td.l2p-nick-cell .l2p-nick-chip {
 }
 
 .l2p-kpi-value {
-    font-size: 1.6rem;
-    font-weight: 700;
+    font-size: 2rem;
+    font-weight: 300;
     line-height: 1.3;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -329,7 +614,7 @@ td.l2p-nick-cell .l2p-nick-chip {
     color: var(--mud-palette-text-secondary);
 }
 
-/* A paper section with an uppercase title and optional controls in its head row. */
+/* A glass section with a title and optional controls in its head row. */
 .l2p-section-head {
     display: flex;
     flex-wrap: wrap;
@@ -337,14 +622,15 @@ td.l2p-nick-cell .l2p-nick-chip {
     column-gap: 1rem;
     row-gap: 0.25rem;
     padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
+    border-bottom: 1px solid var(--l2p-divider);
 }
 
 .l2p-section-title {
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--mud-palette-primary);
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--l2p-text);
 }
 
 /* Percentage badges by band (DisplayFormat.PercentTone). */
@@ -358,32 +644,36 @@ td.l2p-nick-cell .l2p-nick-chip {
     text-align: center;
 }
 
+/* Outline and coloured text, no fill. The light shades are darker than the palette ones to keep 4.5:1 on the glass. */
 .l2p-tone-high {
-    color: var(--mud-palette-success);
-    background: color-mix(in srgb, var(--mud-palette-success) 16%, transparent);
+    color: var(--l2p-tone-high);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--l2p-tone-high) 45%, transparent);
 }
 
 .l2p-tone-mid {
-    color: var(--mud-palette-warning);
-    background: color-mix(in srgb, var(--mud-palette-warning) 16%, transparent);
+    color: var(--l2p-tone-mid);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--l2p-tone-mid) 45%, transparent);
 }
 
 .l2p-tone-low {
-    color: var(--mud-palette-error);
-    background: color-mix(in srgb, var(--mud-palette-error) 16%, transparent);
+    color: var(--l2p-tone-low);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--l2p-tone-low) 45%, transparent);
 }
 
 /* Gold, silver and bronze by the shared place, so a tie gets the same colour. */
 .l2p-place-1 {
-    --l2p-place-color: #e8b923;
+    --l2p-place-color: var(--l2p-place-1);
 }
 
 .l2p-place-2 {
-    --l2p-place-color: #a8b2bf;
+    --l2p-place-color: var(--l2p-place-2);
 }
 
 .l2p-place-3 {
-    --l2p-place-color: #c87f45;
+    --l2p-place-color: var(--l2p-place-3);
 }
 
 @media (max-width: 959.98px) {
@@ -398,10 +688,40 @@ td.l2p-nick-cell .l2p-nick-chip {
     }
 
     .l2p-kpi-value {
-        font-size: 1.3rem;
+        font-size: 1.5rem;
     }
 
     .l2p-section-head {
         padding: 0.5rem 0.25rem 0.5rem 0.75rem;
     }
+}
+
+/* Page titles are a touch lighter than MudBlazor's default h4 weight. */
+.mud-typography-h4 {
+    font-weight: 500;
+}
+
+/* Aligned digits in tables and the attendance grid. */
+.mud-table-cell,
+.l2p-grid {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Segmented switch (MudToggleGroup): stronger glass track, the chosen item is the one full primary fill. */
+.mud-main-content .mud-toggle-group {
+    background: var(--l2p-glass-strong);
+    border: 1px solid var(--l2p-glass-edge);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.mud-main-content .mud-toggle-group .mud-toggle-item {
+    border-radius: 0;
+    color: var(--l2p-text-2);
+}
+
+.mud-main-content .mud-toggle-group .mud-toggle-item.mud-toggle-item-selected,
+.mud-main-content .mud-toggle-group .mud-toggle-item.mud-toggle-item-selected:hover {
+    background: var(--l2p-primary);
+    color: var(--l2p-on-primary);
 }

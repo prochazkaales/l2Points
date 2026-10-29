@@ -3,86 +3,85 @@
 @inject UserManager<AppUser> UserManager
 @inject IJSRuntime JS
 
-<MudThemeProvider @ref="_themeProvider" Theme="AppTheme.Theme" @bind-IsDarkMode="_isDarkMode" />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+@* Nothing renders until the theme is known, so the layout never paints once with the wrong palette; the static
+   "Načítám…" placeholder from App.razor stays visible until .mud-layout exists. *@
+@if (_themeReady)
+{
+    <MudThemeProvider Theme="AppTheme.Theme" @bind-IsDarkMode="_isDarkMode" />
+    <MudPopoverProvider />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
-                       Class="d-md-none" aria-label="Menu" OnClick="ToggleDrawer" />
-        <MudText Typo="Typo.h6" Class="l2p-brand">L2Points</MudText>
-        <MudSpacer />
-        @if (!string.IsNullOrEmpty(_nick))
-        {
-            <MudText Typo="Typo.subtitle1" Class="mr-2">@_nick</MudText>
-        }
-        <MudTooltip Text="@(_isDarkMode ? "Světlý režim" : "Tmavý režim")">
-            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                           Color="Color.Inherit" aria-label="Přepnout téma" OnClick="ToggleThemeAsync" />
-        </MudTooltip>
-        <form method="post" action="logout" class="l2p-logout-form">
-            <AntiforgeryToken />
-            <MudTooltip Text="Odhlásit se">
-                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
-                               ButtonType="ButtonType.Submit" aria-label="Odhlásit se" />
+    <MudLayout>
+        <MudAppBar Elevation="0">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                           Class="d-md-none" aria-label="Menu" OnClick="ToggleDrawer" />
+            <AppLogo />
+            <MudText Typo="Typo.h6" Class="l2p-brand ml-2">L2Points</MudText>
+            <MudSpacer />
+            @if (!string.IsNullOrEmpty(_nick))
+            {
+                <MudText Typo="Typo.subtitle1" Class="mr-2">@_nick</MudText>
+            }
+            <MudTooltip Text="@(_isDarkMode ? "Světlý režim" : "Tmavý režim")">
+                <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                               Color="Color.Inherit" aria-label="Přepnout téma" OnClick="ToggleThemeAsync" />
             </MudTooltip>
-        </form>
-    </MudAppBar>
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" Variant="DrawerVariant.Responsive" ClipMode="DrawerClipMode.Always"
-               Breakpoint="Breakpoint.Md">
-        <NavMenu />
-    </MudDrawer>
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
-            @Body
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+            <form method="post" action="logout" class="l2p-logout-form">
+                <AntiforgeryToken />
+                <MudTooltip Text="Odhlásit se">
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
+                                   ButtonType="ButtonType.Submit" aria-label="Odhlásit se" />
+                </MudTooltip>
+            </form>
+        </MudAppBar>
+        <MudDrawer @bind-Open="_drawerOpen" Elevation="0" Variant="DrawerVariant.Responsive" ClipMode="DrawerClipMode.Always"
+                   Breakpoint="Breakpoint.Md">
+            <NavMenu />
+        </MudDrawer>
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+}
 
 @code {
-    private MudThemeProvider? _themeProvider;
     private bool _drawerOpen = true;
-    // Dark is the default until the stored or system preference is known (after the first interactive render).
+    // Dark is the fallback; the real value comes from the data-theme attribute set before first paint (l2pTheme.current).
     private bool _isDarkMode = true;
+    // False until the theme is read: ComponentBase renders as soon as OnInitializedAsync yields, so without this the
+    // first render would use the default (dark) palette while the JS call is in flight.
+    private bool _themeReady;
     private string? _nick;
 
     protected override async Task OnInitializedAsync()
     {
+        // Prerender is off, so JS interop is available here.
+        try
+        {
+            _isDarkMode = await JS.InvokeAsync<string>("l2pTheme.current") != "light";
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, the default stays.
+        }
+        catch (JSException)
+        {
+            // The script failed (e.g. theme.js not loaded), the default stays.
+        }
+
+        // Show the layout with the right palette now, not only after the nick query below.
+        _themeReady = true;
+        StateHasChanged();
+
         // The user name claim holds the login, so the display nick is read from the database.
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (state.User.Identity?.IsAuthenticated == true)
         {
             var user = await UserManager.GetUserAsync(state.User);
             _nick = user?.Nick;
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-        {
-            return;
-        }
-
-        try
-        {
-            var stored = await JS.InvokeAsync<string?>("l2pTheme.get");
-            if (stored is "dark" or "light")
-            {
-                _isDarkMode = stored == "dark";
-            }
-            else if (_themeProvider is not null)
-            {
-                _isDarkMode = await _themeProvider.GetSystemDarkModeAsync();
-            }
-
-            StateHasChanged();
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, nothing to update.
         }
     }
 

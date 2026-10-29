@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    .tile { fill: #6d4ae0; }
+    .crown { fill: #ffd27a; }
+    .pavilion { fill: #f5a524; }
+    .facets { fill: none; stroke: #6d4ae0; stroke-opacity: .35; stroke-width: 1.6; stroke-linejoin: round; }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: #1c1929; stroke: #2e2a42; stroke-width: 2; }
+      .crown { fill: #c7b3ff; }
+      .pavilion { fill: #9d7bff; }
+      .facets { stroke: #1c1929; }
+    }
+  </style>
+  <rect class="tile" x="1" y="1" width="62" height="62" rx="14" />
+  <path class="crown" d="M13 22.5L24 10.5H40L51 22.5z" />
+  <path class="pavilion" d="M13 22.5H51L32 53.5z" />
+  <path class="facets" d="M24 10.5L26.7 22.5L32 53.5L37.3 22.5L40 10.5M26.7 22.5H37.3" />
+</svg>

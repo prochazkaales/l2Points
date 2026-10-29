@@ -41,7 +41,7 @@
 }
 
 .l2p-podium ::deep .l2p-podium-card.l2p-podium-me {
-    background: color-mix(in srgb, var(--mud-palette-primary) 10%, var(--mud-palette-surface));
+    background: color-mix(in srgb, var(--l2p-primary) 12%, var(--l2p-glass-strong));
 }
 
 .l2p-podium ::deep .l2p-podium-trophy {
@@ -61,7 +61,7 @@
 
 .l2p-podium ::deep .l2p-podium-points {
     font-size: 1.75rem;
-    font-weight: 700;
+    font-weight: 300;
     line-height: 1.2;
     color: var(--mud-palette-primary);
     font-variant-numeric: tabular-nums;

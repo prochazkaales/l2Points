@@ -3,6 +3,13 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.25rem;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.15rem 0.5rem 0.15rem 0.25rem;
+    /* Segmented control look: a stronger glass track, like the MudToggleGroup switches. */
+    background: var(--l2p-glass-strong);
+    border: 1px solid var(--l2p-glass-edge);
+    border-radius: 12px;
 }
 
 /* The label is a MudText, so it does not carry this component's scope attribute; reach it via ::deep. */

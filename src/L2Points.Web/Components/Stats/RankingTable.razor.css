@@ -49,12 +49,14 @@
     display: block;
     height: 100%;
     border-radius: 0.25rem;
-    background: var(--mud-palette-primary);
+    /* The only place the primary -> primary 2 gradient is used (spec). */
+    background: linear-gradient(90deg, var(--l2p-primary), var(--l2p-primary-2));
 }
 
 .l2p-rank-table ::deep tr.l2p-rank-me {
-    --l2p-row-bg: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
-    background: var(--l2p-row-bg);
+    /* The pinned nick cell needs an opaque colour (--l2p-row-bg); the rest of the row is a translucent tint. */
+    --l2p-row-bg: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
+    background: color-mix(in srgb, var(--l2p-primary) 14%, transparent);
 }
 
 /* The marker sits on the place cell, which is the row's first cell. */

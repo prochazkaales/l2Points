@@ -1,0 +1,16 @@
+@* The gem of wwwroot/favicon.svg drawn inline, so it follows the chosen theme (data-theme) via the --l2p-logo-* tokens
+   instead of the OS colour scheme the standalone favicon file reacts to. *@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="@Size" height="@Size" aria-hidden="true" focusable="false"
+     class="l2p-logo">
+    <rect x="1" y="1" width="62" height="62" rx="14" style="fill: var(--l2p-logo-tile); stroke: var(--l2p-logo-tile-edge); stroke-width: 2" />
+    <path d="M13 22.5L24 10.5H40L51 22.5z" style="fill: var(--l2p-logo-crown)" />
+    <path d="M13 22.5H51L32 53.5z" style="fill: var(--l2p-logo-pavilion)" />
+    <path d="M24 10.5L26.7 22.5L32 53.5L37.3 22.5L40 10.5M26.7 22.5H37.3"
+          style="fill: none; stroke: var(--l2p-logo-tile); stroke-opacity: .35; stroke-width: 1.6; stroke-linejoin: round" />
+</svg>
+
+@code {
+    /// <summary>Width and height in pixels.</summary>
+    [Parameter]
+    public int Size { get; set; } = 32;
+}
