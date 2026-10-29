@@ -1,0 +1,336 @@
+@page "/admin/players"
+@attribute [Authorize(Roles = Roles.Admin)]
+@using System.Globalization
+@using L2Points.Domain.Time
+@using L2Points.Infrastructure.Services
+@using L2Points.Web.Components.Admin
+@using L2Points.Web.Formatting
+@inject PlayerAdminService PlayerAdmin
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<AppUser> UserManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject TimeProvider Time
+@inject ILogger<AdminPlayers> Logger
+@implements IDisposable
+
+<PageTitle>Hráči – Admin – L2Points</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Hráči</MudText>
+
+@if (_error)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Hráče se nepodařilo načíst. Zkus to prosím znovu.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadAsync">Zkusit znovu</MudButton>
+}
+else if (_players is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+}
+else
+{
+    <div class="mb-3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+                   Disabled="_saving" OnClick="CreateAsync">Nový hráč</MudButton>
+    </div>
+
+    <div class="l2p-ap">
+        <MudTable T="AdminPlayer" Items="_players" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
+            <HeaderContent>
+                <MudTh Class="l2p-nick-cell">Nick</MudTh>
+                <MudTh>Login</MudTh>
+                <MudTh>Aktivní od</MudTh>
+                <MudTh>Stav</MudTh>
+                <MudTh>Admin</MudTh>
+                <MudTh>Akce</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                @{
+                    var player = context;
+                    var isSelf = player.UserId == _actorId;
+                }
+                <MudTd Class="l2p-nick-cell">
+                    <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover">@player.Nick</MudLink>
+                </MudTd>
+                <MudTd>@player.Login</MudTd>
+                <MudTd>@FormatDate(player.ActiveFrom)</MudTd>
+                <MudTd>
+                    @if (player.IsActive)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">aktivní</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@InactiveText(player)</MudChip>
+                    }
+                </MudTd>
+                <MudTd>
+                    @if (player.IsAdmin)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">admin</MudChip>
+                    }
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" title="Upravit"
+                                   aria-label="@($"Upravit: {player.Nick}")" Disabled="_saving"
+                                   OnClick="@(() => EditAsync(player))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.LockReset" Size="Size.Small" title="Reset hesla"
+                                   aria-label="@($"Reset hesla: {player.Nick}")" Disabled="_saving"
+                                   OnClick="@(() => ResetPasswordAsync(player))" />
+                    @if (player.IsActive)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small" title="Deaktivovat"
+                                       aria-label="@($"Deaktivovat: {player.Nick}")" Disabled="@(_saving || isSelf)"
+                                       OnClick="@(() => SetActiveAsync(player, false))" />
+                    }
+                    else
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.HowToReg" Size="Size.Small" title="Aktivovat"
+                                       aria-label="@($"Aktivovat: {player.Nick}")" Disabled="_saving"
+                                       OnClick="@(() => SetActiveAsync(player, true))" />
+                    }
+                    @if (player.IsAdmin)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.RemoveModerator" Size="Size.Small" title="Odebrat admina"
+                                       aria-label="@($"Odebrat admina: {player.Nick}")" Disabled="@(_saving || isSelf)"
+                                       OnClick="@(() => SetAdminAsync(player, false))" />
+                    }
+                    else
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.AddModerator" Size="Size.Small" title="Udělit admina"
+                                       aria-label="@($"Udělit admina: {player.Nick}")" Disabled="_saving"
+                                       OnClick="@(() => SetAdminAsync(player, true))" />
+                    }
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" title="Smazat"
+                                   aria-label="@($"Smazat: {player.Nick}")" Disabled="@(_saving || isSelf)"
+                                   OnClick="@(() => DeleteAsync(player))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Small" title="Účast"
+                                   aria-label="@($"Účast: {player.Nick}")"
+                                   Href="@($"/admin/attendance?player={Uri.EscapeDataString(player.UserId)}")" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Diamond" Size="Size.Small" title="Šperky"
+                                   aria-label="@($"Šperky: {player.Nick}")"
+                                   Href="@($"/admin/jewels?player={Uri.EscapeDataString(player.UserId)}")" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+}
+
+@code {
+    private static readonly DialogOptions EditOptions = new()
+    {
+        MaxWidth = MaxWidth.ExtraSmall,
+        FullWidth = true,
+        CloseOnEscapeKey = true,
+    };
+
+    // The password is shown only once, so the dialog must not close by an accidental click outside.
+    private static readonly DialogOptions PasswordOptions = new()
+    {
+        MaxWidth = MaxWidth.ExtraSmall,
+        FullWidth = true,
+        BackdropClick = false,
+        CloseOnEscapeKey = false,
+    };
+
+    private readonly CancellationTokenSource _disposed = new();
+
+    private IReadOnlyList<AdminPlayer>? _players;
+    private string? _actorId;
+    private bool _error;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Identity comes only from the authenticated principal.
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _actorId = UserManager.GetUserId(state.User);
+        await LoadAsync();
+    }
+
+    private static string FormatDate(DateOnly date) => date.ToString("d. M. yyyy", CultureInfo.InvariantCulture);
+
+    private static string InactiveText(AdminPlayer player) =>
+        player.DeactivatedAt is { } date ? $"neaktivní od {FormatDate(date)}" : "neaktivní";
+
+    private async Task CreateAsync()
+    {
+        var monday = Week.Containing(AppTime.TodayInPrague(Time)).Monday;
+        var values = await ShowEditDialogAsync(string.Empty, string.Empty, monday);
+        if (values is null)
+        {
+            return;
+        }
+
+        await ChangeAsync(ct => PlayerAdmin.CreateAsync(values.Login, values.Nick, values.ActiveFrom, ct), values.Nick);
+    }
+
+    private async Task EditAsync(AdminPlayer player)
+    {
+        var values = await ShowEditDialogAsync(null, player.Nick, player.ActiveFrom);
+        if (values is null)
+        {
+            return;
+        }
+
+        await ChangeAsync(ct => PlayerAdmin.UpdateAsync(player.UserId, values.Nick, values.ActiveFrom, ct));
+    }
+
+    private async Task ResetPasswordAsync(AdminPlayer player)
+    {
+        if (!await ConfirmAsync("Reset hesla",
+                $"Vygenerovat hráči {player.Nick} nové heslo? Staré heslo přestane platit.", "Resetovat"))
+        {
+            return;
+        }
+
+        await ChangeAsync(ct => PlayerAdmin.ResetPasswordAsync(player.UserId, ct), player.Nick);
+    }
+
+    private async Task SetActiveAsync(AdminPlayer player, bool active)
+    {
+        if (!active && !await ConfirmAsync("Deaktivace hráče",
+                $"Deaktivovat hráče {player.Nick}? Nebude se moct přihlásit, jeho historie zůstane.", "Deaktivovat"))
+        {
+            return;
+        }
+
+        await ChangeAsync(ct => PlayerAdmin.SetActiveAsync(_actorId!, player.UserId, active, ct));
+    }
+
+    private async Task SetAdminAsync(AdminPlayer player, bool isAdmin)
+    {
+        if (!isAdmin && !await ConfirmAsync("Odebrání admina",
+                $"Odebrat hráči {player.Nick} roli Admin?", "Odebrat"))
+        {
+            return;
+        }
+
+        await ChangeAsync(ct => PlayerAdmin.SetAdminAsync(_actorId!, player.UserId, isAdmin, ct));
+    }
+
+    private async Task DeleteAsync(AdminPlayer player)
+    {
+        if (!await ConfirmAsync("Smazání hráče",
+                $"Smazat hráče {player.Nick}? Smaže se i jeho účast a šperky. Akci nelze vrátit.", "Smazat"))
+        {
+            return;
+        }
+
+        await ChangeAsync(ct => PlayerAdmin.DeleteAsync(_actorId!, player.UserId, ct));
+    }
+
+    private async Task<PlayerEditDialog.Values?> ShowEditDialogAsync(string? login, string nick, DateOnly activeFrom)
+    {
+        var parameters = new DialogParameters<PlayerEditDialog>
+        {
+            { d => d.Login, login },
+            { d => d.Nick, nick },
+            { d => d.ActiveFrom, activeFrom },
+        };
+        var dialog = await DialogService.ShowAsync<PlayerEditDialog>(parameters, EditOptions);
+        var result = await dialog.Result;
+        return result is { Canceled: false, Data: PlayerEditDialog.Values values } ? values : null;
+    }
+
+    private async Task<bool> ConfirmAsync(string title, string message, string yesText) =>
+        await DialogService.ShowMessageBoxAsync(title, message, yesText: yesText, cancelText: "Zrušit") == true;
+
+    /// <summary>Runs one change; a returned password is shown to the admin (to <paramref name="passwordNick"/>) and not kept.</summary>
+    private async Task ChangeAsync(Func<CancellationToken, Task<PlayerAdminResult>> change, string? passwordNick = null)
+    {
+        if (_saving || _actorId is null)
+        {
+            return;
+        }
+
+        // Captured up front: reading Token from a disposed source throws.
+        var ct = _disposed.Token;
+        _saving = true;
+        try
+        {
+            var result = await change(ct);
+            if (result.Status == PlayerAdminStatus.Ok)
+            {
+                if (result.Password is { } password)
+                {
+                    var parameters = new DialogParameters<PasswordDialog>
+                    {
+                        { d => d.Nick, passwordNick ?? string.Empty },
+                        { d => d.Password, password },
+                    };
+                    await DialogService.ShowAsync<PasswordDialog>(parameters, PasswordOptions);
+                }
+            }
+            else
+            {
+                Snackbar.Add(ErrorText(result), Severity.Warning);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The component was disposed while saving.
+            _saving = false;
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Changing a player failed");
+            Snackbar.Add("Uložení se nepovedlo, zkus to znovu.", Severity.Error);
+        }
+
+        // The server is the source of truth; reload after every change, successful or not.
+        try
+        {
+            _players = await PlayerAdmin.GetPlayersAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Reloading players failed");
+            _players = null;
+            _error = true;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static string ErrorText(PlayerAdminResult result) => result.Status switch
+    {
+        PlayerAdminStatus.NickTaken => "Nick už používá jiný hráč.",
+        PlayerAdminStatus.LoginTaken => "Login už existuje.",
+        PlayerAdminStatus.CannotChangeSelf => "Sám sobě to udělat nemůžeš.",
+        PlayerAdminStatus.UnknownPlayer => "Hráč už neexistuje.",
+        _ => result.Message ?? "Uložení se nepovedlo, zkus to znovu.",
+    };
+
+    private async Task LoadAsync()
+    {
+        _error = false;
+        try
+        {
+            _players = await PlayerAdmin.GetPlayersAsync(_disposed.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loading players failed");
+            _players = null;
+            _error = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

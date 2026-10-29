@@ -1,0 +1,5 @@
+/* Cells are rendered by MudBlazor components, so reach them via ::deep. */
+.l2p-ap ::deep th,
+.l2p-ap ::deep td:not(.l2p-nick-cell) {
+    white-space: nowrap;
+}

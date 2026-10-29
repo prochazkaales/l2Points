@@ -4,7 +4,29 @@
 <PageTitle>Admin – L2Points</PageTitle>
 
 <MudText Typo="Typo.h4" GutterBottom="true">Admin</MudText>
-<div class="mb-3">
-    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/admin/jewels">Šperky – přiřazení</MudButton>
-</div>
-<MudAlert Severity="Severity.Info">Připravujeme – část 6</MudAlert>
+
+<MudGrid Spacing="2">
+    @foreach (var link in Sections)
+    {
+        <MudItem xs="12" sm="6" md="4">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@link.Href" FullWidth="true"
+                       Size="Size.Large" StartIcon="@link.Icon" Class="justify-start py-4">
+                @link.Label
+            </MudButton>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private sealed record Section(string Label, string Href, string Icon);
+
+    private static readonly Section[] Sections =
+    [
+        new("Hráči", "/admin/players", Icons.Material.Filled.People),
+        new("Účast hráčů", "/admin/attendance", Icons.Material.Filled.EventAvailable),
+        new("Aktivity a body", "/admin/activities", Icons.Material.Filled.EmojiEvents),
+        new("Rozpis", "/admin/schedule", Icons.Material.Filled.Schedule),
+        new("Šperky – přiřazení", "/admin/jewels", Icons.Material.Filled.Diamond),
+        new("Nastavení", "/admin/settings", Icons.Material.Filled.Settings),
+    ];
+}

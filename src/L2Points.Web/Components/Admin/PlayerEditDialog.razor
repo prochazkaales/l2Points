@@ -1,0 +1,72 @@
+@* Creates (Login not null: login is editable) or edits (Login null: the login is not changed) a player.
+   Returns Values on save; the caller passes them to PlayerAdminService, which trims and validates again. *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(IsCreate ? "Nový hráč" : "Upravit hráče")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            @if (IsCreate)
+            {
+                <MudTextField T="string" @bind-Value="_login" Label="Login" Variant="Variant.Outlined" Class="mb-3"
+                              Required="true" RequiredError="Zadej login." />
+            }
+            <MudTextField T="string" @bind-Value="_nick" Label="Nick" Variant="Variant.Outlined" Class="mb-3"
+                          Required="true" RequiredError="Zadej nick." MaxLength="AppUser.NickMaxLength"
+                          Counter="AppUser.NickMaxLength" />
+            <MudDatePicker @bind-Date="_activeFrom" Label="Aktivní od" Variant="Variant.Outlined"
+                           DateFormat="d. M. yyyy" Required="true" RequiredError="Zadej datum." />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Zrušit</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync">Uložit</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    public sealed record Values(string Login, string Nick, DateOnly ActiveFrom);
+
+    private MudForm _form = default!;
+    private string? _login;
+    private string? _nick;
+    private DateTime? _activeFrom;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    /// <summary>Login of a new player; null switches the dialog to editing an existing player.</summary>
+    [Parameter]
+    public string? Login { get; set; }
+
+    [Parameter]
+    public string Nick { get; set; } = string.Empty;
+
+    [Parameter]
+    public DateOnly ActiveFrom { get; set; }
+
+    private bool IsCreate => Login is not null;
+
+    protected override void OnInitialized()
+    {
+        _login = Login;
+        _nick = Nick;
+        _activeFrom = ActiveFrom.ToDateTime(TimeOnly.MinValue);
+    }
+
+    private async Task SaveAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid || _activeFrom is not { } activeFrom)
+        {
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(new Values(
+            _login?.Trim() ?? string.Empty,
+            _nick?.Trim() ?? string.Empty,
+            DateOnly.FromDateTime(activeFrom))));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
