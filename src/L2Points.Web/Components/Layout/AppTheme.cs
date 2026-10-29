@@ -9,6 +9,7 @@ public static class AppTheme
 
     public static readonly MudTheme Theme = new()
     {
+        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "8px" },
         Typography = new Typography
         {
             Default = new DefaultTypography { FontFamily = FontFamily },
@@ -22,15 +23,16 @@ public static class AppTheme
             Subtitle2 = new Subtitle2Typography { FontFamily = FontFamily },
             Body1 = new Body1Typography { FontFamily = FontFamily },
             Body2 = new Body2Typography { FontFamily = FontFamily },
-            Button = new ButtonTypography { FontFamily = FontFamily },
+            Button = new ButtonTypography { FontFamily = FontFamily, TextTransform = "none", FontWeight = "600" },
             Caption = new CaptionTypography { FontFamily = FontFamily },
             Overline = new OverlineTypography { FontFamily = FontFamily },
         },
+        // The palettes mirror the --l2p-* tokens in wwwroot/app.css; AppThemeTokensTests keeps them in sync.
         PaletteLight = new PaletteLight
         {
             Primary = "#6D4AE0",
             PrimaryContrastText = "#FFFFFF",
-            Secondary = "#c2410c",
+            Secondary = "#A93A0B",
             Tertiary = "#0e7490",
             AppbarBackground = "#F8F8FD",
             AppbarText = "#1D1838",
@@ -41,20 +43,21 @@ public static class AppTheme
             DrawerIcon = "#4F4A6E",
             TextPrimary = "#1D1838",
             TextSecondary = "#4F4A6E",
+            TextDisabled = "#77738F",
             ActionDefault = "#4F4A6E",
             LinesDefault = "#DDDAEE",
             TableLines = "#DDDAEE",
             Divider = "#DDDAEE",
-            Success = "#0B7A63",
-            Warning = "#946300",
+            Success = "#086E59",
+            Warning = "#7A5200",
             Info = "#0B5CAD",
-            Error = "#C0392B",
+            Error = "#A3241A",
         },
         PaletteDark = new PaletteDark
         {
             Primary = "#8B6CFF",
             PrimaryContrastText = "#0B0A1A",
-            Secondary = "#ff9a3c",
+            Secondary = "#FF9A3C",
             Tertiary = "#34d1e5",
             AppbarBackground = "#16132A",
             AppbarText = "#F4F2FF",
@@ -65,12 +68,14 @@ public static class AppTheme
             DrawerIcon = "#B9B5D6",
             TextPrimary = "#F4F2FF",
             TextSecondary = "#B9B5D6",
+            TextDisabled = "#8C88AE",
             ActionDefault = "#B9B5D6",
             LinesDefault = "#2A2544",
             TableLines = "#2A2544",
             Divider = "#2A2544",
             Success = "#6FE3C8",
             Warning = "#F5C15C",
+            Info = "#7CC4FF",
             Error = "#FF8A8A",
         },
     };

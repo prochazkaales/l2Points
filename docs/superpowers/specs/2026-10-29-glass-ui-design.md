@@ -38,19 +38,31 @@ Barvy jsou CSS proměnné v `wwwroot/app.css` (jedna sada pro dark, jedna pro li
 | Záře 2 (levý horní roh) | `rgba(199,125,255,.14)` | `rgba(96,165,250,.20)` |
 | Sklo – výplň | `rgba(255,255,255,.045)` | `rgba(255,255,255,.58)` |
 | Sklo – silnější (řádky, vnořené plochy) | `rgba(255,255,255,.06)` | `rgba(109,74,224,.065)` (nádech primary, ne bělejší než karta, jinak dlaždice splývají) |
-| Sklo – hrana (i okraje čipů, dnů a dělicí čára přilepeného sloupce) | `rgba(185,166,255,.11)` | `rgba(90,70,170,.16)` (bílá hrana na světlé stránce není vidět; v tmavém stejný fialový odstín, aby čáry v obou režimech působily stejně) |
+| Sklo – hrana (i okraje čipů, dnů a dělicí čára přilepeného sloupce) | `rgba(185,166,255,.16)` | `rgba(90,70,170,.22)` (bílá hrana na světlé stránce není vidět; v tmavém stejný fialový odstín, aby čáry v obou režimech působily stejně) |
 | Sklo – horní světlo (inset) | `rgba(255,255,255,.04)` | `rgba(255,255,255,.90)` |
 | Stín karty | `0 4px 20px rgba(0,0,0,.22)` | `0 10px 30px rgba(60,40,140,.14)` |
 | Primary | `#8B6CFF` | `#6D4AE0` |
 | Primary jako text (`--l2p-primary-text`) | `#B9A6FF` | `#5B39CC` |
 | Primary 2 (konec přechodu) | `#C77DFF` | `#A855F7` |
 | Text na primary | `#0B0A1A` | `#FFFFFF` |
-| Secondary | `#FF9A3C` (beze změny) | `#C2410C` (beze změny) |
+| Secondary (`--l2p-secondary`) | `#FF9A3C` | `#A93A0B` |
 | Text | `#F4F2FF` | `#1D1838` |
 | Text 2 | `#B9B5D6` | `#4F4A6E` |
-| Tlumený | `#A8A4CA` | `#625D84` |
+| Tlumený | `#AEAAD0` | `#58537A` |
 | Dělicí čára | `rgba(185,166,255,.07)` | `rgba(60,40,140,.08)` |
 | Neprůhledný povrch (popovery, dialogy, sticky buňky) | `#16132A` | `#F8F8FD` |
+| Přilepený povrch (`--l2p-surface-pinned`) | primary 10 % nad neprůhledným povrchem | primary 5 % nad neprůhledným povrchem |
+| Řádek „já“ (`--l2p-row-me`, `--l2p-row-me-solid`) | primary 10 % (průhledný, resp. nad neprůhledným povrchem) | stejně |
+| Neaktivní text (`--l2p-text-disabled`) | `#8C88AE` (>= 3:1, ovládací prvky) | `#77738F` |
+| Info (`--l2p-info`) | `#7CC4FF` | `#0B5CAD` |
+| Success (`--l2p-success`) | `#6FE3C8` | `#086E59` |
+| Warning (`--l2p-warning`) | `#F5C15C` | `#7A5200` |
+| Danger (`--l2p-danger`, MudTheme Error) | `#FF8A8A` | `#A3241A` |
+| Dlaždice ikon šperků (`--l2p-icon-tile`) | `#1C1929` | `#2A2545` |
+| Závoj dialogů (`--l2p-scrim`) | pozadí 60 % | `#1D1838` 45 % |
+| Čáry (`--l2p-line`, `--l2p-line-subtle`, `--l2p-line-strong`) | hrana skla, dělicí čára, primary 35 % | stejně |
+| Obrys fokusu (`--l2p-focus-ring`) | `--l2p-primary-text` | `--l2p-primary-text` |
+| Stíny (`--l2p-shadow-1` karta, `-2` popover, `-3` dialog) | `0 4px 20px .22`, `0 8px 24px .35`, `0 16px 48px .45` | `0 10px 30px .14`, `0 8px 24px .18`, `0 20px 56px .24` (fialový odstín `60,40,140`) |
 
 Barvy kategorií (tečka, pruh, obrys; nikdy velká plocha):
 
@@ -61,7 +73,11 @@ Barvy kategorií (tečka, pruh, obrys; nikdy velká plocha):
 | Chaotic · Ranní (azurově modrá jako dřív) | `#3DBFF2` | `#1E8AD6` |
 | Castle Siege | `#3FD0B0` | `#0F9A7D` |
 
+Text štítků kategorií (`--l2p-cat-normal-text|evening-text|morning-text|cs-text`) je posunutý k barvě textu, aby na vlastní 16% výplni na vnořeném skle dosáhl 4,5:1: dark `#A5BFFF`, `#FCB375`, `#72CEF6`, `#61D6BF`; light `#2953AA`, `#8B4521`, `#1E5B95`, `#156360`.
+
 Pásma procent (`.l2p-tone-*`) a místa 1–3 (`.l2p-place-*`) zůstávají významově stejná, odstíny se doladí tak, aby měly kontrast 4,5:1 na skle v obou režimech.
+
+Hodnoty tokenů hlídají `TokenContrastTests` (kontrast textu, štítků a neaktivního textu nad sklem, září a řádkem „já“) a `AppThemeTokensTests` (palety `AppTheme.cs` zrcadlí tokeny; `DefaultBorderRadius` je 8 px a tlačítka bez velkých písmen).
 
 Text na plné primary (rozhodnutí návrhu): v tmavém režimu tmavý `#0B0A1A`, protože bílá na `#8B6CFF` má jen ~3,7:1; tmavá na ní má ~5,3:1 a stejně to už dnes dělají účtové stránky (`--account-accent-text`). Primary `#8B6CFF` jako text má na tmavém pozadí ~4,9:1, ale nad září v pravém dolním rohu jen ~3:1, proto text používá světlejší `--l2p-primary-text` (`#B9A6FF`, nad září na kartě >= 5:1); zář `--l2p-glow-1` má v tmavém režimu .27 a tlumený text `#A8A4CA` (>= 4,5:1 i na vnořeném silnějším skle v maximu záře, na kartě nad zářím ~5,4:1). Ve světlém režimu bílá na `#6D4AE0` (~5,6:1). Kde se níže píše „bílý text/fajfka na primary“, platí tato barva.
 

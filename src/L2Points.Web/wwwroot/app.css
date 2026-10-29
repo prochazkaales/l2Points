@@ -31,10 +31,13 @@
     /* Edges and lines are a light violet in the dark theme too (the hue of the light theme's lines) but much fainter:
        a hairline that separates the cards from the page without outlining every element. The top light and the
        shadow are kept quiet for the same reason; a dark shadow on a dark page only smudges the glow. */
-    --l2p-glass-edge: rgba(185, 166, 255, 0.11);
+    --l2p-glass-edge: rgba(185, 166, 255, 0.16);
     --l2p-glass-hi: rgba(255, 255, 255, 0.04);
     --l2p-glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
     --l2p-surface-solid: #16132A;
+    --l2p-surface-pinned: color-mix(in srgb, var(--l2p-primary) 10%, var(--l2p-surface-solid));
+    --l2p-row-me: color-mix(in srgb, var(--l2p-primary) 10%, transparent);
+    --l2p-row-me-solid: color-mix(in srgb, var(--l2p-primary) 10%, var(--l2p-surface-solid));
     /* Opaque header band of the attendance grid tables (opaque because the boss column is pinned). */
     --l2p-table-head: color-mix(in srgb, var(--l2p-primary) 14%, var(--l2p-surface-solid));
     --l2p-primary: #8B6CFF;
@@ -44,25 +47,46 @@
     --l2p-on-primary: #0B0A1A;
     --l2p-text: #F4F2FF;
     --l2p-text-2: #B9B5D6;
-    --l2p-muted: #A8A4CA;
+    --l2p-muted: #AEAAD0;
+    --l2p-text-disabled: #8C88AE;
+    --l2p-focus-ring: var(--l2p-primary-text);
     --l2p-divider: rgba(185, 166, 255, 0.07);
+    --l2p-line: var(--l2p-glass-edge);
+    --l2p-line-subtle: var(--l2p-divider);
+    --l2p-line-strong: color-mix(in srgb, var(--l2p-primary) 35%, transparent);
     --l2p-cat-normal: #6E9BFF;
     --l2p-cat-evening: #FF9F4A;
     --l2p-cat-morning: #3DBFF2;
     --l2p-cat-cs: #3FD0B0;
+    /* Category colours shifted towards the text colour: badge text on its 16 % fill >= 4.6:1. */
+    --l2p-cat-normal-text: #A5BFFF;
+    --l2p-cat-evening-text: #FCB375;
+    --l2p-cat-morning-text: #72CEF6;
+    --l2p-cat-cs-text: #61D6BF;
+    /* Semantic colours (MudTheme Info/Success/Warning/Error/Secondary mirror them, see AppThemeTokensTests). */
+    --l2p-info: #7CC4FF;
+    --l2p-success: #6FE3C8;
+    --l2p-warning: #F5C15C;
+    --l2p-danger: #FF8A8A;
+    --l2p-secondary: #FF9A3C;
+    --l2p-icon-tile: #1C1929;
+    --l2p-scrim: color-mix(in srgb, var(--l2p-bg) 60%, transparent);
     --l2p-logo-tile: #1C1929;
     --l2p-logo-crown: #C7B3FF;
     --l2p-logo-pavilion: #9D7BFF;
     --l2p-logo-tile-edge: #2E2A42;
     --l2p-tone-high: #6FE3C8;
     --l2p-tone-mid: #F5C15C;
-    --l2p-tone-low: #FFA3A3;
+    --l2p-tone-low: #FFB3B3;
     --l2p-place-1: #F5C15C;
     --l2p-place-2: #C9CBE0;
-    --l2p-place-3: #E0915A;
+    --l2p-place-3: #EBA06B;
     --l2p-medal-1: #F5C15C;
     --l2p-medal-2: #C9CBE0;
     --l2p-medal-3: #E0915A;
+    --l2p-shadow-1: inset 0 1px 0 var(--l2p-glass-hi), 0 4px 20px rgba(0, 0, 0, 0.22);
+    --l2p-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --l2p-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
 :root[data-theme="light"] {
@@ -74,10 +98,13 @@
     /* Light theme: white-on-white nested surfaces and a white edge blend into the pale page, so the nested surface is
        a faint primary tint (darker than the card, not whiter) and the edge a faint violet line. */
     --l2p-glass-strong: rgba(109, 74, 224, 0.065);
-    --l2p-glass-edge: rgba(90, 70, 170, 0.16);
+    --l2p-glass-edge: rgba(90, 70, 170, 0.22);
     --l2p-glass-hi: rgba(255, 255, 255, 0.90);
     --l2p-glass-shadow: 0 10px 30px rgba(60, 40, 140, 0.14);
     --l2p-surface-solid: #F8F8FD;
+    --l2p-surface-pinned: color-mix(in srgb, var(--l2p-primary) 5%, var(--l2p-surface-solid));
+    --l2p-row-me: color-mix(in srgb, var(--l2p-primary) 10%, transparent);
+    --l2p-row-me-solid: color-mix(in srgb, var(--l2p-primary) 10%, var(--l2p-surface-solid));
     /* Same faint tint as the nested surfaces; a stronger one reads as a dull grey-violet next to the white card. */
     --l2p-table-head: color-mix(in srgb, var(--l2p-primary) 7%, var(--l2p-surface-solid));
     --l2p-primary: #6D4AE0;
@@ -86,27 +113,46 @@
     --l2p-on-primary: #FFFFFF;
     --l2p-text: #1D1838;
     --l2p-text-2: #4F4A6E;
-    --l2p-muted: #625D84;
+    --l2p-muted: #58537A;
+    --l2p-text-disabled: #77738F;
+    --l2p-focus-ring: var(--l2p-primary-text);
     --l2p-divider: rgba(60, 40, 140, 0.08);
+    --l2p-line: var(--l2p-glass-edge);
+    --l2p-line-subtle: var(--l2p-divider);
+    --l2p-line-strong: color-mix(in srgb, var(--l2p-primary) 35%, transparent);
     --l2p-cat-normal: #2F6FE0;
     --l2p-cat-evening: #E2690F;
     --l2p-cat-morning: #1E8AD6;
     --l2p-cat-cs: #0F9A7D;
+    --l2p-cat-normal-text: #2953AA;
+    --l2p-cat-evening-text: #8B4521;
+    --l2p-cat-morning-text: #1E5B95;
+    --l2p-cat-cs-text: #156360;
+    --l2p-info: #0B5CAD;
+    --l2p-success: #086E59;
+    --l2p-warning: #7A5200;
+    --l2p-danger: #A3241A;
+    --l2p-secondary: #A93A0B;
+    --l2p-icon-tile: #2A2545;
+    --l2p-scrim: color-mix(in srgb, #1D1838 45%, transparent);
     --l2p-logo-tile: #6D4AE0;
     --l2p-logo-crown: #FFD27A;
     --l2p-logo-pavilion: #F5A524;
     --l2p-logo-tile-edge: transparent;
-    --l2p-tone-high: #06604E;
-    --l2p-tone-mid: #714B00;
+    --l2p-tone-high: #05594A;
+    --l2p-tone-mid: #664400;
     --l2p-tone-low: #912317;
-    --l2p-place-1: #755600;
-    --l2p-place-2: #575A78;
-    --l2p-place-3: #8F4817;
+    --l2p-place-1: #6E5100;
+    --l2p-place-2: #52556F;
+    --l2p-place-3: #87431A;
     /* Medals are graphics (podium edge, trophy), not text, so they can stay bright; the place shades above are text
        and have to be dark enough for 4.5:1. */
     --l2p-medal-1: #E0A31B;
     --l2p-medal-2: #9EA3C4;
     --l2p-medal-3: #D4813F;
+    --l2p-shadow-1: inset 0 1px 0 var(--l2p-glass-hi), 0 10px 30px rgba(60, 40, 140, 0.14);
+    --l2p-shadow-2: 0 8px 24px rgba(60, 40, 140, 0.18);
+    --l2p-shadow-3: 0 20px 56px rgba(60, 40, 140, 0.24);
 }
 
 /* Page background: two glows over the base colour. It does not depend on MudThemeProvider, so it is right before
