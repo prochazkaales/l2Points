@@ -57,6 +57,27 @@ public static class DisplayFormat
         _ => "",
     };
 
+    /// <summary>Short kind of an event for its badge: "Normal", the chaotic slot ("Večerní", "Ranní") or "CS".</summary>
+    public static string EventKindLabel(ActivityCategory category, EventSlot slot) => category switch
+    {
+        ActivityCategory.ChaoticEpic => SlotLabel(slot),
+        ActivityCategory.CastleSiege => CategoryLabel(StatCategory.CastleSiege),
+        _ => CategoryLabel(StatCategory.Normal),
+    };
+
+    /// <summary>CSS suffix of the event kind badge: "normal", "evening", "morning" or "cs".</summary>
+    public static string EventKindKey(ActivityCategory category, EventSlot slot) => (category, slot) switch
+    {
+        (ActivityCategory.ChaoticEpic, EventSlot.Morning) => "morning",
+        (ActivityCategory.ChaoticEpic, _) => "evening",
+        (ActivityCategory.CastleSiege, _) => "cs",
+        _ => "normal",
+    };
+
+    /// <summary>Spawn time of an event in Prague ("19:00"), or null for an event without a fixed time.</summary>
+    public static string? EventTime(DateOnly date, TimeOnly? timeUtc) =>
+        timeUtc is { } time ? AppTime.ToPragueTime(date, time).ToString("HH:mm", CultureInfo.InvariantCulture) : null;
+
     public static string CategoryLabel(StatCategory c) => c switch
     {
         StatCategory.Normal => "Normal",

@@ -6,40 +6,6 @@
     column-gap: 1.5rem;
 }
 
-/* Dashboard figures: four cards in a row, two by two on phones. */
-.l2p-kpis {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
-}
-
-.l2p-kpis ::deep .l2p-kpi {
-    padding: 0.75rem 1rem;
-    min-width: 0;
-}
-
-.l2p-kpis ::deep .l2p-kpi-label,
-.l2p-kpis ::deep .l2p-kpi-note {
-    display: block;
-    color: var(--mud-palette-text-secondary);
-}
-
-.l2p-kpis ::deep .l2p-kpi-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    line-height: 1.3;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.l2p-kpis ::deep .l2p-kpi-more {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--mud-palette-text-secondary);
-}
-
 /* Podium: first place in the middle and raised, second on the left, third on the right. */
 .l2p-podium {
     display: grid;
@@ -109,150 +75,12 @@
     color: var(--mud-palette-text-secondary);
 }
 
-/* Gold, silver and bronze by the shared rank, so a tie gets the same colour. */
-::deep .l2p-place-1 {
-    --l2p-place-color: #e8b923;
-}
-
-::deep .l2p-place-2 {
-    --l2p-place-color: #a8b2bf;
-}
-
-::deep .l2p-place-3 {
-    --l2p-place-color: #c87f45;
-}
-
-/* Sections with a table. */
-.l2p-lb-section-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    column-gap: 1rem;
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
-}
-
-.l2p-lb-section-head ::deep .l2p-lb-section-title {
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--mud-palette-primary);
-}
-
-/* Cells are rendered by MudBlazor components, so reach them via ::deep. */
-.l2p-lb ::deep th,
-.l2p-lb ::deep td:not(.l2p-nick-cell) {
-    white-space: nowrap;
-}
-
-.l2p-lb ::deep th.l2p-lb-col,
-.l2p-lb ::deep td.l2p-stat-points,
-.l2p-lb ::deep td.l2p-stat-pct {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-.l2p-lb ::deep td.l2p-stat-points {
-    font-weight: 700;
-}
-
-.l2p-lb ::deep .l2p-stat-empty {
-    color: var(--mud-palette-text-disabled);
-}
-
-.l2p-lb ::deep .l2p-lb-rank {
-    width: 2.5rem;
-    padding-right: 0;
-    text-align: right;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(--mud-palette-text-secondary);
-}
-
-.l2p-lb ::deep .l2p-lb-rank span[class^="l2p-place-"] {
-    color: var(--l2p-place-color, inherit);
-}
-
-/* Points bar relative to the leader. */
-.l2p-lb ::deep .l2p-lb-bar-cell {
-    width: 30%;
-    min-width: 7rem;
-}
-
-.l2p-lb ::deep .l2p-lb-bar {
-    height: 0.5rem;
-    border-radius: 0.25rem;
-    background: var(--mud-palette-action-disabled-background);
-    overflow: hidden;
-}
-
-.l2p-lb ::deep .l2p-lb-bar span {
-    display: block;
-    height: 100%;
-    border-radius: 0.25rem;
-    background: var(--mud-palette-primary);
-}
-
-.l2p-lb ::deep tr.l2p-lb-me {
-    --l2p-row-bg: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
-    background: var(--l2p-row-bg);
-}
-
-/* The marker sits on the rank cell, which is the row's first cell. */
-.l2p-lb ::deep tr.l2p-lb-me td.l2p-lb-rank {
-    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
-}
-
-.l2p-lb ::deep tr.l2p-lb-me td.l2p-nick-cell {
-    font-weight: 600;
-}
-
-/* Dimmed via colour (not opacity) so the pinned cell stays opaque. */
-.l2p-lb ::deep tr.l2p-lb-inactive td {
-    color: var(--mud-palette-text-secondary);
-}
-
-/* Percentage badges by band (DisplayFormat.PercentTone). */
-::deep .l2p-tone {
-    display: inline-block;
-    min-width: 3.25rem;
-    padding: 0.05rem 0.5rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-align: center;
-}
-
-::deep .l2p-tone-high {
-    color: var(--mud-palette-success);
-    background: color-mix(in srgb, var(--mud-palette-success) 16%, transparent);
-}
-
-::deep .l2p-tone-mid {
-    color: var(--mud-palette-warning);
-    background: color-mix(in srgb, var(--mud-palette-warning) 16%, transparent);
-}
-
-::deep .l2p-tone-low {
-    color: var(--mud-palette-error);
-    background: color-mix(in srgb, var(--mud-palette-error) 16%, transparent);
-}
-
-@media (max-width: 959.98px) {
-    .l2p-kpis {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+/* Thin progress line in a section head while the week reloads; it keeps its height so nothing jumps. */
+.l2p-lb-week-loading {
+    height: 4px;
 }
 
 @media (max-width: 599.98px) {
-    .l2p-kpis ::deep .l2p-kpi {
-        padding: 0.6rem 0.75rem;
-    }
-
-    .l2p-kpis ::deep .l2p-kpi-value {
-        font-size: 1.3rem;
-    }
-
     .l2p-podium {
         gap: 0.4rem;
     }
@@ -276,14 +104,5 @@
 
     .l2p-podium ::deep .l2p-podium-caption {
         display: none;
-    }
-
-    /* The bar would push the percentages off screen; the points already say it. */
-    .l2p-lb ::deep .l2p-lb-bar-cell {
-        display: none;
-    }
-
-    .l2p-lb-section-head {
-        padding: 0.5rem 0.25rem 0.5rem 0.75rem;
     }
 }

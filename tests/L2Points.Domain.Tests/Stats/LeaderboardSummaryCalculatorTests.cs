@@ -6,11 +6,11 @@ public class LeaderboardSummaryCalculatorTests
 {
     private static readonly DateOnly ActiveFrom = new(2026, 10, 26);
 
-    private static LeaderboardRow Row(string id, int overallPoints, int weekPoints = 0, CategoryStat? total = null) =>
+    private static LeaderboardRow Row(string id, int overallPoints, int weekPoints = 0, CategoryStat? total = null, CategoryStat? weekTotal = null) =>
         new(
             new PlayerInfo(id, id, true, ActiveFrom, null),
             new PlayerSummary(overallPoints, Stats(total ?? default)),
-            new PlayerSummary(weekPoints, ParticipationStats.Empty));
+            new PlayerSummary(weekPoints, Stats(weekTotal ?? default)));
 
     private static ParticipationStats Stats(CategoryStat normal) =>
         new(new Dictionary<StatCategory, CategoryStat> { [StatCategory.Normal] = normal });
@@ -43,6 +43,15 @@ public class LeaderboardSummaryCalculatorTests
             [Row("A", 0, total: new CategoryStat(8, 10)), Row("B", 0, total: new CategoryStat(1, 30))], null);
 
         Assert.Equal(new CategoryStat(9, 40), summary.PartyAttendance);
+    }
+
+    [Fact]
+    public void Week_attendance_sums_the_week_of_all_rows()
+    {
+        var summary = LeaderboardSummaryCalculator.Calculate(
+            [Row("A", 0, weekTotal: new CategoryStat(3, 5)), Row("B", 0, weekTotal: new CategoryStat(1, 5))], null);
+
+        Assert.Equal(new CategoryStat(4, 10), summary.WeekAttendance);
     }
 
     [Fact]

@@ -39,7 +39,8 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
 
     /// <summary>
     /// Week overview: active players plus inactive players who attended something that week,
-    /// ordered by the week's points, and the events with their attendees.
+    /// ordered by the week's points, the events with their attendees and the total points of the previous week
+    /// (counted the same way; null when that week ended before tracking started).
     /// </summary>
     public async Task<WeekOverview> GetWeekOverviewAsync(Week week, CancellationToken ct = default)
     {
@@ -49,29 +50,39 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
         var trackingStart = await db.GetTrackingStartAsync(ct);
         var today = AppTime.TodayInPrague(time);
         var attendances = await LoadAttendancesAsync(db, trackingStart, today, week, null, ct);
-
-        var range = week.Range;
-        var attendedThisWeek = attendances
-            .Where(a => range.Contains(a.Entry.Date))
-            .Select(a => a.UserId)
-            .Distinct()
-            .ToList();
-
-        var players = await db.Users
+        // The party is small, so all players are loaded once and narrowed per week in memory.
+        var allPlayers = await db.Users
             .AsNoTracking()
-            .Where(u => u.IsActive || attendedThisWeek.Contains(u.Id))
             .SelectPlayerInfo()
             .ToListAsync(ct);
 
+        var players = PlayersOfWeek(allPlayers, attendances, week);
         var rows = LeaderboardCalculator.Build(players, activities, attendances, week, trackingStart, today)
             .OrderByDescending(r => r.Week.Points)
             .ThenBy(r => r.Player.Nick, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.Player.UserId, StringComparer.Ordinal)
             .ToList();
 
+        var previous = week.Previous();
+        int? previousWeekPoints = previous.Sunday < trackingStart
+            ? null
+            : LeaderboardCalculator.Build(PlayersOfWeek(allPlayers, attendances, previous), activities, attendances, previous, trackingStart, today)
+                .Sum(r => r.Week.Points);
+
         var events = WeekEventsCalculator.Build(players, activities, attendances, week);
         var jewels = await db.LoadJewelsByPlayerAsync(ct);
-        return new WeekOverview(week, rows, events, jewels);
+        return new WeekOverview(week, rows, events, jewels, previousWeekPoints);
+    }
+
+    /// <summary>Active players plus inactive players who attended something in the week.</summary>
+    private static List<PlayerInfo> PlayersOfWeek(IReadOnlyList<PlayerInfo> players, IReadOnlyCollection<UserAttendance> attendances, Week week)
+    {
+        var range = week.Range;
+        var attended = attendances
+            .Where(a => range.Contains(a.Entry.Date))
+            .Select(a => a.UserId)
+            .ToHashSet();
+        return players.Where(p => p.IsActive || attended.Contains(p.UserId)).ToList();
     }
 
     /// <summary>Attendances from tracking start to the later of today and the end of the week (one query).</summary>

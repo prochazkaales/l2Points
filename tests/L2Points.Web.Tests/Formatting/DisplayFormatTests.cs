@@ -46,6 +46,25 @@ public class DisplayFormatTests
         Assert.Equal(expected, DisplayFormat.PointsCount(count));
 
     [Theory]
+    [InlineData(ActivityCategory.NormalEpic, EventSlot.None, "Normal", "normal")]
+    [InlineData(ActivityCategory.ChaoticEpic, EventSlot.Evening, "Večerní", "evening")]
+    [InlineData(ActivityCategory.ChaoticEpic, EventSlot.Morning, "Ranní", "morning")]
+    [InlineData(ActivityCategory.CastleSiege, EventSlot.None, "CS", "cs")]
+    public void EventKind_label_and_key(ActivityCategory category, EventSlot slot, string label, string key)
+    {
+        Assert.Equal(label, DisplayFormat.EventKindLabel(category, slot));
+        Assert.Equal(key, DisplayFormat.EventKindKey(category, slot));
+    }
+
+    [Fact]
+    public void EventTime_in_prague()
+    {
+        // 18:30 UTC is 19:30 in Prague in winter (CET).
+        Assert.Equal("19:30", DisplayFormat.EventTime(new DateOnly(2026, 11, 3), new TimeOnly(18, 30)));
+        Assert.Null(DisplayFormat.EventTime(new DateOnly(2026, 11, 3), null));
+    }
+
+    [Theory]
     [InlineData(2026, 10, 26, "Po 26. 10.")]
     [InlineData(2026, 11, 1, "Ne 1. 11.")]
     public void DayHeader_czech(int year, int month, int day, string expected) =>

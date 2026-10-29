@@ -4,6 +4,7 @@ namespace L2Points.Domain.Stats;
 public sealed record LeaderboardSummary(
     IReadOnlyDictionary<string, int> Ranks,
     CategoryStat PartyAttendance,
+    CategoryStat WeekAttendance,
     int WeekPoints,
     IReadOnlyList<PlayerInfo> PlayersOfWeek,
     int PlayersOfWeekPoints,

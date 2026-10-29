@@ -1,30 +1,150 @@
-/* Cells are rendered by MudBlazor components, so reach them via ::deep. */
-.l2p-wk ::deep th,
-.l2p-wk ::deep td:not(.l2p-nick-cell) {
-    white-space: nowrap;
+/* Keeps its height so the page does not jump when the progress line appears. */
+.l2p-wk-loading {
+    height: 4px;
 }
 
-.l2p-wk ::deep th.l2p-wk-col,
-.l2p-wk ::deep td.l2p-stat-points,
-.l2p-wk ::deep td.l2p-stat-pct {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+.l2p-wk-events-head {
+    justify-content: space-between;
 }
 
-.l2p-wk ::deep td.l2p-stat-points {
+/* Day picker: one button per day with the number of events; wraps on phones. */
+.l2p-wk-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.l2p-wk-day {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.4rem 0.2rem 0.75rem;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.l2p-wk-day:hover {
+    border-color: var(--mud-palette-primary);
+}
+
+.l2p-wk-day-count {
+    min-width: 1.4rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: var(--mud-palette-action-disabled-background);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
 }
 
-.l2p-wk ::deep .l2p-stat-empty {
+.l2p-wk-day-today {
+    border-color: var(--mud-palette-primary);
+}
+
+.l2p-wk-day-empty {
     color: var(--mud-palette-text-disabled);
 }
 
-.l2p-wk-event-head {
+.l2p-wk-day-selected,
+.l2p-wk-day-selected:hover {
+    border-color: var(--mud-palette-primary);
+    background: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+}
+
+.l2p-wk-day-selected .l2p-wk-day-count {
+    background: color-mix(in srgb, var(--mud-palette-primary-text) 25%, transparent);
+}
+
+.l2p-wk-muted,
+.l2p-wk-empty {
+    color: var(--mud-palette-text-secondary);
+}
+
+/* Event kind badge (Normal / Večerní / Ranní / CS). */
+.l2p-wk-kind {
+    display: inline-block;
+    padding: 0 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    --l2p-kind: var(--mud-palette-info);
+    color: var(--l2p-kind);
+    background: color-mix(in srgb, var(--l2p-kind) 16%, transparent);
+}
+
+.l2p-wk-kind-evening {
+    --l2p-kind: var(--mud-palette-secondary);
+}
+
+.l2p-wk-kind-morning {
+    --l2p-kind: var(--mud-palette-tertiary);
+}
+
+.l2p-wk-kind-cs {
+    --l2p-kind: var(--mud-palette-warning);
+}
+
+/* Cards view. */
+.l2p-wk-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.l2p-wk-cards ::deep .l2p-wk-card {
+    padding: 0.75rem;
+    min-width: 0;
+}
+
+.l2p-wk-card-top {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+    min-height: 1.25rem;
+}
+
+.l2p-wk-time {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-wk-card-title {
+    margin: 0.2rem 0;
+    font-weight: 600;
+}
+
+.l2p-wk-card-count {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+}
+
+.l2p-wk-meter {
+    flex: 1 1 auto;
+    max-width: 6rem;
+    height: 0.4rem;
+    border-radius: 0.2rem;
+    background: var(--mud-palette-action-disabled-background);
+    overflow: hidden;
+}
+
+.l2p-wk-meter span {
+    display: block;
+    height: 100%;
+    background: var(--mud-palette-primary);
 }
 
 .l2p-wk-attendees {
@@ -35,4 +155,96 @@
 
 .l2p-wk-attendees ::deep .mud-chip {
     margin: 0;
+}
+
+/* Grid view: players in rows, the day's events in columns; the nick column stays pinned when scrolling. */
+.l2p-wk-grid-scroll {
+    overflow-x: auto;
+}
+
+.l2p-wk-grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+}
+
+.l2p-wk-grid th,
+.l2p-wk-grid td {
+    padding: 0.35rem 0.6rem;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+    text-align: center;
+}
+
+.l2p-wk-grid thead th {
+    vertical-align: bottom;
+    font-weight: 600;
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-wk-grid-boss {
+    display: block;
+    min-width: 5.5rem;
+    max-width: 8rem;
+    margin: 0.15rem auto 0;
+    color: var(--mud-palette-text-primary);
+    line-height: 1.2;
+}
+
+.l2p-wk-grid .l2p-wk-grid-nick {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    text-align: left;
+    white-space: nowrap;
+    font-weight: 500;
+    border-right: 1px solid var(--mud-palette-lines-default);
+}
+
+.l2p-wk-grid tr.l2p-wk-grid-me th,
+.l2p-wk-grid tr.l2p-wk-grid-me td {
+    background: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
+}
+
+.l2p-wk-grid tr.l2p-wk-grid-me .l2p-wk-grid-nick {
+    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+    font-weight: 600;
+}
+
+.l2p-wk-grid ::deep .l2p-wk-yes {
+    color: var(--mud-palette-success);
+    vertical-align: middle;
+}
+
+.l2p-wk-no {
+    color: var(--mud-palette-text-disabled);
+}
+
+.l2p-wk-grid-sum {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--mud-palette-text-secondary);
+}
+
+.l2p-wk-grid tfoot th,
+.l2p-wk-grid tfoot td {
+    border-bottom: none;
+}
+
+@media (max-width: 599.98px) {
+    .l2p-wk-days {
+        padding: 0.5rem 0.75rem;
+        gap: 0.3rem;
+    }
+
+    .l2p-wk-day {
+        font-size: 0.8rem;
+        padding-left: 0.55rem;
+    }
+
+    .l2p-wk-cards {
+        grid-template-columns: 1fr;
+        padding: 0.75rem;
+    }
 }
