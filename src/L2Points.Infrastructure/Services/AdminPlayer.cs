@@ -9,4 +9,6 @@ public sealed record AdminPlayer(
     DateOnly ActiveFrom,
     DateOnly? DeactivatedAt,
     bool IsAdmin,
-    bool IsSuperAdmin);
+    bool IsSuperAdmin,
+    bool IsReader,
+    bool ShowInStats);

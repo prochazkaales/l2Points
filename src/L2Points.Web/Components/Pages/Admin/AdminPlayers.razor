@@ -174,7 +174,7 @@ else
             return;
         }
 
-        await ChangeAsync(ct => PlayerAdmin.CreateAsync(values.Login, values.Nick, values.ActiveFrom, ct), values.Nick);
+        await ChangeAsync(ct => PlayerAdmin.CreateAsync(values.Login, values.Nick, values.ActiveFrom, ct: ct), values.Nick);
     }
 
     private async Task EditAsync(AdminPlayer player)

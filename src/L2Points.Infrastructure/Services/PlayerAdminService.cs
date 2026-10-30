@@ -32,7 +32,10 @@ public sealed class PlayerAdminService(
                 db.UserRoles.Any(ur => ur.UserId == u.Id
                     && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.Admin)),
                 db.UserRoles.Any(ur => ur.UserId == u.Id
-                    && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.SuperAdmin))))
+                    && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.SuperAdmin)),
+                db.UserRoles.Any(ur => ur.UserId == u.Id
+                    && db.Roles.Any(r => r.Id == ur.RoleId && r.Name == Roles.Reader)),
+                u.ShowInStats))
             .ToListAsync(ct);
 
         return rows
@@ -41,8 +44,17 @@ public sealed class PlayerAdminService(
             .ToList();
     }
 
-    /// <summary>Creates a player with a generated password (returned once in the result).</summary>
-    public async Task<PlayerAdminResult> CreateAsync(string login, string nick, DateOnly? activeFrom, CancellationToken ct = default)
+    /// <summary>
+    /// Creates a player (or a read-only reader) with a generated password (returned once in the result).
+    /// <paramref name="showInStats"/> only applies to readers; players are always shown in stats.
+    /// </summary>
+    public async Task<PlayerAdminResult> CreateAsync(
+        string login,
+        string nick,
+        DateOnly? activeFrom,
+        bool isReader = false,
+        bool showInStats = true,
+        CancellationToken ct = default)
     {
         login = login.Trim();
         nick = nick.Trim();
@@ -64,6 +76,7 @@ public sealed class PlayerAdminService(
             IsActive = true,
             ActiveFrom = activeFrom ?? Week.Containing(AppTime.TodayInPrague(time)).Monday,
             CreatedAt = time.GetUtcNow().UtcDateTime,
+            ShowInStats = !isReader || showInStats,
         };
 
         var password = PasswordGenerator.Generate();
@@ -71,7 +84,7 @@ public sealed class PlayerAdminService(
         if (!created.Succeeded)
             return FromIdentityErrors(created);
 
-        var role = await users.AddToRoleAsync(user, Roles.Player);
+        var role = await users.AddToRoleAsync(user, isReader ? Roles.Reader : Roles.Player);
         if (!role.Succeeded)
         {
             // Do not leave a half-created account without a role behind.
@@ -170,7 +183,7 @@ public sealed class PlayerAdminService(
     }
 
     /// <summary>
-    /// Grants or revokes the Admin role. The security stamp rotates, so the player is signed out
+    /// Grants or revokes the Admin role (a reader cannot become an admin). The security stamp rotates, so the player is signed out
     /// and gets the new roles on the next sign-in. Only the super admin may do this, and the
     /// super admin's own Admin role cannot be changed.
     /// </summary>
@@ -191,6 +204,8 @@ public sealed class PlayerAdminService(
             return new PlayerAdminResult(PlayerAdminStatus.SuperAdminProtected);
         if (!await IsSuperAdminAsync(users, actorUserId))
             return new PlayerAdminResult(PlayerAdminStatus.RequiresSuperAdmin);
+        if (isAdmin && await users.IsInRoleAsync(user, Roles.Reader))
+            return new PlayerAdminResult(PlayerAdminStatus.ReaderCannotBeAdmin);
         if (await users.IsInRoleAsync(user, Roles.Admin) == isAdmin)
             return new PlayerAdminResult(PlayerAdminStatus.Ok);
 
@@ -202,6 +217,77 @@ public sealed class PlayerAdminService(
 
         var stamp = await users.UpdateSecurityStampAsync(user);
         return stamp.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(stamp);
+    }
+
+    /// <summary>
+    /// Switches the account between Player and Reader (read-only). The user is shown in stats again either way,
+    /// attendance stays as it is, and the security stamp rotates so the session picks up the new role.
+    /// An admin (including the super admin) cannot become a reader.
+    /// </summary>
+    public async Task<PlayerAdminResult> SetReaderAsync(string actorUserId, string userId, bool isReader, CancellationToken ct = default)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        if (!await IsAllowedActorAsync(users, actorUserId))
+            return new PlayerAdminResult(PlayerAdminStatus.ActorNotAllowed);
+
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
+        if (actorUserId == userId)
+            return new PlayerAdminResult(PlayerAdminStatus.CannotChangeSelf);
+        if (isReader && await users.IsInRoleAsync(user, Roles.Admin))
+            return new PlayerAdminResult(PlayerAdminStatus.AdminCannotBeReader);
+        if (await users.IsInRoleAsync(user, Roles.Reader) == isReader)
+            return new PlayerAdminResult(PlayerAdminStatus.Ok);
+
+        // Older accounts may lack the Player role, so only remove a role the user actually has.
+        var oldRole = isReader ? Roles.Player : Roles.Reader;
+        var newRole = isReader ? Roles.Reader : Roles.Player;
+        if (await users.IsInRoleAsync(user, oldRole))
+        {
+            var removed = await users.RemoveFromRoleAsync(user, oldRole);
+            if (!removed.Succeeded)
+                return FromIdentityErrors(removed);
+        }
+
+        if (!await users.IsInRoleAsync(user, newRole))
+        {
+            var added = await users.AddToRoleAsync(user, newRole);
+            if (!added.Succeeded)
+                return FromIdentityErrors(added);
+        }
+
+        user.ShowInStats = true;
+        // UpdateSecurityStampAsync saves the other changes too.
+        var stamp = await users.UpdateSecurityStampAsync(user);
+        return stamp.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(stamp);
+    }
+
+    /// <summary>
+    /// Shows or hides a reader in stats (leaderboards, week overview). Only readers can be hidden;
+    /// players are always shown. No security stamp rotation, nothing changes for the session.
+    /// </summary>
+    public async Task<PlayerAdminResult> SetShowInStatsAsync(string actorUserId, string userId, bool show, CancellationToken ct = default)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+        if (!await IsAllowedActorAsync(users, actorUserId))
+            return new PlayerAdminResult(PlayerAdminStatus.ActorNotAllowed);
+
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return new PlayerAdminResult(PlayerAdminStatus.UnknownPlayer);
+        if (!show && !await users.IsInRoleAsync(user, Roles.Reader))
+            return new PlayerAdminResult(PlayerAdminStatus.NotReader);
+        if (user.ShowInStats == show)
+            return new PlayerAdminResult(PlayerAdminStatus.Ok);
+
+        user.ShowInStats = show;
+        var saved = await users.UpdateAsync(user);
+        return saved.Succeeded ? new PlayerAdminResult(PlayerAdminStatus.Ok) : FromIdentityErrors(saved);
     }
 
     /// <summary>

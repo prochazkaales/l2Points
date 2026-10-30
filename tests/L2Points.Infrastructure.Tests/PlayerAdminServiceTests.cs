@@ -1,4 +1,5 @@
 using L2Points.Domain.Jewels;
+using L2Points.Domain.Time;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Infrastructure.Services;
@@ -83,7 +84,7 @@ public class PlayerAdminServiceTests
         using (var scope = provider.CreateScope())
         {
             var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin })
+            foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin, Roles.Reader })
             {
                 Assert.True((await roles.CreateAsync(new IdentityRole(role))).Succeeded);
             }
@@ -552,5 +553,182 @@ public class PlayerAdminServiceTests
         Assert.False(players.Single(p => p.Login == "admin2").IsSuperAdmin);
         Assert.True(players.Single(p => p.Login == "admin2").IsAdmin);
         Assert.False(players.Single(p => p.Login == "bob").IsSuperAdmin);
+    }
+
+    [Fact]
+    public async Task Create_Reader_GetsReaderRoleOnly()
+    {
+        await using var arranged = await ArrangeAsync();
+
+        var result = await arranged.Service.CreateAsync("rita", "Rita", null, isReader: true, showInStats: false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        var user = (await arranged.FindAsync("rita"))!;
+        Assert.Equal([Roles.Reader], await arranged.RolesOfAsync(user));
+        Assert.False(user.ShowInStats);
+    }
+
+    [Fact]
+    public async Task Create_HiddenReader_IsStoredHidden()
+    {
+        await using var arranged = await ArrangeAsync();
+        await TestData.SeedCatalogAsync(arranged.Provider);
+
+        var result = await arranged.Service.CreateAsync("rita", "Rita", null, isReader: true, showInStats: false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        var row = (await arranged.Service.GetPlayersAsync()).Single(p => p.Login == "rita");
+        Assert.True(row.IsReader);
+        Assert.False(row.ShowInStats);
+        var overview = arranged.Provider.GetRequiredService<OverviewService>();
+        var leaderboard = await overview.GetLeaderboardAsync(Week.Containing(Monday), includeInactive: true);
+        Assert.DoesNotContain(leaderboard.Rows, r => r.Player.Nick == "Rita");
+    }
+
+    [Fact]
+    public async Task Create_PlayerIgnoresShowInStatsFalse()
+    {
+        await using var arranged = await ArrangeAsync();
+
+        var result = await arranged.Service.CreateAsync("karel", "Karel", null, isReader: false, showInStats: false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        var user = (await arranged.FindAsync("karel"))!;
+        Assert.True(user.ShowInStats);
+        Assert.Equal([Roles.Player], await arranged.RolesOfAsync(user));
+    }
+
+    [Fact]
+    public async Task SetReader_Player_BecomesShownReader()
+    {
+        await using var arranged = await ArrangeAsync();
+        await TestData.SeedCatalogAsync(arranged.Provider);
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        await TestData.AddAttendanceAsync(arranged.Provider, bob.Id, "QueenAnt", Monday);
+        var oldStamp = await arranged.StampOfAsync(bob.Id);
+        var factory = arranged.Provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        int before;
+        await using (var db = await factory.CreateDbContextAsync())
+            before = await db.Attendances.CountAsync(a => a.UserId == bob.Id);
+
+        var result = await arranged.Service.SetReaderAsync(arranged.Admin.Id, bob.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        var reloaded = await arranged.FindByIdAsync(bob.Id);
+        Assert.Equal([Roles.Reader], await arranged.RolesOfAsync(reloaded));
+        Assert.True(reloaded.ShowInStats);
+        Assert.NotEqual(oldStamp, await arranged.StampOfAsync(bob.Id));
+        await using (var db = await factory.CreateDbContextAsync())
+            Assert.Equal(before, await db.Attendances.CountAsync(a => a.UserId == bob.Id));
+    }
+
+    [Fact]
+    public async Task SetReader_BackToPlayer_ShowsInStatsAgain()
+    {
+        await using var arranged = await ArrangeAsync();
+        var rita = await TestData.CreateReaderAsync(arranged.Provider, "rita", Monday, showInStats: false);
+
+        var result = await arranged.Service.SetReaderAsync(arranged.Admin.Id, rita.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, result.Status);
+        var reloaded = await arranged.FindByIdAsync(rita.Id);
+        Assert.Equal([Roles.Player], await arranged.RolesOfAsync(reloaded));
+        Assert.True(reloaded.ShowInStats);
+    }
+
+    [Fact]
+    public async Task SetReader_Admin_IsRejected()
+    {
+        await using var arranged = await ArrangeAsync();
+        var admin2 = await arranged.CreateRegularAdminAsync("admin2");
+
+        var regular = await arranged.Service.SetReaderAsync(arranged.Admin.Id, admin2.Id, true);
+        var superAdmin = await arranged.Service.SetReaderAsync(admin2.Id, arranged.Admin.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.AdminCannotBeReader, regular.Status);
+        Assert.Equal(PlayerAdminStatus.AdminCannotBeReader, superAdmin.Status);
+        Assert.DoesNotContain(Roles.Reader, await arranged.RolesOfAsync(admin2));
+    }
+
+    [Fact]
+    public async Task SetReader_Self_IsRejected()
+    {
+        await using var arranged = await ArrangeAsync();
+
+        var result = await arranged.Service.SetReaderAsync(arranged.Admin.Id, arranged.Admin.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.CannotChangeSelf, result.Status);
+    }
+
+    [Fact]
+    public async Task SetReader_InactiveActor_IsRejected()
+    {
+        await using var arranged = await ArrangeAsync();
+        var admin2 = await arranged.CreateRegularAdminAsync("admin2");
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+        Assert.Equal(PlayerAdminStatus.Ok, (await arranged.Service.SetActiveAsync(arranged.Admin.Id, admin2.Id, false)).Status);
+
+        var result = await arranged.Service.SetReaderAsync(admin2.Id, bob.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.ActorNotAllowed, result.Status);
+    }
+
+    [Fact]
+    public async Task SetShowInStats_Reader_TogglesWithoutStamp()
+    {
+        await using var arranged = await ArrangeAsync();
+        var rita = await TestData.CreateReaderAsync(arranged.Provider, "rita", Monday, showInStats: true);
+        var stamp = await arranged.StampOfAsync(rita.Id);
+
+        var hidden = await arranged.Service.SetShowInStatsAsync(arranged.Admin.Id, rita.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.Ok, hidden.Status);
+        Assert.False((await arranged.FindByIdAsync(rita.Id)).ShowInStats);
+
+        var shown = await arranged.Service.SetShowInStatsAsync(arranged.Admin.Id, rita.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.Ok, shown.Status);
+        Assert.True((await arranged.FindByIdAsync(rita.Id)).ShowInStats);
+        Assert.Equal(stamp, await arranged.StampOfAsync(rita.Id));
+    }
+
+    [Fact]
+    public async Task SetShowInStats_HidePlayer_IsRejected()
+    {
+        await using var arranged = await ArrangeAsync();
+        var bob = await TestData.CreatePlayerAsync(arranged.Provider, "bob", Monday);
+
+        var result = await arranged.Service.SetShowInStatsAsync(arranged.Admin.Id, bob.Id, false);
+
+        Assert.Equal(PlayerAdminStatus.NotReader, result.Status);
+        Assert.True((await arranged.FindByIdAsync(bob.Id)).ShowInStats);
+    }
+
+    [Fact]
+    public async Task SetAdmin_Reader_IsRejected()
+    {
+        await using var arranged = await ArrangeAsync();
+        var rita = await TestData.CreateReaderAsync(arranged.Provider, "rita", Monday, showInStats: true);
+
+        var result = await arranged.Service.SetAdminAsync(arranged.Admin.Id, rita.Id, true);
+
+        Assert.Equal(PlayerAdminStatus.ReaderCannotBeAdmin, result.Status);
+        Assert.Equal([Roles.Reader], await arranged.RolesOfAsync(rita));
+    }
+
+    [Fact]
+    public async Task GetPlayers_IncludesHiddenReaders()
+    {
+        await using var arranged = await ArrangeAsync();
+        await TestData.CreateReaderAsync(arranged.Provider, "rita", Monday, showInStats: false);
+
+        var players = await arranged.Service.GetPlayersAsync();
+
+        var rita = players.Single(p => p.Login == "rita");
+        Assert.True(rita.IsReader);
+        Assert.False(rita.ShowInStats);
+        var admin = players.Single(p => p.Login == "admin");
+        Assert.False(admin.IsReader);
+        Assert.True(admin.ShowInStats);
     }
 }

@@ -12,6 +12,9 @@ public enum PlayerAdminStatus
     RequiresSuperAdmin,
     SuperAdminProtected,
     AdminProtected,
+    AdminCannotBeReader,
+    ReaderCannotBeAdmin,
+    NotReader,
 }
 
 /// <param name="Status">Outcome of the operation.</param>

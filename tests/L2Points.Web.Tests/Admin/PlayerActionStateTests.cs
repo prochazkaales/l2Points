@@ -9,7 +9,7 @@ public class PlayerActionStateTests
     private const string Other = "other-id";
 
     private static AdminPlayer Player(string id, bool isAdmin = false, bool isSuperAdmin = false) =>
-        new(id, "login", "Nick", true, new DateOnly(2026, 10, 26), null, isAdmin || isSuperAdmin, isSuperAdmin);
+        new(id, "login", "Nick", true, new DateOnly(2026, 10, 26), null, isAdmin || isSuperAdmin, isSuperAdmin, false, true);
 
     [Fact]
     public void Self_cannot_reset_deactivate_delete_or_remove_admin()
