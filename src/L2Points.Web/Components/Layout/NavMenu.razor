@@ -1,9 +1,12 @@
 <MudNavMenu>
+    <div class="l2p-nav-section">Účast</div>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.EventAvailable">Můj týden</MudNavLink>
     <MudNavLink Href="/week" Icon="@Icons.Material.Filled.CalendarViewWeek">Týden – všichni</MudNavLink>
+    <div class="l2p-nav-section">Statistiky</div>
     <MudNavLink Href="/leaderboard" Icon="@Icons.Material.Filled.Leaderboard">Přehled</MudNavLink>
     <MudNavLink Href="/jewels" Icon="@Icons.Material.Filled.Diamond">Šperky</MudNavLink>
     <MudNavLink Href="/points" Icon="@Icons.Material.Filled.EmojiEvents">Body</MudNavLink>
+    <div class="l2p-nav-section">Účet</div>
     <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.ManageAccounts">Profil</MudNavLink>
     <AuthorizeView Roles="@Roles.Admin">
         <MudNavLink Href="/admin" Icon="@Icons.Material.Filled.AdminPanelSettings">Admin</MudNavLink>

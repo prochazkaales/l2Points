@@ -494,31 +494,68 @@ h1:focus {
     display: block;
 }
 
-/* App bar and drawer are glass with blur (same specificity as MudBlazor's own single-class rule, app.css loads later). */
-.mud-appbar,
-.mud-drawer {
+/* The app bar exists only below md (it opens the drawer); it is glass with blur (same specificity as MudBlazor's own
+   single-class rule, app.css loads later). */
+.mud-appbar {
     background-color: var(--l2p-glass);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
     backdrop-filter: blur(20px) saturate(140%);
     box-shadow: none;
-}
-
-.mud-appbar {
     border-bottom: var(--l2p-line-width) solid var(--l2p-line);
 }
 
+/* From md up the drawer has no fill of its own: the page glow runs under it and only a hairline that fades out at
+   both ends separates it from the content. */
 .mud-drawer {
-    border-right: var(--l2p-line-width) solid var(--l2p-line);
+    background-color: transparent;
+    box-shadow: none;
+    border-right: var(--l2p-line-width) solid transparent;
+    border-image: linear-gradient(to bottom, transparent, var(--l2p-line) 12%, var(--l2p-line) 88%, transparent) 1;
+}
+
+/* No app bar from md up, so the content starts at the top. */
+@media (min-width: 960px) {
+    .mud-main-content.l2p-main {
+        padding-top: var(--l2p-space-2);
+    }
 }
 
 /* A drawer that slides over the content on a phone is a menu, so it is opaque. */
 @media (max-width: 959.98px) {
     .mud-drawer {
         background-color: var(--l2p-surface-solid);
-        /* Nothing shows through an opaque fill, so the blur would only cost GPU time. */
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+        border-image: none;
+        border-right-color: var(--l2p-line);
     }
+}
+
+/* Drawer content: brand on top, navigation, user card pinned to the bottom. */
+.mud-drawer .mud-drawer-content {
+    height: 100%;
+}
+
+.l2p-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: var(--l2p-space-4) 0 var(--l2p-space-3);
+}
+
+.l2p-shell-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--l2p-space-3);
+    padding: 0 var(--l2p-space-5) var(--l2p-space-4);
+    font-size: var(--l2p-font-xl);
+}
+
+.l2p-nav-section {
+    padding: var(--l2p-space-3) var(--l2p-space-5) var(--l2p-space-1);
+    font-size: var(--l2p-font-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--l2p-muted);
 }
 
 .mud-drawer .mud-navmenu .mud-nav-link {
@@ -532,15 +569,96 @@ h1:focus {
     color: var(--l2p-text);
 }
 
+/* Active item: tinted glass with a glowing accent bar on the drawer edge, not a solid primary fill. */
 .mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled),
 .mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled):hover {
-    background-color: var(--l2p-primary);
-    color: var(--l2p-on-primary);
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--l2p-primary) 24%, transparent),
+        color-mix(in srgb, var(--l2p-primary) 5%, transparent));
+    box-shadow: inset 0 0 0 var(--l2p-line-width) var(--l2p-line-strong);
+    color: var(--l2p-text);
 }
 
-.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-icon,
+/* The bar sits on the nav item, not the link: the link clips its ripple (overflow: hidden) and would clip the bar too. */
+.mud-drawer .mud-navmenu .mud-nav-item {
+    position: relative;
+}
+
+.mud-drawer .mud-navmenu .mud-nav-item:has(> .mud-nav-link.active:not(.mud-nav-link-disabled))::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: calc(var(--l2p-space-1) + var(--l2p-space-2));
+    bottom: calc(var(--l2p-space-1) + var(--l2p-space-2));
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(var(--l2p-primary-text), var(--l2p-primary-2));
+    box-shadow: 0 0 10px var(--l2p-primary);
+}
+
 .mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-text {
+    color: var(--l2p-text);
+    font-weight: 600;
+}
+
+.mud-drawer .mud-navmenu .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-icon {
+    color: var(--l2p-primary-text);
+}
+
+/* The gap also keeps the theme toggle and log out 8px apart (--l2p-touch-gap) on touch screens. */
+.l2p-user-card {
+    display: flex;
+    align-items: center;
+    gap: var(--l2p-space-2);
+    margin: auto var(--l2p-space-2) 0;
+    padding: var(--l2p-space-2);
+    border-radius: var(--l2p-radius-lg);
+    border: var(--l2p-line-width) solid var(--l2p-line);
+    background: var(--l2p-glass-strong);
+    box-shadow: inset 0 1px 0 var(--l2p-glass-hi);
+}
+
+/* Keeps the card off the last nav item when the drawer is short. */
+.l2p-shell .mud-navmenu {
+    margin-bottom: var(--l2p-space-5);
+}
+
+.l2p-avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--l2p-primary), var(--l2p-primary-2));
     color: var(--l2p-on-primary);
+    font-weight: 700;
+    font-size: var(--l2p-font-md);
+}
+
+.l2p-user-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.l2p-user-nick {
+    font-weight: 600;
+    color: var(--l2p-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.l2p-user-role {
+    font-size: var(--l2p-font-xs);
+    color: var(--l2p-muted);
+}
+
+.l2p-user-card .mud-icon-button {
+    color: var(--l2p-text-2);
 }
 
 /* No blur support, or the user asked for less transparency: cards, app bar and drawer become opaque. Kept after the
@@ -1366,11 +1484,6 @@ a:not(.mud-button-root):focus-visible,
     /* Menu items (Další akce on /admin/players) are 48px rows; keep neighbouring items 8px apart. */
     .mud-menu-list .mud-menu-item + .mud-menu-item {
         margin-top: var(--l2p-touch-gap);
-    }
-
-    /* Theme toggle and log out in the app bar sit 8px apart. */
-    .l2p-logout-form {
-        margin-inline-start: var(--l2p-touch-gap);
     }
 
     .l2p-view-label {
