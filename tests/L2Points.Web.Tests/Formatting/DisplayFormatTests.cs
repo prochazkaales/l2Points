@@ -110,6 +110,17 @@ public class DisplayFormatTests
     public void Pieces_czech_plural(int count, string expected) =>
         Assert.Equal(expected, DisplayFormat.Pieces(count));
 
+    [Theory]
+    [InlineData(1, 1, 1, 8, "Celkem 1 kus u 1 hráče · 1 z 8 typů")]
+    [InlineData(3, 2, 2, 8, "Celkem 3 kusy u 2 hráčů · 2 z 8 typů")]
+    [InlineData(5, 5, 4, 8, "Celkem 5 kusů u 5 hráčů · 4 z 8 typů")]
+    public void Jewel_gallery_summary(int pieces, int holders, int typesHeld, int typesTotal, string expected) =>
+        Assert.Equal(expected, DisplayFormat.JewelGallerySummary(pieces, holders, typesHeld, typesTotal));
+
+    [Fact]
+    public void Jewel_gallery_summary_when_nobody_holds_a_jewel() =>
+        Assert.Equal("Zatím nikdo nemá žádný šperk.", DisplayFormat.JewelGallerySummary(0, 0, 0, 8));
+
     private static readonly Week WinterWeek = Week.Containing(new DateOnly(2026, 11, 2));
 
     [Fact]

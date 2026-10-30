@@ -115,6 +115,11 @@ public static class DisplayFormat
         _ => $"{count} kusů",
     };
 
+    /// <summary>One-line summary above the jewel gallery ("Celkem 3 kusy u 2 hráčů · 2 z 8 typů").</summary>
+    public static string JewelGallerySummary(int pieces, int holders, int typesHeld, int typesTotal) => pieces == 0
+        ? "Zatím nikdo nemá žádný šperk."
+        : $"Celkem {Pieces(pieces)} u {holders} {(holders == 1 ? "hráče" : "hráčů")} · {typesHeld} z {typesTotal} typů";
+
     /// <summary>
     /// Czech description of when an activity happens. Weekly times are shown in Prague time for the day of <paramref name="week"/>
     /// (so they follow the daylight saving switch), optionally followed by the stored UTC time, e.g. "Týdně v sobotu 21:00 (20:00 UTC)".

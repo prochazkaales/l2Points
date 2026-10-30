@@ -9,12 +9,6 @@
     border-top: var(--l2p-line-width) solid var(--l2p-line-subtle);
 }
 
-/* JewelIcon renders the <img>, so reach it via ::deep from this page's row. */
-.l2p-admin-jewel-row ::deep img {
-    image-rendering: pixelated;
-    display: block;
-}
-
 .l2p-admin-jewel-row ::deep .l2p-admin-jewel-name {
     flex: 1 1 auto;
     min-width: 0;
