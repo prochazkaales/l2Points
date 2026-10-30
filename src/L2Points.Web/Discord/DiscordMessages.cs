@@ -28,6 +28,9 @@ public static class DiscordMessages
         public const string WrongGuild = "Tenhle bot funguje jen na serveru party.";
         public const string PanelNotFound = "Na screenu jsem nenašel panel Party Members. Pošli screen rozbalené party.";
         public const string ProcessingFailed = "Screen se nepodařilo zpracovat, zkus to znovu.";
+        public const string NoNicks = "V panelu Party Members jsem nepřečetl žádný nick. Pošli ostřejší screen rozbalené party.";
+        public const string SubmitFailed =
+            "Zápis se nepodařilo dokončit, část účasti už může být zapsaná. Zkontroluj ji ve webu nebo pošli /report znovu.";
         public const string BadAttachment = "Příloha musí být obrázek PNG, JPG nebo WEBP do 10 MB.";
         public const string Cancelled = "Report zrušen, nic se nezapsalo.";
         public const string Closed = "Report už je uzavřený.";
@@ -57,11 +60,17 @@ public static class DiscordMessages
         return Ephemeral(PanelContent(state), rows);
     }
 
-    /// <summary>Ephemeral confirmation for the reporter after a submit.</summary>
-    public static DiscordMessage Result(DiscordReportView view) =>
-        SummaryLines(view) is { } lines
-            ? Ephemeral("Zapsáno.\n" + lines)
-            : Notice(Texts.Closed);
+    /// <summary>Ephemeral confirmation for the reporter after a submit: new and already recorded attendance per event, then the issues.</summary>
+    public static DiscordMessage Result(DiscordReportView view)
+    {
+        if (view.State.Result is not { } result)
+            return Notice(Texts.Closed);
+
+        var lines = new List<string> { "Zapsáno." };
+        lines.AddRange(result.Events.Select(e => $"{SlotLabelOf(e.ActivityName, e.Event.Slot)}: nově {e.Added}, už mělo {e.AlreadyHad}"));
+        lines.AddRange(IssueLines(result.Events));
+        return Ephemeral(string.Join("\n", lines));
+    }
 
     /// <summary>The message everyone in the channel sees after a submit.</summary>
     public static DiscordMessage PublicSummary(DiscordReportView view) =>
@@ -183,14 +192,17 @@ public static class DiscordMessages
             $"{dateText} – {labels}: zapsáno {PlayerCount(CountPlayers(view.State, events))}. Report: {view.ReporterName}",
         };
 
-        foreach (var e in events)
-        {
-            var activity = SlotLabelOf(e.ActivityName, e.Event.Slot);
-            lines.AddRange(e.Issues.Select(i => $"{i.Nick}: {activity} – {Reason(i.Reason)}"));
-        }
-
+        lines.AddRange(IssueLines(events));
         return string.Join("\n", lines);
     }
+
+    /// <summary>One line per player whose attendance was not recorded, e.g. „Mayu: Queen Ant – týdenní limit“.</summary>
+    private static IEnumerable<string> IssueLines(IReadOnlyList<ReportEventResult> events) =>
+        events.SelectMany(e =>
+        {
+            var activity = SlotLabelOf(e.ActivityName, e.Event.Slot);
+            return e.Issues.Select(i => $"{i.Nick}: {activity} – {Reason(i.Reason)}");
+        });
 
     /// <summary>
     /// Distinct players with at least one recorded or already present attendance. The result only has per-event counts,

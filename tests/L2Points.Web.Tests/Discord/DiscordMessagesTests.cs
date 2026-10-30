@@ -246,9 +246,40 @@ public class DiscordMessagesTests
 
         var message = DiscordMessages.Result(ViewWithResult(result));
 
-        Assert.Equal("Zapsáno.\n30. 10. – Baium: zapsáno 2 hráči. Report: Alice", message.Content);
+        Assert.Equal("Zapsáno.\nBaium: nově 2, už mělo 0", message.Content);
         Assert.Equal(64, Json(message).GetProperty("flags").GetInt32());
         Assert.Equal(0, Json(message).GetProperty("allowed_mentions").GetProperty("parse").GetArrayLength());
+    }
+
+    [Fact]
+    public void Result_shows_new_and_already_recorded_per_event_then_issues()
+    {
+        var result = new ReportResult(
+        [
+            new ReportEventResult(new AttendanceEntry(1, Day, EventSlot.None), "Baium", 0, 7, []),
+            new ReportEventResult(new AttendanceEntry(2, Day, EventSlot.Evening), "Chaotic Core", 1, 1,
+                [new ReportPlayerIssue("Cyd", AttendanceChangeResult.WeeklyLimitReached)]),
+        ]);
+
+        var message = DiscordMessages.Result(ViewWithResult(result));
+
+        Assert.Equal(
+            "Zapsáno.\n" +
+            "Baium: nově 0, už mělo 7\n" +
+            "Chaotic Core – Večerní: nově 1, už mělo 1\n" +
+            "Cyd: Chaotic Core – Večerní – týdenní limit",
+            message.Content);
+    }
+
+    [Fact]
+    public void Public_summary_keeps_its_headline_without_per_event_counts()
+    {
+        var result = new ReportResult([new ReportEventResult(new AttendanceEntry(1, Day, EventSlot.None), "Baium", 0, 7, [])]);
+
+        var content = DiscordMessages.PublicSummary(ViewWithResult(result)).Content!;
+
+        Assert.StartsWith("30. 10. – Baium: zapsáno", content);
+        Assert.DoesNotContain("nově", content);
     }
 
     [Fact]

@@ -59,10 +59,43 @@ public class DiscordViewsTests
     public void Other_states_show_a_notice(
         DiscordReportOutcome outcome, DiscordReportStatus status, bool panelFound, string expected)
     {
-        var message = DiscordViews.ToMessage(View(outcome, status, new DiscordReportState { PanelFound = panelFound }));
+        var message = DiscordViews.ToMessage(
+            View(outcome, status, new DiscordReportState { PanelFound = panelFound, ReadNicks = ["Bob"] }));
 
         Assert.Equal(expected, message!.Content);
         Assert.Null(message.Components);
+    }
+
+    [Theory]
+    [InlineData(DiscordReportOutcome.Ok)]
+    [InlineData(DiscordReportOutcome.Finished)]
+    public void Failed_submit_shows_submit_failed(DiscordReportOutcome outcome)
+    {
+        var message = DiscordViews.ToMessage(View(outcome, DiscordReportStatus.Failed, WithResult));
+
+        Assert.Equal(DiscordMessages.Texts.SubmitFailed, message!.Content);
+        Assert.Null(message.Components);
+    }
+
+    [Fact]
+    public void Failed_with_panel_but_no_nicks_shows_no_nicks()
+    {
+        var message = DiscordViews.ToMessage(
+            View(DiscordReportOutcome.Finished, DiscordReportStatus.Failed, new DiscordReportState { PanelFound = true }));
+
+        Assert.Equal(DiscordMessages.Texts.NoNicks, message!.Content);
+        Assert.Null(message.Components);
+    }
+
+    [Fact]
+    public void Failure_texts_are_czech()
+    {
+        Assert.Equal(
+            "Zápis se nepodařilo dokončit, část účasti už může být zapsaná. Zkontroluj ji ve webu nebo pošli /report znovu.",
+            DiscordMessages.Texts.SubmitFailed);
+        Assert.Equal(
+            "V panelu Party Members jsem nepřečetl žádný nick. Pošli ostřejší screen rozbalené party.",
+            DiscordMessages.Texts.NoNicks);
     }
 
     [Fact]

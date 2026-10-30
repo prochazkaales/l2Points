@@ -20,7 +20,10 @@ public static class DiscordViews
             DiscordReportStatus.Completed => Result(view),
             DiscordReportStatus.Cancelled => Notice(Texts.Cancelled),
             DiscordReportStatus.Expired => Notice(Texts.Expired),
+            // Only a submit stores a result, so a failed report with one is a failed submit.
+            DiscordReportStatus.Failed when view.State.Result is not null => Notice(Texts.SubmitFailed),
             DiscordReportStatus.Failed when !view.State.PanelFound => Notice(Texts.PanelNotFound),
+            DiscordReportStatus.Failed when view.State.ReadNicks.Count == 0 => Notice(Texts.NoNicks),
             DiscordReportStatus.Failed => Notice(Texts.ProcessingFailed),
             _ => Notice(Texts.Closed),
         },
