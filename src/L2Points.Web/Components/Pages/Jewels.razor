@@ -18,7 +18,7 @@
 }
 else if (_gallery is null)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+    <LoadingSkeleton />
 }
 else
 {
@@ -32,12 +32,12 @@ else
                     </div>
                     <div>
                         <MudText Typo="Typo.h6" HtmlTag="h2">@summary.Type.Name</MudText>
-                        <MudText Typo="Typo.body2" Class="l2p-jewel-total">@DisplayFormat.Pieces(summary.Count)</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@DisplayFormat.Pieces(summary.Count)</MudText>
                     </div>
                 </div>
                 @if (summary.Holders.Count == 0)
                 {
-                    <MudText Typo="Typo.body2" Class="l2p-jewel-none">Zatím nikdo</MudText>
+                    <EmptyState Text="Zatím nikdo" Compact="true" />
                 }
                 else
                 {

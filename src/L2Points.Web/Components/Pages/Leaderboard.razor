@@ -29,7 +29,7 @@
 }
 else if (_rows is null || _summary is null)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+    <LoadingSkeleton Kpis="4" Rows="5" />
 }
 else if (_rows.Count == 0)
 {

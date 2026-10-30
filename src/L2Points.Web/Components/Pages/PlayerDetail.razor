@@ -27,7 +27,7 @@
 else if (!_detailLoaded)
 {
     <PageHeader Title="Detail hráče" />
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+    <LoadingSkeleton Rows="4" />
 }
 else if (_detail is null)
 {
@@ -53,7 +53,7 @@ else
         <SectionTitle Text="Šperky" Icon="@Icons.Material.Outlined.Diamond" />
         @if (_detail.Jewels.Count == 0)
         {
-            <MudText Typo="Typo.body2" Class="mud-text-secondary">Zatím žádný šperk.</MudText>
+            <EmptyState Text="Zatím žádný šperk." Icon="@Icons.Material.Outlined.Diamond" />
         }
         else
         {
@@ -77,7 +77,7 @@ else
         <SectionTitle Text="Historie po týdnech" Icon="@Icons.Material.Outlined.History" />
         @if (_detail.History.Count == 0)
         {
-            <MudAlert Severity="Severity.Normal">Zatím tu žádná historie není.</MudAlert>
+            <EmptyState Text="Zatím tu žádná historie není." Icon="@Icons.Material.Outlined.History" />
         }
         else
         {
@@ -120,7 +120,7 @@ else
         }
         else if (_grid is null)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+            <LoadingSkeleton Grid="true" />
         }
         else
         {

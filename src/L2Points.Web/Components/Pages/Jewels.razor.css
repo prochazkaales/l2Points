@@ -17,14 +17,6 @@
     display: block;
 }
 
-.l2p-jewel-total {
-    color: var(--mud-palette-text-secondary);
-}
-
-.l2p-jewel-none {
-    color: var(--mud-palette-text-disabled);
-}
-
 .l2p-jewel-holders {
     display: flex;
     flex-wrap: wrap;

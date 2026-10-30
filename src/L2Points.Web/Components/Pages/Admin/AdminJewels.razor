@@ -22,7 +22,7 @@
 }
 else if (_assignments is null)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+    <LoadingSkeleton />
 }
 else
 {
@@ -57,6 +57,10 @@ else
                 </div>
             }
         </MudPaper>
+    }
+    else
+    {
+        <EmptyState Text="Vyber hráče, kterému chceš přidat nebo odebrat šperk." Icon="@Icons.Material.Outlined.PersonSearch" />
     }
 }
 

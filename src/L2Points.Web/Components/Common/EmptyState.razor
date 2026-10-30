@@ -1,0 +1,22 @@
+@* One look for "nothing here yet": muted icon above secondary text, optional action as child content.
+   Compact drops the icon and uses less padding, for empty spots inside a small tile. *@
+<div class="@(Compact ? "l2p-empty l2p-empty-compact" : "l2p-empty")">
+    @if (!Compact)
+    {
+        <MudIcon Icon="@Icon" Size="Size.Medium" Class="l2p-empty-icon" />
+    }
+    <MudText Typo="Typo.body2" Class="l2p-empty-text">@Text</MudText>
+    @ChildContent
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+
+    [Parameter] public string Icon { get; set; } = Icons.Material.Outlined.Inbox;
+
+    /// <summary>No icon and smaller padding.</summary>
+    [Parameter] public bool Compact { get; set; }
+
+    /// <summary>Optional action (button or link) shown under the text.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

@@ -1,0 +1,38 @@
+@* Initial-load placeholder shaped like the content that follows: optional KPI tiles, then grid cards or one table card. *@
+<div class="l2p-skeleton" aria-busy="true" role="status" aria-label="Načítám…">
+    @if (Kpis > 0)
+    {
+        <div class="l2p-kpis">
+            @for (var i = 0; i < Kpis; i++)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="96px" Class="l2p-skeleton-block" />
+            }
+        </div>
+    }
+    @if (Grid)
+    {
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="240px" Class="l2p-skeleton-block" />
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="240px" Class="l2p-skeleton-block" />
+    }
+    else
+    {
+        <div class="l2p-skeleton-card">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="34px" Class="l2p-skeleton-block" />
+            @for (var i = 0; i < Rows; i++)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="33px" Class="l2p-skeleton-block" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Number of KPI tiles above the content.</summary>
+    [Parameter] public int Kpis { get; set; }
+
+    /// <summary>Rows of the table card (ignored when <see cref="Grid"/> is set).</summary>
+    [Parameter] public int Rows { get; set; } = 5;
+
+    /// <summary>Two tall cards instead of the table card, for the week grid.</summary>
+    [Parameter] public bool Grid { get; set; }
+}

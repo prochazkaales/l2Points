@@ -1114,6 +1114,58 @@ a:not(.mud-button-root):focus-visible,
     .mud-ripple-icon::after {
         display: none;
     }
+
+    .l2p-skeleton .mud-skeleton::after {
+        animation: none;
+        display: none;
+    }
+}
+
+/* Loading placeholder (Components/Common/LoadingSkeleton): blocks in the shape of the content that follows. */
+.l2p-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--l2p-gap-tiles);
+}
+
+.l2p-skeleton .l2p-skeleton-block {
+    background-color: var(--l2p-glass-strong);
+    border-radius: var(--l2p-radius-lg);
+    transform: none;
+}
+
+.l2p-skeleton-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--l2p-space-2);
+    border: var(--l2p-line-width) solid var(--l2p-line);
+    border-radius: var(--l2p-radius-xl);
+    background: var(--l2p-glass);
+}
+
+/* Empty state (Components/Common/EmptyState): muted icon above secondary text. */
+.l2p-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--l2p-space-2);
+    padding: var(--l2p-space-4);
+    text-align: center;
+}
+
+.l2p-empty .l2p-empty-icon {
+    color: var(--l2p-muted);
+}
+
+.l2p-empty .l2p-empty-text {
+    color: var(--l2p-text-2);
+}
+
+.l2p-empty-compact {
+    padding: var(--l2p-space-1) 0;
+    align-items: flex-start;
+    text-align: left;
 }
 
 /* Gold, silver and bronze by the shared place, so a tie gets the same colour. */

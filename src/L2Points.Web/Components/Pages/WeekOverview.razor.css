@@ -63,8 +63,7 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 55%, transparent);
 }
 
-.l2p-wk-muted,
-.l2p-wk-empty {
+.l2p-wk-muted {
     color: var(--l2p-text-2);
 }
 

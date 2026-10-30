@@ -25,7 +25,7 @@
 }
 else if (_players is null || _actorId is null)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+    <LoadingSkeleton />
 }
 else
 {
@@ -55,7 +55,7 @@ else
             }
             else if (_summary is null)
             {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+                <LoadingSkeleton Rows="3" />
             }
             else
             {
@@ -65,6 +65,10 @@ else
 
         <EditableWeekGrid ActorUserId="@_actorId" ActorIsAdmin="true" TargetUserId="@selected.UserId"
                           Week="_week" Today="_today" OnChanged="LoadSummaryAsync" />
+    }
+    else
+    {
+        <EmptyState Text="Vyber hráče, kterému chceš opravit účast." Icon="@Icons.Material.Outlined.PersonSearch" />
     }
 }
 

@@ -38,7 +38,7 @@
 }
 else if (_overview is null || _summary is null)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="my-4" />
+    <LoadingSkeleton Kpis="4" Rows="5" />
 }
 else
 {
@@ -100,7 +100,7 @@ else
             }
             @if (events.Count == 0)
             {
-                <MudText Typo="Typo.body2" Class="pa-4 l2p-wk-empty">@(_day > _today ? "Tento den ještě nenastal." : "Tento den nikdo nic nezapsal.")</MudText>
+                <EmptyState Text="@(_day > _today ? "Tento den ještě nenastal." : "Tento den nikdo nic nezapsal.")" Icon="@Icons.Material.Outlined.EventBusy" />
             }
             else if (_view == EventView.Cards)
             {
@@ -167,7 +167,7 @@ else
                                             }
                                             else
                                             {
-                                                <span class="l2p-wk-no" aria-label="Nebyl(a)">·</span>
+                                                <span class="l2p-wk-no" aria-label="Nebyl(a)">–</span>
                                             }
                                         </td>
                                     }
