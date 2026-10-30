@@ -3,6 +3,7 @@ using L2Points.Infrastructure;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Web.Components;
+using L2Points.Web.Discord;
 using L2Points.Web.Hosting;
 using L2Points.Web.Identity;
 using Microsoft.AspNetCore.Antiforgery;
@@ -24,6 +25,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddDiscordReports(builder.Configuration);
 builder.Services.AddScoped<IdentityErrorDescriber, CzechIdentityErrorDescriber>();
 
 // AddIdentityCore registers no authentication scheme, so the Identity cookies are added here.
@@ -105,6 +107,8 @@ app.MapPost("/logout", async (HttpContext context, IAntiforgery antiforgery, Sig
     await signInManager.SignOutAsync();
     return Results.LocalRedirect("/login");
 }).AllowAnonymous();
+
+app.MapDiscordInteractions();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

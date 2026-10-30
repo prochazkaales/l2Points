@@ -20,9 +20,7 @@ public static class AttachmentPolicy
     /// <summary>The host is checked first so that nothing outside the Discord CDN is ever fetched.</summary>
     public static AttachmentCheck Check(string? url, string? contentType, long size)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
-            || uri.Scheme != Uri.UriSchemeHttps
-            || !TrustedHosts.Contains(uri.Host, StringComparer.OrdinalIgnoreCase))
+        if (!IsTrustedUrl(url))
             return AttachmentCheck.UntrustedHost;
 
         var mediaType = contentType?.Split(';')[0].Trim();
@@ -31,4 +29,10 @@ public static class AttachmentPolicy
 
         return size > MaxBytes ? AttachmentCheck.TooLarge : AttachmentCheck.Ok;
     }
+
+    /// <summary>Https on the Discord CDN; checked before anything is fetched.</summary>
+    public static bool IsTrustedUrl(string? url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps
+        && TrustedHosts.Contains(uri.Host, StringComparer.OrdinalIgnoreCase);
 }
