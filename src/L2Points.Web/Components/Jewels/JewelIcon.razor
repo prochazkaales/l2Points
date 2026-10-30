@@ -4,7 +4,8 @@
 @* One jewel type: its framed icon and, when the player holds more than one piece, a "×N" count. *@
 <span class="l2p-jewel" title="@(Decorative ? null : Title)">
     <span class="l2p-jewel-tile">
-        <img src="@Type.ImagePath" alt="@(Decorative ? "" : Title)" width="@Size" height="@Size" />
+        @* Assets[] adds the content fingerprint, so a changed icon is never served from a stale browser cache. *@
+        <img src="@Assets[Type.ImagePath]" alt="@(Decorative ? "" : Title)" width="@Size" height="@Size" />
     </span>
     @if (Count > 1)
     {
