@@ -9,4 +9,5 @@ public sealed record PlayerDetail(
     PlayerSummary Overall,
     PlayerSummary CurrentWeek,
     IReadOnlyList<WeekHistoryRow> History,
-    IReadOnlyList<PlayerJewel> Jewels);
+    IReadOnlyList<PlayerJewel> Jewels,
+    bool IsReader);

@@ -191,4 +191,45 @@ public class OverviewServiceTests
         Assert.Contains(first.Players, r => r.Player.UserId == x.D);
         Assert.DoesNotContain(second.Players, r => r.Player.UserId == x.D);
     }
+
+    [Fact]
+    public async Task Leaderboard_OmitsHiddenReader()
+    {
+        await using var x = await ArrangeAsync();
+        var reader = await TestData.CreateReaderAsync(x.Provider, "readerHidden", Mon, showInStats: false);
+        await TestData.AddAttendanceAsync(x.Provider, reader.Id, "QueenAnt", Mon);
+
+        var rows = (await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: true)).Rows;
+
+        Assert.DoesNotContain(rows, r => r.Player.UserId == reader.Id);
+        Assert.Equal(3, rows.Count);
+    }
+
+    [Fact]
+    public async Task Leaderboard_IncludesShownReader()
+    {
+        await using var x = await ArrangeAsync();
+        var reader = await TestData.CreateReaderAsync(x.Provider, "readerShown", Mon, showInStats: true);
+        await TestData.AddAttendanceAsync(x.Provider, reader.Id, "QueenAnt", Mon);
+
+        var rows = (await x.Service.GetLeaderboardAsync(Week.Containing(NextMon), includeInactive: false)).Rows;
+
+        Assert.Equal(1, rows.Single(r => r.Player.UserId == reader.Id).Overall.Points);
+    }
+
+    [Fact]
+    public async Task WeekOverview_EventsOmitHiddenReader()
+    {
+        await using var x = await ArrangeAsync();
+        var reader = await TestData.CreateReaderAsync(x.Provider, "readerHidden", Mon, showInStats: false);
+        await TestData.AddAttendanceAsync(x.Provider, reader.Id, "QueenAnt", Mon);
+
+        var first = await x.Service.GetWeekOverviewAsync(Week.Containing(Mon));
+        var second = await x.Service.GetWeekOverviewAsync(Week.Containing(NextMon));
+
+        Assert.DoesNotContain(first.Players, r => r.Player.UserId == reader.Id);
+        Assert.All(first.Events, e => Assert.Equal([x.A], e.Attendees.Select(p => p.UserId)));
+        // Player A earned 3 points in the previous week; the hidden reader's point is not counted.
+        Assert.Equal(3, second.PreviousWeekPoints);
+    }
 }

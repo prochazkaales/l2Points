@@ -18,7 +18,7 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
 
         var players = await db.Users
             .AsNoTracking()
-            .Where(u => includeInactive || u.IsActive)
+            .Where(u => u.ShowInStats && (includeInactive || u.IsActive))
             .SelectPlayerInfo()
             .ToListAsync(ct);
 
@@ -53,6 +53,7 @@ public sealed class OverviewService(IDbContextFactory<AppDbContext> dbFactory, T
         // The party is small, so all players are loaded once and narrowed per week in memory.
         var allPlayers = await db.Users
             .AsNoTracking()
+            .Where(u => u.ShowInStats)
             .SelectPlayerInfo()
             .ToListAsync(ct);
 

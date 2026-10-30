@@ -33,14 +33,14 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
         return PlayerSummaryCalculator.Calculate(activities, attendances, window, period);
     }
 
-    /// <summary>Overall, current-week and weekly history statistics of a player, or null when the player does not exist.</summary>
+    /// <summary>Overall, current-week and weekly history statistics of a player, or null when the player does not exist or is hidden from stats.</summary>
     public async Task<PlayerDetail?> GetPlayerDetailAsync(string userId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
         var player = await db.Users
             .AsNoTracking()
-            .Where(u => u.Id == userId)
+            .Where(u => u.Id == userId && u.ShowInStats)
             .SelectPlayerInfo()
             .SingleOrDefaultAsync(ct);
         if (player is null)
@@ -62,6 +62,6 @@ public sealed class PlayerStatsService(IDbContextFactory<AppDbContext> dbFactory
             .Single();
         var history = PlayerHistoryCalculator.Build(player, activities, entries, trackingStart, today);
         var jewels = await db.LoadJewelsByPlayerAsync(ct);
-        return new PlayerDetail(player, row.Overall, row.Week, history, jewels.Of(userId));
+        return new PlayerDetail(player, row.Overall, row.Week, history, jewels.Of(userId), await db.IsReaderAsync(userId, ct));
     }
 }

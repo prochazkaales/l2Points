@@ -190,4 +190,32 @@ public class PlayerStatsServiceTests
         Assert.Null(detail.Overall.Stats.Total.Percent);
         Assert.Empty(detail.History);
     }
+
+    [Fact]
+    public async Task Detail_HiddenReader_IsNull()
+    {
+        var (time, provider, _) = await ArrangeDetailAsync();
+        await using var disposable = provider;
+        var (stats, _) = CreateServices(provider, time);
+        var reader = await TestData.CreateReaderAsync(provider, "hiddenReader", Monday, showInStats: false);
+
+        Assert.Null(await stats.GetPlayerDetailAsync(reader.Id));
+    }
+
+    [Fact]
+    public async Task Detail_ShownReader_IsMarked()
+    {
+        var (time, provider, userId) = await ArrangeDetailAsync();
+        await using var disposable = provider;
+        var (stats, _) = CreateServices(provider, time);
+        var reader = await TestData.CreateReaderAsync(provider, "shownReader", Monday, showInStats: true);
+
+        var readerDetail = await stats.GetPlayerDetailAsync(reader.Id);
+        var playerDetail = await stats.GetPlayerDetailAsync(userId);
+
+        Assert.NotNull(readerDetail);
+        Assert.True(readerDetail.IsReader);
+        Assert.NotNull(playerDetail);
+        Assert.False(playerDetail.IsReader);
+    }
 }

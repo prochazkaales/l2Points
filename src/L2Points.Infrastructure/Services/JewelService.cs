@@ -91,7 +91,7 @@ public sealed class JewelService(IDbContextFactory<AppDbContext> dbFactory)
 
     private static async Task<List<PlayerInfo>> LoadAllPlayersAsync(AppDbContext db, CancellationToken ct)
     {
-        var players = await db.Users.AsNoTracking().SelectPlayerInfo().ToListAsync(ct);
+        var players = await db.Users.AsNoTracking().Where(u => u.ShowInStats).SelectPlayerInfo().ToListAsync(ct);
         return players
             .OrderBy(p => p.Nick, StringComparer.OrdinalIgnoreCase)
             .ThenBy(p => p.UserId, StringComparer.Ordinal)

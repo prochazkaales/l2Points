@@ -120,4 +120,33 @@ public class JewelServiceTests
         Assert.Equal(["Alice", "bob", "carl"], assignments.Players.Select(p => p.Nick));
         Assert.Equal(8, assignments.Types.Count);
     }
+
+    [Fact]
+    public async Task Gallery_IgnoresHiddenReaderPieces()
+    {
+        await using var x = await ArrangeAsync();
+        var reader = await TestData.CreateReaderAsync(x.Provider, "hiddenReader", Monday, showInStats: false);
+        var queenAnt = await x.TypeIdAsync("QueenAntRing");
+        await x.Service.AssignAsync(x.Bob, queenAnt);
+        await x.Service.AssignAsync(reader.Id, queenAnt);
+        await x.Service.AssignAsync(reader.Id, queenAnt);
+
+        var summary = (await x.Service.GetGalleryAsync())[0];
+
+        Assert.Equal(1, summary.Count);
+        Assert.Equal([x.Bob], summary.Holders.Select(h => h.Player.UserId));
+    }
+
+    [Fact]
+    public async Task Assignments_OmitHiddenReader()
+    {
+        await using var x = await ArrangeAsync();
+        var hidden = await TestData.CreateReaderAsync(x.Provider, "hiddenReader", Monday, showInStats: false);
+        var shown = await TestData.CreateReaderAsync(x.Provider, "shownReader", Monday, showInStats: true);
+
+        var players = (await x.Service.GetAssignmentsAsync()).Players;
+
+        Assert.DoesNotContain(players, p => p.UserId == hidden.Id);
+        Assert.Contains(players, p => p.UserId == shown.Id);
+    }
 }
