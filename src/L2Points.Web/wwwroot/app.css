@@ -1380,6 +1380,17 @@ a:not(.mud-button-root):focus-visible,
     width: 9rem;
 }
 
+/* Phones: short names wrap in a narrow first column, the point columns hold three digits and their header. */
+@media (max-width: 599.98px) {
+    .l2p-catalog-table tr > :first-child {
+        width: 6.5rem;
+    }
+
+    .l2p-catalog-table tr > .l2p-col-points {
+        width: 4.25rem;
+    }
+}
+
 /* Page titles are a touch lighter than MudBlazor's default h4 weight. */
 .mud-typography-h4 {
     font-weight: 500;

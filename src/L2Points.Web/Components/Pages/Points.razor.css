@@ -9,3 +9,19 @@
     padding-right: 1.5rem;
     font-weight: 600;
 }
+
+/* Phones: the table fits the screen without scrolling; the schedule wraps instead. */
+@media (max-width: 599.98px) {
+    .l2p-points ::deep table {
+        min-width: 0;
+    }
+
+    .l2p-points ::deep td:last-child {
+        white-space: normal;
+    }
+
+    .l2p-points ::deep .mud-table-cell.l2p-points-value {
+        padding-left: var(--l2p-space-1);
+        padding-right: var(--l2p-cell-x);
+    }
+}

@@ -392,4 +392,14 @@
     .l2p-grid-check + .l2p-grid-check {
         margin-top: 4px;
     }
+
+    /* A chaotic cell (44px hit area + "V 19:00") would overflow the 6.5rem day column: the cell padding shrinks and the
+       label moves into the hit area's empty padding, so the text starts right after the visible 20px box. */
+    .l2p-grid td.l2p-grid-cell {
+        padding-inline: var(--l2p-space-1);
+    }
+
+    .l2p-grid-check ::deep .mud-checkbox .mud-typography {
+        margin-left: -8px;
+    }
 }

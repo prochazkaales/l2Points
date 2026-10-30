@@ -131,7 +131,7 @@ public static class DisplayFormat
             ? WeeklyTimeLabel(a, week, time, withUtc)
             : $"Týdně {DayWithPreposition(a.WeeklyDay)}",
         ScheduleType.Biweekly => $"Ob týden {DayWithPreposition(a.WeeklyDay)}",
-        ScheduleType.Slotted => $"Rozpis: {Spawns(a.Spawns.Count)} týdně",
+        ScheduleType.Slotted => $"{Spawns(a.Spawns.Count)} týdně",
         _ => a.ScheduleType.ToString(),
     };
 
