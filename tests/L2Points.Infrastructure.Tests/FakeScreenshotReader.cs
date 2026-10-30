@@ -13,12 +13,17 @@ internal sealed class FakeScreenshotReader : IScreenshotReader
 
     public IReadOnlyList<string> KnownNicks { get; private set; } = [];
 
-    public Task<ScreenshotReadResult> ReadPartyMembersAsync(
+    /// <summary>Runs while the read is in progress, to simulate something happening to the report meanwhile.</summary>
+    public Func<Task>? WhileReading { get; set; }
+
+    public async Task<ScreenshotReadResult> ReadPartyMembersAsync(
         byte[] image, string mediaType, IReadOnlyList<string> knownNicks, CancellationToken ct = default)
     {
         KnownNicks = knownNicks;
         if (Failure is not null)
             throw Failure;
-        return Task.FromResult(new ScreenshotReadResult(PanelFound, Nicks));
+        if (WhileReading is not null)
+            await WhileReading();
+        return new ScreenshotReadResult(PanelFound, Nicks);
     }
 }

@@ -1,8 +1,11 @@
+using System.Text.Json;
 using L2Points.Domain.Activities;
+using L2Points.Domain.Attendances;
 using L2Points.Domain.Reports;
 using L2Points.Domain.Stats;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Infrastructure.Reports;
+using L2Points.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -36,6 +39,18 @@ public class DiscordReportServiceTests
         {
             await using var db = Provider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext();
             return await db.DiscordReports.AsNoTracking().SingleAsync(r => r.Id == id);
+        }
+
+        public async Task<List<Attendance>> AttendancesAsync()
+        {
+            await using var db = Provider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext();
+            return await db.Attendances.AsNoTracking().ToListAsync();
+        }
+
+        public async Task SetStatusAsync(Guid id, DiscordReportStatus status)
+        {
+            await using var db = Provider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext();
+            await db.DiscordReports.Where(r => r.Id == id).ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, status));
         }
 
         public async Task<Guid> AnalyzedAsync(params string[] nicks)
@@ -326,5 +341,195 @@ public class DiscordReportServiceTests
         Assert.Equal(DiscordReportStatus.Processing, view.Status);
         Assert.Null(view.State.Date);
         Assert.Empty(view.EventOptions);
+    }
+
+    [Fact]
+    public async Task Submit_writes_attendance_for_confirmed_players()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "V0lume", "Mayu");
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Ok, view.Outcome);
+        Assert.Equal(DiscordReportStatus.Completed, view.Status);
+        var rows = await f.AttendancesAsync();
+        Assert.Equal(8, rows.Count);
+        Assert.All(rows, r => Assert.Equal(DiscordReportService.ActorId(id), r.CreatedByUserId));
+        Assert.All(rows, r => Assert.Equal(EventSlot.Evening, r.Slot));
+        var confirmedIds = view.State.Players.Where(p => p.Confirmed).Select(p => p.UserId).Order().ToList();
+        Assert.Equal(["Hubkins1010", "Mayu"], view.State.Players.Where(p => p.Confirmed).Select(p => p.Nick).Order());
+        Assert.Equal(confirmedIds, rows.Select(r => r.UserId).Distinct().Order());
+
+        var result = Assert.IsType<ReportResult>(view.State.Result);
+        Assert.Equal(4, result.Events.Count);
+        Assert.All(result.Events, e =>
+        {
+            Assert.Equal(2, e.Added);
+            Assert.Equal(0, e.AlreadyHad);
+            Assert.Empty(e.Issues);
+        });
+        Assert.Contains(result.Events, e => e.ActivityName == "Chaotic Core");
+
+        var stored = await f.LoadAsync(id);
+        Assert.Equal(DiscordReportStatus.Completed, stored.Status);
+        Assert.Equal(new DateTime(2026, 10, 30, 19, 45, 0, DateTimeKind.Utc), stored.CompletedAtUtc);
+    }
+
+    [Fact]
+    public async Task Submit_counts_existing_attendance()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        await TestData.AddAttendanceAsync(f.Provider, f.Mayu, "ChaoticCore", Friday, EventSlot.Evening);
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        var core = await f.ActivityAsync("ChaoticCore");
+        var coreResult = Assert.IsType<ReportResult>(view.State.Result).Events.Single(e => e.Event.ActivityId == core);
+        Assert.Equal(1, coreResult.Added);
+        Assert.Equal(1, coreResult.AlreadyHad);
+        var rows = await f.AttendancesAsync();
+        Assert.Equal(1, rows.Count(r => r.UserId == f.Mayu && r.ActivityId == core && r.Date == Friday));
+        Assert.Equal(8, rows.Count);
+    }
+
+    [Fact]
+    public async Task Submit_reports_weekly_limit()
+    {
+        await using var f = await CreateAsync();
+        foreach (var date in new[] { Monday, new(2026, 10, 27), new(2026, 10, 28), Thursday, new(2026, 10, 31), new(2026, 11, 1) })
+            await TestData.AddAttendanceAsync(f.Provider, f.Mayu, "QueenAnt", date);
+        var id = await f.AnalyzedAsync("Mayu");
+        var queenAnt = new AttendanceEntry(await f.ActivityAsync("QueenAnt"), Friday, EventSlot.None);
+        await f.Service.SelectEventsAsync(id, "1001", [queenAnt]);
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        var result = Assert.Single(Assert.IsType<ReportResult>(view.State.Result).Events);
+        Assert.Equal(0, result.Added);
+        Assert.Equal(new ReportPlayerIssue("Mayu", AttendanceChangeResult.WeeklyLimitReached), Assert.Single(result.Issues));
+        Assert.Equal(6, (await f.AttendancesAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Submit_twice_returns_same_result()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        var first = await f.Service.SubmitAsync(id, "1001");
+
+        var second = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Ok, first.Outcome);
+        Assert.Equal(DiscordReportOutcome.Finished, second.Outcome);
+        Assert.Equal(DiscordReportStatus.Completed, second.Status);
+        Assert.Equal(JsonSerializer.Serialize(first.State.Result), JsonSerializer.Serialize(second.State.Result));
+        Assert.Equal(8, (await f.AttendancesAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Submit_concurrent_calls_write_once()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+
+        var views = await Task.WhenAll(f.Service.SubmitAsync(id, "1001"), f.Service.SubmitAsync(id, "1001"));
+
+        Assert.Single(views, v => v.Outcome == DiscordReportOutcome.Ok);
+        Assert.Single(views, v => v.Outcome == DiscordReportOutcome.Finished);
+        Assert.Equal(8, (await f.AttendancesAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Submit_by_other_user_is_rejected()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+
+        var view = await f.Service.SubmitAsync(id, "9999");
+
+        Assert.Equal(DiscordReportOutcome.NotOwner, view.Outcome);
+        Assert.Empty(await f.AttendancesAsync());
+        Assert.Equal(DiscordReportStatus.Pending, (await f.LoadAsync(id)).Status);
+    }
+
+    [Fact]
+    public async Task Submit_after_lifetime_expires_report()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        f.Time.Advance(TimeSpan.FromMinutes(16));
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Expired, view.Outcome);
+        Assert.Equal(DiscordReportStatus.Expired, (await f.LoadAsync(id)).Status);
+        Assert.Empty(await f.AttendancesAsync());
+    }
+
+    [Fact]
+    public async Task Submit_without_confirmed_players_changes_nothing()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("V0lume");
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Ok, view.Outcome);
+        Assert.Equal(DiscordReportStatus.Pending, view.Status);
+        Assert.Null(view.State.Result);
+        Assert.Empty(await f.AttendancesAsync());
+    }
+
+    [Fact]
+    public async Task Submit_without_selected_events_changes_nothing()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010");
+        await f.Service.SelectEventsAsync(id, "1001", []);
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Ok, view.Outcome);
+        Assert.Equal(DiscordReportStatus.Pending, view.Status);
+        Assert.Empty(await f.AttendancesAsync());
+    }
+
+    [Fact]
+    public async Task Submitting_report_is_not_expired()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        await f.SetStatusAsync(id, DiscordReportStatus.Submitting);
+        f.Time.Advance(TimeSpan.FromMinutes(16));
+
+        var submit = await f.Service.SubmitAsync(id, "1001");
+        var get = await f.Service.GetAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Ok, submit.Outcome);
+        Assert.Equal(DiscordReportStatus.Submitting, submit.Status);
+        Assert.Equal(DiscordReportOutcome.Ok, get.Outcome);
+        var stored = await f.LoadAsync(id);
+        Assert.Equal(DiscordReportStatus.Submitting, stored.Status);
+        Assert.Null(stored.CompletedAtUtc);
+        Assert.Empty(await f.AttendancesAsync());
+    }
+
+    [Fact]
+    public async Task Cancel_during_analysis_wins()
+    {
+        await using var f = await CreateAsync();
+        f.Reader.Nicks = ["Hubkins1010"];
+        var id = await f.Service.CreateAsync(Reporter);
+        f.Reader.WhileReading = () => f.Service.CancelAsync(id, "1001");
+
+        var view = await f.Service.AnalyzeAsync(id, [1, 2, 3], "image/png");
+
+        Assert.Equal(DiscordReportStatus.Cancelled, view.Status);
+        Assert.Equal(DiscordReportOutcome.Finished, view.Outcome);
+        var stored = await f.LoadAsync(id);
+        Assert.Equal(DiscordReportStatus.Cancelled, stored.Status);
+        Assert.Empty((await f.Service.GetAsync(id, "1001")).State.Players);
     }
 }
