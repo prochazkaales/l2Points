@@ -4,21 +4,62 @@
     gap: var(--l2p-gap-tiles);
 }
 
+/* MudPaper is a child component: its root is reached via ::deep from the gallery wrapper. */
+.l2p-jewel-gallery ::deep .l2p-jewel-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--l2p-space-3);
+    padding: var(--l2p-pad-card);
+}
+
 .l2p-jewel-head {
     display: flex;
     align-items: center;
     gap: var(--l2p-space-4);
-    margin-bottom: var(--l2p-space-3);
 }
 
-/* JewelIcon renders the <img>, so reach it via ::deep from this page's wrapper. */
+.l2p-jewel-big {
+    flex: none;
+}
+
+/* JewelIcon renders the tile and <img>, so reach them via ::deep from this page's wrapper. */
+.l2p-jewel-big ::deep .l2p-jewel-tile {
+    padding: var(--l2p-space-1);
+    border-radius: var(--l2p-radius-md);
+}
+
 .l2p-jewel-big ::deep img {
-    image-rendering: pixelated;
-    display: block;
+    border-radius: var(--l2p-radius-sm);
+}
+
+.l2p-jewel-title {
+    min-width: 0;
+}
+
+.l2p-jewel-title ::deep .l2p-jewel-name {
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+/* A type nobody holds keeps its place but steps back: a dimmed, desaturated icon. Text keeps its colour for contrast. */
+.l2p-jewel-gallery ::deep .l2p-jewel-card-empty .l2p-jewel-big img {
+    filter: grayscale(0.85);
+    opacity: 0.45;
 }
 
 .l2p-jewel-holders {
     display: flex;
     flex-wrap: wrap;
     gap: var(--l2p-space-1);
+}
+
+.l2p-jewel-holders ::deep .mud-chip {
+    margin: 0;
+}
+
+@media (pointer: coarse), (max-width: 599.98px) {
+    .l2p-jewel-holders {
+        gap: var(--l2p-touch-gap);
+    }
 }

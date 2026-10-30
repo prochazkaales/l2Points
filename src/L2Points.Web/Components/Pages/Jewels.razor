@@ -9,7 +9,12 @@
 
 <PageTitle>Šperky – L2Points</PageTitle>
 
-<PageHeader Title="Šperky" />
+<PageHeader Title="Šperky">
+    <AuthorizeView Roles="@Roles.Admin">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/admin/jewels"
+                   StartIcon="@Icons.Material.Outlined.Edit">Upravit šperky</MudButton>
+    </AuthorizeView>
+</PageHeader>
 
 @if (_error)
 {
@@ -22,24 +27,24 @@ else if (_gallery is null)
 }
 else
 {
+    <MudText Typo="Typo.body2" Class="mb-3">@Summary(_gallery)</MudText>
+
     <div class="l2p-jewel-gallery">
         @foreach (var summary in _gallery)
         {
-            <MudPaper Outlined="true" Class="pa-3 l2p-tile">
+            var held = summary.Count > 0;
+            @* Unheld types stay in place (catalog order) but step back, so the held ones stand out. *@
+            <MudPaper Outlined="true" Class="@(held ? "l2p-tile l2p-jewel-card" : "l2p-tile l2p-jewel-card l2p-jewel-card-empty")">
                 <div class="l2p-jewel-head">
                     <div class="l2p-jewel-big">
                         <JewelIcon Type="summary.Type" Size="64" Decorative="true" />
                     </div>
-                    <div>
-                        <MudText Typo="Typo.h6" HtmlTag="h2">@summary.Type.Name</MudText>
-                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@DisplayFormat.Pieces(summary.Count)</MudText>
+                    <div class="l2p-jewel-title">
+                        <MudText Typo="Typo.subtitle1" HtmlTag="h2" Class="l2p-jewel-name">@summary.Type.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@(held ? DisplayFormat.Pieces(summary.Count) : "Zatím nikdo")</MudText>
                     </div>
                 </div>
-                @if (summary.Holders.Count == 0)
-                {
-                    <EmptyState Text="Zatím nikdo" Compact="true" />
-                }
-                else
+                @if (held)
                 {
                     <div class="l2p-jewel-holders">
                         @foreach (var holder in summary.Holders)
@@ -62,6 +67,12 @@ else
     private bool _error;
 
     protected override Task OnInitializedAsync() => LoadAsync();
+
+    private static string Summary(IReadOnlyList<JewelTypeSummary> gallery) => DisplayFormat.JewelGallerySummary(
+        gallery.Sum(s => s.Count),
+        gallery.SelectMany(s => s.Holders).Select(h => h.Player.UserId).Distinct().Count(),
+        gallery.Count(s => s.Count > 0),
+        gallery.Count);
 
     private static string HolderText(JewelHolder holder)
     {
