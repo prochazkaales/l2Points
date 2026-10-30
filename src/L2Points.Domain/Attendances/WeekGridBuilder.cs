@@ -57,7 +57,7 @@ public static class WeekGridBuilder
                     var isChecked = checkedEntries.Contains(new AttendanceEntry(activity.Id, c.Date, c.Slot));
                     var editable = AttendanceRules.CanEdit(c.Date, today, trackingStart, isAdmin)
                                    && (c.IsScheduled || isChecked);
-                    return new WeekGridCell(c.Date, c.Slot, c.TimeUtc, c.IsScheduled, isChecked, editable);
+                    return new WeekGridCell(c.Date, c.Slot, c.TimeUtc, c.IsScheduled, isChecked, editable, c.Date >= trackingStart);
                 })
                 .ToList();
 

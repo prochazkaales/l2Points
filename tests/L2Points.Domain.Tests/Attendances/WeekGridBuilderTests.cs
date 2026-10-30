@@ -17,8 +17,9 @@ public class WeekGridBuilderTests
         IReadOnlyCollection<AttendanceEntry>? attendances = null,
         Week? week = null,
         DateOnly? today = null,
-        bool isAdmin = false) =>
-        WeekGridBuilder.Build(activities, week ?? TestWeek, attendances ?? [], today ?? Today, TrackingStart, isAdmin);
+        bool isAdmin = false,
+        DateOnly? trackingStart = null) =>
+        WeekGridBuilder.Build(activities, week ?? TestWeek, attendances ?? [], today ?? Today, trackingStart ?? TrackingStart, isAdmin);
 
     private static WeekGridRow Row(WeekGrid grid, string code) =>
         grid.Rows.Single(r => r.Activity.Code == code);
@@ -97,6 +98,23 @@ public class WeekGridBuilderTests
         Assert.Equal(
             [true, true, true, false, false, false, false],
             cells.Select(c => c.IsEditable));
+    }
+
+    [Fact]
+    public void Days_before_tracking_start_are_not_tracked_even_when_checked()
+    {
+        var activities = StatsTestCatalog.Create();
+        var queenAnt = activities.ByCode("QueenAnt");
+        var attendances = new[] { new AttendanceEntry(queenAnt.Id, new DateOnly(2026, 10, 27), EventSlot.None) };
+
+        var cells = Row(Build(activities, attendances, isAdmin: true, trackingStart: new DateOnly(2026, 10, 28)), "QueenAnt").Cells;
+
+        Assert.Equal(
+            [false, false, true, true, true, true, true],
+            cells.Select(c => c.IsTracked));
+        var checkedCell = cells.Single(c => c.Date == new DateOnly(2026, 10, 27));
+        Assert.True(checkedCell.IsChecked);
+        Assert.False(checkedCell.IsEditable);
     }
 
     [Fact]

@@ -13,6 +13,9 @@ public enum GridCellState
 
     /// <summary>The whole grid is view-only (read-only page or loading); drawn like a normal cell, without interaction.</summary>
     ReadOnly,
+
+    /// <summary>The day is before the tracking start and never counts; drawn as a dash, even when checked.</summary>
+    Untracked,
 }
 
 public static class GridCellStates
@@ -23,6 +26,11 @@ public static class GridCellStates
     /// </summary>
     public static GridCellState For(bool gridReadOnly, WeekGridCell cell, bool limitReached)
     {
+        if (!cell.IsTracked)
+        {
+            return GridCellState.Untracked;
+        }
+
         if (gridReadOnly)
         {
             return GridCellState.ReadOnly;

@@ -6,8 +6,16 @@ namespace L2Points.Web.Tests.Attendance;
 
 public class GridCellStatesTests
 {
-    private static WeekGridCell Cell(bool scheduled, bool isChecked, bool editable) =>
-        new(new DateOnly(2026, 10, 29), EventSlot.None, null, scheduled, isChecked, editable);
+    private static WeekGridCell Cell(bool scheduled, bool isChecked, bool editable, bool tracked = true) =>
+        new(new DateOnly(2026, 10, 29), EventSlot.None, null, scheduled, isChecked, editable, tracked);
+
+    [Fact]
+    public void DayBeforeTrackingStart_IsUntracked_EvenWhenChecked() =>
+        Assert.Equal(GridCellState.Untracked, GridCellStates.For(false, Cell(scheduled: true, isChecked: true, editable: false, tracked: false), false));
+
+    [Fact]
+    public void DayBeforeTrackingStart_IsUntracked_InReadOnlyGrid() =>
+        Assert.Equal(GridCellState.Untracked, GridCellStates.For(true, Cell(scheduled: true, isChecked: true, editable: false, tracked: false), false));
 
     [Fact]
     public void ReadOnlyGrid_IsReadOnly_EvenWhenCellIsLocked() =>

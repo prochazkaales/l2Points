@@ -282,6 +282,15 @@
     color: var(--l2p-muted);
 }
 
+/* A day before the tracking start: a muted dash instead of the checkboxes, so an old check does not read as counted. */
+.l2p-grid-untracked {
+    display: inline-block;
+    padding: var(--l2p-space-1) 0;
+    font-size: var(--l2p-font-md);
+    color: var(--l2p-muted);
+    cursor: default;
+}
+
 /* A view-only grid (player detail, or while the grid reloads) is not diluted: only the interaction is gone. */
 .l2p-grid-readonly .l2p-grid-check ::deep .mud-checkbox,
 .l2p-grid-readonly .l2p-grid-check ::deep .mud-checkbox .mud-icon-button,
@@ -339,6 +348,14 @@
 
 .l2p-legend-blocked {
     border: var(--l2p-line-width-strong) dashed color-mix(in srgb, var(--l2p-muted) 50%, transparent);
+}
+
+.l2p-legend-untracked {
+    display: inline-block;
+    width: 14px;
+    margin-right: 0.4rem;
+    text-align: center;
+    color: var(--l2p-muted);
 }
 
 @media (max-width: 599.98px) {

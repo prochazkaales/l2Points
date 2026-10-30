@@ -43,10 +43,19 @@
                                 <th class="l2p-grid-boss" scope="row">@row.Activity.Name</th>
                                 @foreach (var day in Days)
                                 {
+                                    var dayCells = row.Cells.Where(c => c.Date == day).ToList();
                                     <td class="l2p-grid-cell @DayClass(day)">
-                                        @foreach (var cell in row.Cells.Where(c => c.Date == day))
+                                        @if (dayCells.Count > 0 && dayCells.All(c => GridCellStates.For(ReadOnly, c, limitReached) == GridCellState.Untracked))
                                         {
-                                            @RenderCell(row.Activity, cell, limitReached)
+                                            @* One dash for the whole day (both chaotic slots): it does not count, even when checked. *@
+                                            <span class="l2p-grid-untracked" title="Před začátkem evidence, nepočítá se">–</span>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var cell in dayCells)
+                                            {
+                                                @RenderCell(row.Activity, cell, limitReached)
+                                            }
                                         }
                                     </td>
                                 }
@@ -66,6 +75,7 @@
         <li><span class="l2p-legend-box l2p-legend-unchecked" aria-hidden="true"></span>nezaškrtnuto</li>
         <li><span class="l2p-legend-box l2p-legend-locked" aria-hidden="true"></span>zaškrtnuto, nejde měnit</li>
         <li><span class="l2p-legend-box l2p-legend-blocked" aria-hidden="true"></span>nejde přidat (zamčený den, mimo rozpis, limit)</li>
+        <li><span class="l2p-legend-untracked" aria-hidden="true">–</span>před začátkem evidence, nepočítá se</li>
         <li><span class="l2p-grid-dot l2p-grid-dot-evening" aria-hidden="true"></span>V – Večerní</li>
         <li><span class="l2p-grid-dot l2p-grid-dot-morning" aria-hidden="true"></span>R – Ranní</li>
     </ul>
