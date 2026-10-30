@@ -17,6 +17,11 @@
 
 @if (_userId is not null)
 {
+    @if (_isReader)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-3">Jsi přihlášen jako čtenář. Účast tady nejde zapisovat.</MudAlert>
+    }
+
     <div class="mb-2">
         <WeekNavigator Week="_week" Today="_today" WeekChanged="OnWeekChanged" />
     </div>
@@ -49,6 +54,7 @@
     private Week _week;
     private string? _userId;
     private bool _isAdmin;
+    private bool _isReader;
     private bool _summaryError;
     // Only the result of the latest summary request is applied.
     private int _summaryVersion;
@@ -69,6 +75,7 @@
             var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             _userId = UserManager.GetUserId(state.User);
             _isAdmin = state.User.IsInRole(Roles.Admin);
+            _isReader = state.User.IsInRole(Roles.Reader);
             changed = true;
         }
 

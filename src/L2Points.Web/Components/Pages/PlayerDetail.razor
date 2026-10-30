@@ -43,6 +43,10 @@ else
             {
                 <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
             }
+            @if (_detail.IsReader)
+            {
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">čtenář</MudChip>
+            }
         </TitleSuffix>
     </PageHeader>
 

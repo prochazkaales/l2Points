@@ -135,12 +135,16 @@ Ring of Queen Ant, Ring of Core, Earring of Orfen, Earring of Zaken, Necklace of
 
 ### 3.7 Uživatelé a role
 
-- Role **Admin**, **Player** a **SuperAdmin**. Registrace zvenku neexistuje.
+- Role **Admin**, **Player**, **SuperAdmin** a **Reader** (viz níže). Registrace zvenku neexistuje.
 - Admin zakládá hráče: **login + nick**. **Heslo vygeneruje aplikace**, zobrazí se adminovi jednou a admin ho předá.
 - Hráč si po přihlášení může heslo změnit.
 - Admin může: resetovat heslo (nové vygenerované), **deaktivovat** hráče (nemůže se přihlásit, historie zůstává, v žebříčku je skrytý s možností zobrazit neaktivní) a **smazat** hráče (smaže se i jeho účast a šperky, s potvrzením).
 - Admin z konfigurace (env proměnné `Admin__UserName`, `Admin__Password`, `Admin__Nick`) se vytvoří při startu, pokud neexistuje. Je to **super admin** (role SuperAdmin, právě jeden, v UI se nepřiděluje): při každém startu je aktivní a má role Admin, Player a SuperAdmin, jeho existující heslo se nemění. Při změně `Admin__UserName` přejde role SuperAdmin na nový účet.
 - **Admin je zároveň hráč** *(moje volba)*: má svůj týden, objevuje se v žebříčku a počítají se mu body. Role Admin je jen přídavek. Roli Admin uděluje a odebírá na stránce hráčů **jen super admin** *(změna na žádost uživatele)*. Admini na sebe navzájem nesahají: běžný admin nemůže jinému adminovi (ani super adminovi) deaktivovat účet, smazat ho ani resetovat heslo, super admina nemůže omezit nikdo. Super admin smí tyto akce u všech ostatních. Nick, „aktivní od“, účast a šperky může admin upravit komukoli *(změna na žádost uživatele)*. Žádný admin nemůže deaktivovat ani smazat sám sebe ani si odebrat roli Admin.
+
+#### Role Čtenář
+
+Čtenář je účet jen ke čtení, bez účasti a bez bodů: vidí všechny stránky, ale nic nezapisuje, ani si nezmění heslo. Admin ho zakládá nebo přepíná z hráče a může ho ve statistikách skrýt („Zobrazovat ve statistikách“). Čtenář nikdy není admin. Rozhodnutí, rozsah a model jsou v `docs/superpowers/specs/2026-10-30-reader-role-design.md`.
 
 ## 4. Stránky
 
