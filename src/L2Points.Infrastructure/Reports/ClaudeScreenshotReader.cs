@@ -53,7 +53,7 @@ public sealed class ClaudeScreenshotReader(IOptions<AnthropicOptions> options) :
                             Source = new Base64ImageSource
                             {
                                 Data = Convert.ToBase64String(image),
-                                MediaType = ToMediaType(mediaType),
+                                MediaType = ToMediaType(DetectMediaType(image, mediaType)),
                             },
                         },
                         new TextBlockParam { Text = string.Format(PromptTemplate, string.Join(", ", knownNicks)) },
@@ -143,6 +143,27 @@ public sealed class ClaudeScreenshotReader(IOptions<AnthropicOptions> options) :
         ["required"] = JsonSerializer.SerializeToElement(new[] { "panelFound", "nicks" }),
         ["additionalProperties"] = JsonSerializer.SerializeToElement(false),
     };
+
+    private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    private static readonly byte[] JpegSignature = [0xFF, 0xD8, 0xFF];
+
+    /// <summary>
+    /// The image type from the file signature; falls back to <paramref name="declared"/> for unknown bytes. Discord's declared
+    /// content type does not always match the file (a PNG declared as image/webp), and the API rejects such a mismatch.
+    /// </summary>
+    internal static string DetectMediaType(byte[] image, string declared)
+    {
+        ReadOnlySpan<byte> bytes = image;
+        if (bytes.StartsWith(PngSignature))
+            return "image/png";
+        if (bytes.StartsWith(JpegSignature))
+            return "image/jpeg";
+        if (bytes.StartsWith("GIF8"u8))
+            return "image/gif";
+        if (bytes.Length >= 12 && bytes.StartsWith("RIFF"u8) && bytes[8..12].SequenceEqual("WEBP"u8))
+            return "image/webp";
+        return declared;
+    }
 
     private static MediaType ToMediaType(string mediaType) => mediaType.ToLowerInvariant() switch
     {
