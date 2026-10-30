@@ -97,11 +97,21 @@
         display: none;
     }
 
+    /* Place and nick take only what they need, so the points and the five percentages get room for their badges and
+       the sort arrow instead of being squeezed against each other. */
     .l2p-rank-table ::deep table {
-        min-width: 34rem;
+        min-width: 38rem;
+    }
+
+    .l2p-rank-table ::deep tr > :nth-child(1) {
+        width: 2.25rem;
     }
 
     .l2p-rank-table ::deep tr > :nth-child(2) {
-        width: 9rem;
+        width: 7rem;
+    }
+
+    .l2p-rank-table ::deep tr > :nth-child(3) {
+        width: 5rem;
     }
 }

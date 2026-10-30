@@ -132,8 +132,8 @@ public class DisplayFormatTests
         Assert.Equal("Týdně v sobotu 21:00", DisplayFormat.ScheduleLabel(catalog["Baium"], WinterWeek));
         Assert.Equal("Týdně v neděli 19:00", DisplayFormat.ScheduleLabel(catalog["CastleSiege"], WinterWeek));
         Assert.Equal("Ob týden v neděli", DisplayFormat.ScheduleLabel(catalog["Antharas"], WinterWeek));
-        Assert.Equal("Rozpis: 6 spawnů týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticZaken"], WinterWeek));
-        Assert.Equal("Rozpis: 4 spawny týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticFrintezza"], WinterWeek));
+        Assert.Equal("6 spawnů týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticZaken"], WinterWeek));
+        Assert.Equal("4 spawny týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticFrintezza"], WinterWeek));
     }
 
     [Fact]
@@ -192,11 +192,11 @@ public class DisplayFormatTests
     }
 
     [Theory]
-    [InlineData(0, "Rozpis: 0 spawnů týdně")]
-    [InlineData(1, "Rozpis: 1 spawn týdně")]
-    [InlineData(2, "Rozpis: 2 spawny týdně")]
-    [InlineData(4, "Rozpis: 4 spawny týdně")]
-    [InlineData(5, "Rozpis: 5 spawnů týdně")]
+    [InlineData(0, "0 spawnů týdně")]
+    [InlineData(1, "1 spawn týdně")]
+    [InlineData(2, "2 spawny týdně")]
+    [InlineData(4, "4 spawny týdně")]
+    [InlineData(5, "5 spawnů týdně")]
     public void Schedule_label_slotted_czech_plural(int spawns, string expected)
     {
         var activity = new Activity { ScheduleType = ScheduleType.Slotted };
