@@ -44,8 +44,8 @@
 
 /* A type nobody holds keeps its place but steps back: a dimmed, desaturated icon. Text keeps its colour for contrast. */
 .l2p-jewel-gallery ::deep .l2p-jewel-card-empty .l2p-jewel-big img {
-    filter: grayscale(0.85);
-    opacity: 0.45;
+    filter: saturate(0.3);
+    opacity: 0.7;
 }
 
 .l2p-jewel-holders {
