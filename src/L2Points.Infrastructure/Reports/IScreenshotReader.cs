@@ -5,7 +5,16 @@ namespace L2Points.Infrastructure.Reports;
 public sealed record ScreenshotReadResult(bool PanelFound, IReadOnlyList<string> Nicks);
 
 /// <summary>The screenshot could not be processed (service failure, unreadable response).</summary>
-public sealed class ScreenshotReadException(string message) : Exception(message);
+public sealed class ScreenshotReadException : Exception
+{
+    public ScreenshotReadException(string message) : base(message)
+    {
+    }
+
+    public ScreenshotReadException(string message, Exception inner) : base(message, inner)
+    {
+    }
+}
 
 /// <summary>Reads the party member nicks from a game screenshot.</summary>
 public interface IScreenshotReader

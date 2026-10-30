@@ -1,4 +1,5 @@
 using L2Points.Infrastructure.Reports;
+using Microsoft.Extensions.Options;
 
 namespace L2Points.Infrastructure.Tests;
 
@@ -47,4 +48,28 @@ public class ClaudeScreenshotReaderTests
         Assert.Equal("claude-haiku-5-5", new AnthropicOptions().Model);
         Assert.Equal("Anthropic", AnthropicOptions.SectionName);
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public async Task Read_without_api_key_throws(string? apiKey)
+    {
+        var reader = CreateReader(apiKey);
+
+        await Assert.ThrowsAsync<ScreenshotReadException>(() =>
+            reader.ReadPartyMembersAsync([1, 2, 3], "image/png", ["A"]));
+    }
+
+    [Fact]
+    public async Task Read_with_unsupported_media_type_throws_before_any_request()
+    {
+        var reader = CreateReader("test-key");
+
+        await Assert.ThrowsAsync<ScreenshotReadException>(() =>
+            reader.ReadPartyMembersAsync([1, 2, 3], "application/pdf", ["A"]));
+    }
+
+    private static ClaudeScreenshotReader CreateReader(string? apiKey) =>
+        new(Options.Create(new AnthropicOptions { ApiKey = apiKey }));
 }

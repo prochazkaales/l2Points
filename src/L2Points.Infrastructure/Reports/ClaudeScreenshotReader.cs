@@ -61,14 +61,15 @@ public sealed class ClaudeScreenshotReader(IOptions<AnthropicOptions> options) :
         {
             response = await _client.Value.Messages.Create(parameters, ct);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
         catch (Exception ex)
         {
-            // Only the exception type is carried over, the message could contain request details.
-            throw new ScreenshotReadException($"The screenshot reading service failed ({ex.GetType().Name}).");
+            // The user-facing message is generic; the cause (including HTTP timeouts, which surface as
+            // TaskCanceledException while the caller's token is not cancelled) is kept as the inner exception for logs.
+            throw new ScreenshotReadException($"The screenshot reading service failed ({ex.GetType().Name}).", ex);
         }
 
         if (response.StopReason != StopReason.EndTurn)
