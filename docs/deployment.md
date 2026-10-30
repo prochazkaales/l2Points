@@ -14,7 +14,7 @@ Všechno leží v jedné resource group `rg-l2points`, výchozí region je Polan
 | Container Apps environment | `cae-l2points` | consumption, bez VNet, logy do Log Analytics |
 | Azure SQL server | `sql-l2points-<suffix>` | TLS 1.2+, smíšená autentizace: SQL login `l2pointsadmin` s náhodným heslem (používá ho aplikace) a Entra admin (účet, který spustil `deploy.ps1`); firewall pravidlo „Allow Azure services“ |
 | Azure SQL databáze | `sqldb-l2points` | Basic, 5 DTU, 2 GB, lokálně redundantní zálohy, point-in-time obnova 7 dní |
-| Key Vault | `kv-l2points-<suffix>` | RBAC režim; tajemství `sql-connection-string` a `admin-password`, klíč `dataprotection` pro šifrování Data Protection klíčů |
+| Key Vault | `kv-l2points-<suffix>` | RBAC režim; tajemství `sql-connection-string` a `admin-password` (a po zapnutí Discord bota `discord-bot-token` a `anthropic-api-key`), klíč `dataprotection` pro šifrování Data Protection klíčů |
 | Log Analytics | `log-l2points` | retence 30 dní, denní strop ingestu 0,1 GB |
 | Identita aplikace | `id-l2points-app` | user-assigned; role Key Vault Secrets User a Key Vault Crypto User na Key Vaultu |
 | Identita GitHub Actions | `id-l2points-github` | federované přihlášení (OIDC, žádný klientský secret) jen pro větev `main` repa `prochazkaales/l2Points` (subject `repo:prochazkaales@142387925/l2Points@1437856239:ref:refs/heads/main`); role Contributor jen na `rg-l2points` |
@@ -33,6 +33,7 @@ Nastavuje ji `main.bicep`, ručně se nic nenastavuje.
 | `DataProtection__KeyVaultKeyUri` | klíč v Key Vaultu, kterým se šifrují Data Protection klíče uložené v DB. Bez něj se klíče ukládají nešifrované a aplikace při startu zaloguje varování |
 | `Database__CreateIfMissing=false` | aplikace nikdy sama nevytvoří chybějící databázi. Aplikace se připojuje jako admin SQL serveru, takže holé `CREATE DATABASE` by vytvořilo drahou databázi ve výchozím tarifu a vyčerpalo kredit. Chybějící `sqldb-l2points` místo toho zastaví start s jasnou chybou. Bez proměnné (lokálně, `docker-compose.yml`, smoke test) se prázdná databáze vytvoří |
 | `ForwardedHeaders__TrustAllProxies=true` | viz níže |
+| `Discord__ApplicationId`, `Discord__PublicKey`, `Discord__GuildId`, `Discord__BotToken`, `Anthropic__ApiKey`, `Anthropic__Model` | jen když je zapnutý Discord bot, viz [Discord bot](#discord-bot). Token bota a klíč Claude API jsou secrety z Key Vaultu, `Anthropic__Model` je volitelný |
 | `AZURE_CLIENT_ID` | klient identity aplikace, aby `DefaultAzureCredential` použil správnou user-assigned identitu |
 
 **`ForwardedHeaders__TrustAllProxies`** je potřeba vždy, když aplikace běží za reverzní proxy (Azure ingress, nginx apod.). Bez ní ASP.NET Core důvěřuje jen loopbacku, hlavičky `X-Forwarded-For` a `X-Forwarded-Proto` ignoruje a aplikace neví, že uživatel přišel přes HTTPS. IP ingressu v Container Apps není pevná, proto se důvěřuje všem proxy (`ForwardLimit` zůstává 1). Je to bezpečné jen proto, že ingress je jediná cesta ke kontejneru. Lokálně a v `docker-compose.yml` proxy není a proměnná se nenastavuje.
@@ -87,7 +88,7 @@ Pokud předplatné ve výchozím regionu odmítne vytvořit SQL server nebo jin�
 Push na `main` spustí workflow `CI/CD`:
 
 1. `build-test` – `dotnet build` a `dotnet test` (běží na každém pushi a pull requestu, na všech větvích).
-2. `image` – jen push na `main`: sestaví image, projede ho smoke testem proti SQL Serveru v kontejneru (health live/ready, přihlašovací stránka, ikona šperku s rozlišením velikosti písmen, tzdata a ICU, žádné chyby v logu) a teprve pak ho pushne do GHCR. Nasazuje se přesně ten image, který prošel testem.
+2. `image` – jen push na `main`: sestaví image, projede ho smoke testem proti SQL Serveru v kontejneru (health live/ready, přihlašovací stránka, ikona šperku s rozlišením velikosti písmen, `POST /discord/interactions` bez konfigurace vrací 404, tzdata a ICU, žádné chyby v logu) a teprve pak ho pushne do GHCR. Nasazuje se přesně ten image, který prošel testem.
 3. `deploy` – přihlásí se do Azure přes OIDC, `az containerapp update` nastaví image `sha-<commit>`, počká, až nejnovější revize běží a je zdravá s očekávaným image, a nakonec čeká na `200` z `/health/ready`. Pokud nejsou nastavené GitHub variables, job se přeskočí.
 
 Při přepnutí revize se otevřené Blazor circuity odpojí a prohlížeč nabídne obnovení. Přihlášení zůstane. Pokud nasazení selže, stará revize dál obsluhuje provoz a workflow je červený.
@@ -102,7 +103,7 @@ Migrace databáze se tím nevrací; starší kód musí s novějším schématem
 
 Upravit `infra/main.bicep` a znovu spustit `pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id>`. Skript pozná, že `ca-l2points` už existuje, a spustí aktualizaci:
 
-- **zachová:** hesla (SQL i super admina, v Key Vaultu zůstanou), budget, aktuální image aplikace, login a nick super admina (parametry `-AdminUserName`, `-AdminNick` a `-BudgetEmail` se ignorují s varováním), Data Protection klíč (znovu se nevytváří),
+- **zachová:** hesla (SQL i super admina, v Key Vaultu zůstanou), tajemství Discord bota (token a klíč Claude API, pokud se nepředá `-SetDiscordSecrets`), Discord hodnoty a model (čtou se z běžící aplikace), budget, aktuální image aplikace, login a nick super admina (parametry `-AdminUserName`, `-AdminNick` a `-BudgetEmail` se ignorují s varováním), Data Protection klíč (znovu se nevytváří),
 - **změní:** vše ostatní podle šablony.
 
 Entra admin SQL serveru se nastavuje jen při vytvoření serveru (vlastnost `administrators` se při aktualizaci spolehlivě neaplikuje), opakované spuštění jiným uživatelem ho tedy nepřepíše. Změna Entra admina:
@@ -111,6 +112,46 @@ az sql server ad-admin create -g rg-l2points --server-name <sql-server-name> --d
 ```
 
 Rozpočet se po zřízení mění v portálu (Cost Management > Budgets), skript ho při aktualizaci nechává být. Stejný skript lze spustit i opakovaně bez změny šablony, nic se nezmění.
+
+## Discord bot
+
+Bot `/report` čte screen party a zapisuje účast na epicích (návrh: [docs/superpowers/specs/2026-10-30-discord-report-bot-design.md](superpowers/specs/2026-10-30-discord-report-bot-design.md)). Běží uvnitř aplikace, žádná nová služba v Azure není. Discord volá endpoint `POST /discord/interactions` aplikace a na screen se aplikace dívá přes Claude API. Dokud konfigurace není kompletní (`Discord__ApplicationId`, `Discord__PublicKey`, `Discord__GuildId`, `Discord__BotToken` a `Anthropic__ApiKey`), je funkce vypnutá: endpoint vrací 404 a nic se nevolá. Aplikace bez ní (lokální vývoj, testy, smoke test v CI) běží jako dřív.
+
+Tajemství (token bota, klíč Claude API) leží v Key Vaultu jako `discord-bot-token` a `anthropic-api-key`, Container App na ně odkazuje stejně jako na ostatní (versionless URI, identita aplikace). Veřejný klíč, Application ID a Guild ID nejsou tajné a jsou přímo v proměnných Container App.
+
+Ruční kroky, v tomto pořadí:
+
+1. **Discord Developer Portal** ([discord.com/developers/applications](https://discord.com/developers/applications)): New Application, záložka Bot (přidat bota, Reset Token a token zkopírovat), na General Information zkopírovat Application ID a Public Key. Guild ID získat v Discordu (Nastavení > Pokročilé > Vývojářský režim, pak pravé tlačítko na server > Kopírovat ID serveru).
+2. **console.anthropic.com**: založit API klíč, nahrát kredit a v nastavení organizace nastavit měsíční limit útraty (Limits). Odhad při ~10 screenech denně je jednotky dolarů měsíčně i se Sonnetem.
+3. **Nasadit konfiguraci:**
+   ```powershell
+   pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id> `
+       -DiscordApplicationId <application-id> -DiscordPublicKey <public-key> -DiscordGuildId <guild-id> `
+       -SetDiscordSecrets
+   ```
+   Přepínač `-SetDiscordSecrets` se zeptá na token bota a klíč Claude API (skrytý vstup), uloží je do Key Vaultu a nasadí aplikaci s novou konfigurací. Tajemství nikdy nejdou na příkazovou řádku, jen do dočasného souboru s parametry, který se po nasazení smaže. Při prvním zapnutí je přepínač povinný (jinak by revize odkazovala na neexistující tajemství a nenastartovala, skript proto skončí s chybou). Při pozdějších spuštěních skriptu se Discord hodnoty přečtou z běžící aplikace a tajemství v Key Vaultu zůstanou, takže běžná aktualizace infrastruktury bota nevypne. `-SetDiscordSecrets` je potřeba jen pro výměnu tokenu nebo klíče.
+4. **Interactions Endpoint URL**: v Developer Portalu na General Information nastavit `https://ca-l2points.graytree-049f5bba.polandcentral.azurecontainerapps.io/discord/interactions` a uložit. Discord při uložení pošle PING podepsaný Ed25519, aplikace proto musí už běžet s konfigurací z kroku 3 (správný Public Key); jinak uložení selže.
+5. **Pozvat aplikaci na server**: OAuth2 > URL Generator, scope `applications.commands` (příkaz se při startu aplikace zaregistruje jako guild command přes REST API s tokenem bota; registrace při selhání jen zaloguje varování a start nezastaví). Otevřít vygenerovanou adresu a vybrat náš server.
+6. **Oprávnění příkazu**: příkaz je ve výchozím stavu vidět jen správcům serveru. V Discordu: Nastavení serveru > Integrace > aplikace > `/report` a povolit vybrané role a kanály.
+
+Aplikace sama oprávnění nekontroluje, vynucuje je Discord. Interakce z jiného serveru, než je `Discord__GuildId`, a z DM se odmítnou.
+
+**Změna modelu.** Výchozí je `claude-haiku-5-5` (levný, ~0,2 USD měsíčně). Přesnější `claude-sonnet-5-5` (~4 USD měsíčně) se zapne jedním spuštěním skriptu, které model předá do `Anthropic__Model` (ostatní Discord hodnoty skript přečte z běžící aplikace):
+```powershell
+pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id> -AnthropicModel claude-sonnet-5-5
+```
+Návrat na výchozí model: `az containerapp update -g rg-l2points -n ca-l2points --remove-env-vars Anthropic__Model`, a protože další spuštění `deploy.ps1` hodnotu čte z běžící aplikace, odebraná hodnota se nevrátí.
+
+**Dohledání reportu.** Každý report je v tabulce `DiscordReports` (kdo ho poslal, kanál, čas, stav `Status`: 0 zpracovává se, 1 čeká, 2 zapisuje se, 3 zapsáno, 4 zrušeno, 5 vypršelo, 6 chyba; `StateJson` obsahuje přečtené nicky, párování, zvolené datum a události a výsledek). Účasti vzniklé reportem mají `CreatedByUserId = 'discord-report:<id>'`, kde `<id>` je `Id` reportu bez pomlček:
+```sql
+SELECT Id, DiscordUserName, CreatedAtUtc, Status, StateJson FROM DiscordReports ORDER BY CreatedAtUtc DESC;
+
+SELECT r.Id AS ReportId, r.DiscordUserName, a.*
+FROM Attendances a
+JOIN DiscordReports r ON a.CreatedByUserId = 'discord-report:' + LOWER(REPLACE(CONVERT(varchar(36), r.Id), '-', ''))
+ORDER BY r.CreatedAtUtc DESC;
+```
+Přístup do databáze viz níže. Report lze zrušit nebo zapsané účasti opravit jako každou jinou účast v aplikaci (Admin > Oprava účasti).
 
 ## Heslo super admina
 
