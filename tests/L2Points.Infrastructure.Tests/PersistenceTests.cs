@@ -49,6 +49,64 @@ public class PersistenceTests
         (await db.Activities.SingleAsync(a => a.Code == code)).Id;
 
     [Fact]
+    public async Task ShowInStats_FalseRoundTrips()
+    {
+        await using var provider = TestServices.Create();
+        string id;
+        using (var scope = provider.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var user = new AppUser
+            {
+                UserName = "reader",
+                Nick = "reader",
+                ActiveFrom = new DateOnly(2026, 10, 26),
+                CreatedAt = new DateTime(2026, 10, 28, 10, 0, 0, DateTimeKind.Utc),
+                ShowInStats = false,
+            };
+            Assert.True((await userManager.CreateAsync(user, "Password1")).Succeeded);
+            id = user.Id;
+        }
+
+        await using var db = NewContext(provider);
+        Assert.False((await db.Users.SingleAsync(u => u.Id == id)).ShowInStats);
+    }
+
+    [Fact]
+    public async Task ShowInStats_DefaultsToTrue()
+    {
+        Assert.True(new AppUser().ShowInStats);
+
+        await using var provider = TestServices.Create();
+        var id = await CreateUserAsync(provider, "player");
+
+        await using var db = NewContext(provider);
+        Assert.True((await db.Users.SingleAsync(u => u.Id == id)).ShowInStats);
+    }
+
+    [Fact]
+    public async Task PlayerQueries_ReaderAndHiddenHelpers_ReflectRoleAndShowInStats()
+    {
+        await using var provider = TestServices.Create();
+        var from = new DateOnly(2026, 10, 26);
+        var player = await TestData.CreatePlayerAsync(provider, "player", from);
+        var hiddenReader = await TestData.CreateReaderAsync(provider, "reader", from, showInStats: false);
+        var countedReader = await TestData.CreateReaderAsync(provider, "counted", from, showInStats: true);
+
+        await using var db = NewContext(provider);
+
+        Assert.False(await db.IsReaderAsync(player.Id));
+        Assert.True(await db.IsReaderAsync(hiddenReader.Id));
+        Assert.True(await db.IsReaderAsync(countedReader.Id));
+        Assert.False(await db.IsReaderAsync("missing"));
+
+        Assert.False(await db.IsHiddenFromStatsAsync(player.Id));
+        Assert.True(await db.IsHiddenFromStatsAsync(hiddenReader.Id));
+        Assert.False(await db.IsHiddenFromStatsAsync(countedReader.Id));
+        Assert.False(await db.IsHiddenFromStatsAsync("missing"));
+    }
+
+    [Fact]
     public async Task Attendance_unique_per_user_activity_date_slot()
     {
         await using var provider = TestServices.Create();

@@ -40,6 +40,51 @@ public class IdentitySeederTests
     }
 
     [Fact]
+    public async Task Seed_CreatesReaderRole()
+    {
+        await using var provider = TestServices.Create(FullAdmin());
+
+        await SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        Assert.True(await roleManager.RoleExistsAsync(Roles.Reader));
+    }
+
+    [Fact]
+    public async Task Seed_ConfigAdminWithReaderRole_IsNormalised()
+    {
+        await using var provider = TestServices.Create(FullAdmin());
+        await SeedAsync(provider);
+
+        using (var scope = provider.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var admin = await userManager.FindByNameAsync("admin");
+            Assert.NotNull(admin);
+            Assert.True((await userManager.AddToRoleAsync(admin, Roles.Reader)).Succeeded);
+            Assert.True((await userManager.RemoveFromRoleAsync(admin, Roles.Player)).Succeeded);
+            admin.ShowInStats = false;
+            Assert.True((await userManager.UpdateAsync(admin)).Succeeded);
+        }
+
+        await SeedAsync(provider);
+
+        using (var scope = provider.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var admin = await userManager.FindByNameAsync("admin");
+            Assert.NotNull(admin);
+            var roles = await userManager.GetRolesAsync(admin);
+            Assert.Contains(Roles.Admin, roles);
+            Assert.Contains(Roles.Player, roles);
+            Assert.Contains(Roles.SuperAdmin, roles);
+            Assert.DoesNotContain(Roles.Reader, roles);
+            Assert.True(admin.ShowInStats);
+        }
+    }
+
+    [Fact]
     public async Task Seed_is_idempotent()
     {
         await using var provider = TestServices.Create(FullAdmin());

@@ -12,13 +12,13 @@ public class IdentitySeeder(
 {
     /// <summary>
     /// Ensures the roles and the config admin (Admin__UserName): it is always active, has the roles
-    /// Admin, Player and SuperAdmin, and is the only super admin. Its existing password is never changed.
+    /// Admin, Player and SuperAdmin (never Reader), is shown in stats, and is the only super admin. Its existing password is never changed.
     /// </summary>
     public async Task SeedAsync(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
 
-        foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin })
+        foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin, Roles.Reader })
         {
             if (await roleManager.RoleExistsAsync(role))
             {
@@ -70,6 +70,20 @@ public class IdentitySeeder(
             admin.IsActive = true;
             admin.DeactivatedAt = null;
             ThrowIfFailed(await userManager.UpdateAsync(admin), "Reactivating admin account failed");
+        }
+
+        // The config admin is always a counted player, never a reader.
+        if (await userManager.IsInRoleAsync(admin, Roles.Reader))
+        {
+            ThrowIfFailed(
+                await userManager.RemoveFromRoleAsync(admin, Roles.Reader),
+                $"Removing role '{Roles.Reader}' from admin failed");
+        }
+
+        if (!admin.ShowInStats)
+        {
+            admin.ShowInStats = true;
+            ThrowIfFailed(await userManager.UpdateAsync(admin), "Showing admin in stats failed");
         }
 
         foreach (var role in new[] { Roles.Admin, Roles.Player, Roles.SuperAdmin })
