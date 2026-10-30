@@ -12,8 +12,9 @@ namespace L2Points.Infrastructure.Services;
 public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
     /// <summary>
-    /// Builds the grid for <paramref name="userId"/>. A non-admin only ever loads their own grid (<see cref="SetAttendanceAsync"/>
-    /// forbids other targets), so for a non-admin the grid is fully locked when that user is a read-only reader.
+    /// Builds the grid for <paramref name="userId"/>. For a non-admin caller the lock follows the reader as viewer: the grid is fully
+    /// locked when <paramref name="userId"/> is a reader. The editable grid is only loaded for one's own account when not admin; other
+    /// non-admin callers (e.g. the player detail) render it read-only. <see cref="SetAttendanceAsync"/> enforces writes independently.
     /// </summary>
     public async Task<WeekGrid> GetWeekGridAsync(string userId, Week week, bool isAdmin, CancellationToken ct = default)
     {
