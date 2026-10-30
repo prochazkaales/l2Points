@@ -15,8 +15,14 @@ public sealed class ClaudeScreenshotReader(IOptions<AnthropicOptions> options) :
         Known players: {0}
         """;
 
-    // Created on first use so that building the container never needs the API key.
-    private readonly Lazy<AnthropicClient> _client = new(() => new AnthropicClient { ApiKey = options.Value.ApiKey });
+    // Created on first use so that building the container never needs the API key. The SDK defaults (10 min, 2 retries)
+    // would hold up the serial job queue far too long; the worker also cuts off a whole job after 2 min.
+    private readonly Lazy<AnthropicClient> _client = new(() => new AnthropicClient
+    {
+        ApiKey = options.Value.ApiKey,
+        Timeout = TimeSpan.FromSeconds(60),
+        MaxRetries = 1,
+    });
 
     public async Task<ScreenshotReadResult> ReadPartyMembersAsync(
         byte[] image, string mediaType, IReadOnlyList<string> knownNicks, CancellationToken ct = default)

@@ -15,6 +15,10 @@
     <PackageReference Include="MudBlazor" Version="9.11.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="L2Points.Web.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <!-- The SDK adds the framework web assets (_framework/blazor.web.js) only when it sees .razor files
