@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Azure.Identity;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
+using L2Points.Infrastructure.Reports;
 using L2Points.Infrastructure.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -60,6 +61,9 @@ public static class DependencyInjection
         services.AddScoped<JewelService>();
         services.AddScoped<CatalogAdminService>();
         services.AddScoped<PlayerAdminService>();
+        services.Configure<AnthropicOptions>(configuration.GetSection(AnthropicOptions.SectionName));
+        services.AddSingleton<IScreenshotReader, ClaudeScreenshotReader>();
+        services.AddScoped<IDiscordReportService, DiscordReportService>();
 
         return services;
     }
