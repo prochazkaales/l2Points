@@ -70,6 +70,18 @@ public class ClaudeScreenshotReaderTests
             reader.ReadPartyMembersAsync([1, 2, 3], "application/pdf", ["A"]));
     }
 
+    [Theory]
+    [InlineData(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00 }, "image/webp", "image/png")]
+    [InlineData(new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00 }, "image/png", "image/jpeg")]
+    [InlineData(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }, "image/png", "image/gif")]
+    [InlineData(new byte[] { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50 }, "image/png", "image/webp")]
+    public void Detected_image_type_wins_over_declared(byte[] image, string declared, string expected) =>
+        Assert.Equal(expected, ClaudeScreenshotReader.DetectMediaType(image, declared));
+
+    [Fact]
+    public void Unknown_bytes_keep_declared_type() =>
+        Assert.Equal("image/png", ClaudeScreenshotReader.DetectMediaType([1, 2, 3], "image/png"));
+
     private static ClaudeScreenshotReader CreateReader(string? apiKey) =>
         new(Options.Create(new AnthropicOptions { ApiKey = apiKey }));
 }
