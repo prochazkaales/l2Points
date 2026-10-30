@@ -11,6 +11,10 @@ namespace L2Points.Infrastructure.Services;
 /// <summary>Weekly attendance grid and attendance changes; enforces the edit rules on the server.</summary>
 public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider time)
 {
+    /// <summary>
+    /// Builds the grid for <paramref name="userId"/>. A non-admin only ever loads their own grid (<see cref="SetAttendanceAsync"/>
+    /// forbids other targets), so for a non-admin the grid is fully locked when that user is a read-only reader.
+    /// </summary>
     public async Task<WeekGrid> GetWeekGridAsync(string userId, Week week, bool isAdmin, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -24,7 +28,9 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
             .Select(a => new AttendanceEntry(a.ActivityId, a.Date, a.Slot))
             .ToListAsync(ct);
 
-        return WeekGridBuilder.Build(activities, week, attendances, AppTime.TodayInPrague(time), trackingStart, isAdmin);
+        var canEdit = isAdmin || !await db.IsReaderAsync(userId, ct);
+
+        return WeekGridBuilder.Build(activities, week, attendances, AppTime.TodayInPrague(time), trackingStart, isAdmin, canEdit);
     }
 
     public async Task<AttendanceChangeResult> SetAttendanceAsync(
@@ -41,6 +47,10 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
             return AttendanceChangeResult.Forbidden;
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
+
+        // Checked in the database, not from claims: a reader keeps the admin flag in a stale session, and hidden readers are not edited at all.
+        if (await db.IsReaderAsync(actorUserId, ct) || await db.IsHiddenFromStatsAsync(targetUserId, ct))
+            return AttendanceChangeResult.ReadOnlyAccount;
 
         var today = AppTime.TodayInPrague(time);
         var trackingStart = await db.GetTrackingStartAsync(ct);

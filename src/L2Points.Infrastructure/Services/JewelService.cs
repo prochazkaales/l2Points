@@ -84,6 +84,9 @@ public sealed class JewelService(IDbContextFactory<AppDbContext> dbFactory)
     {
         if (!await db.Users.AnyAsync(u => u.Id == userId, ct))
             return JewelChangeResult.UnknownPlayer;
+        // Hidden readers are not part of the stats, so their jewels cannot be edited.
+        if (await db.IsHiddenFromStatsAsync(userId, ct))
+            return JewelChangeResult.HiddenPlayer;
         if (!await db.JewelTypes.AnyAsync(t => t.Id == jewelTypeId, ct))
             return JewelChangeResult.UnknownJewelType;
         return JewelChangeResult.Ok;

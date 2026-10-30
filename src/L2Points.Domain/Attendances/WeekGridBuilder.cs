@@ -5,7 +5,10 @@ using L2Points.Domain.Time;
 
 namespace L2Points.Domain.Attendances;
 
-/// <summary>Builds the weekly attendance grid (rows = activities, columns = days) for one user.</summary>
+/// <summary>
+/// Builds the weekly attendance grid (rows = activities, columns = days) for one user.
+/// <c>canEdit: false</c> locks every cell regardless of the edit window (read-only accounts).
+/// </summary>
 public static class WeekGridBuilder
 {
     public static WeekGrid Build(
@@ -14,7 +17,8 @@ public static class WeekGridBuilder
         IReadOnlyCollection<AttendanceEntry> attendances,
         DateOnly today,
         DateOnly trackingStart,
-        bool isAdmin)
+        bool isAdmin,
+        bool canEdit = true)
     {
         var range = week.Range;
         var checkedEntries = attendances
@@ -55,7 +59,8 @@ public static class WeekGridBuilder
                 .Select(c =>
                 {
                     var isChecked = checkedEntries.Contains(new AttendanceEntry(activity.Id, c.Date, c.Slot));
-                    var editable = AttendanceRules.CanEdit(c.Date, today, trackingStart, isAdmin)
+                    var editable = canEdit
+                                   && AttendanceRules.CanEdit(c.Date, today, trackingStart, isAdmin)
                                    && (c.IsScheduled || isChecked);
                     return new WeekGridCell(c.Date, c.Slot, c.TimeUtc, c.IsScheduled, isChecked, editable, c.Date >= trackingStart);
                 })

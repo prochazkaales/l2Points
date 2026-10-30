@@ -1,4 +1,5 @@
 using L2Points.Domain.Activities;
+using L2Points.Domain.Attendances;
 using L2Points.Domain.Time;
 using L2Points.Infrastructure.Persistence;
 using L2Points.Infrastructure.Services;
@@ -235,5 +236,94 @@ public class AttendanceServiceTests
             await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 10, 28), EventSlot.None, false));
         Assert.Equal(AttendanceChangeResult.Ok,
             await f.Service.SetAttendanceAsync(f.PlayerA, false, f.PlayerA, frintezza, new DateOnly(2026, 10, 31), EventSlot.None, true));
+    }
+
+    [Fact]
+    public async Task Grid_Reader_IsFullyLocked()
+    {
+        await using var f = await CreateAsync();
+        var reader = await TestData.CreateReaderAsync(f.Provider, "readerX", Monday, showInStats: true);
+
+        var grid = await f.Service.GetWeekGridAsync(reader.Id, Week.Containing(Tuesday), isAdmin: false);
+
+        Assert.All(grid.Rows.SelectMany(r => r.Cells), c => Assert.False(c.IsEditable));
+    }
+
+    [Fact]
+    public async Task Grid_AdminViewingShownReader_IsEditable()
+    {
+        await using var f = await CreateAsync();
+        var reader = await TestData.CreateReaderAsync(f.Provider, "readerX", Monday, showInStats: true);
+
+        var grid = await f.Service.GetWeekGridAsync(reader.Id, Week.Containing(Tuesday), isAdmin: true);
+
+        var today = new DateOnly(2026, 10, 28);
+        var cell = grid.Rows.Single(r => r.Activity.Code == "QueenAnt").Cells.Single(c => c.Date == today);
+        Assert.True(cell.IsEditable);
+    }
+
+    [Fact]
+    public async Task SetAttendance_Reader_IsRejected()
+    {
+        await using var f = await CreateAsync();
+        var reader = await TestData.CreateReaderAsync(f.Provider, "readerX", Monday, showInStats: true);
+        var queenAnt = await TestData.ActivityIdAsync(f.Provider, "QueenAnt");
+
+        var result = await f.Service.SetAttendanceAsync(reader.Id, false, reader.Id, queenAnt, Tuesday, EventSlot.None, true);
+
+        Assert.Equal(AttendanceChangeResult.ReadOnlyAccount, result);
+        await using var db = f.NewContext();
+        Assert.Empty(await db.Attendances.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SetAttendance_ReaderActorWithAdminFlag_IsRejected()
+    {
+        // The admin flag comes from claims and may be stale; the reader role is checked in the database.
+        await using var f = await CreateAsync();
+        var reader = await TestData.CreateReaderAsync(f.Provider, "readerX", Monday, showInStats: true);
+        var queenAnt = await TestData.ActivityIdAsync(f.Provider, "QueenAnt");
+
+        var result = await f.Service.SetAttendanceAsync(reader.Id, true, f.PlayerA, queenAnt, Tuesday, EventSlot.None, true);
+
+        Assert.Equal(AttendanceChangeResult.ReadOnlyAccount, result);
+        await using var db = f.NewContext();
+        Assert.Empty(await db.Attendances.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SetAttendance_AdminOnHiddenReader_IsRejected()
+    {
+        await using var f = await CreateAsync();
+        var hidden = await TestData.CreateReaderAsync(f.Provider, "hiddenReader", Monday, showInStats: false);
+        var queenAnt = await TestData.ActivityIdAsync(f.Provider, "QueenAnt");
+        await using (var db = f.NewContext())
+        {
+            db.Attendances.Add(new Attendance { UserId = hidden.Id, ActivityId = queenAnt, Date = Tuesday, Slot = EventSlot.None, CreatedAtUtc = DateTime.UtcNow, CreatedByUserId = f.Admin });
+            await db.SaveChangesAsync();
+        }
+
+        var add = await f.Service.SetAttendanceAsync(f.Admin, true, hidden.Id, queenAnt, Monday, EventSlot.None, true);
+        var remove = await f.Service.SetAttendanceAsync(f.Admin, true, hidden.Id, queenAnt, Tuesday, EventSlot.None, false);
+
+        Assert.Equal(AttendanceChangeResult.ReadOnlyAccount, add);
+        Assert.Equal(AttendanceChangeResult.ReadOnlyAccount, remove);
+        await using var verify = f.NewContext();
+        var row = await verify.Attendances.SingleAsync();
+        Assert.Equal(Tuesday, row.Date);
+    }
+
+    [Fact]
+    public async Task SetAttendance_AdminOnShownReader_Succeeds()
+    {
+        await using var f = await CreateAsync();
+        var shown = await TestData.CreateReaderAsync(f.Provider, "shownReader", Monday, showInStats: true);
+        var queenAnt = await TestData.ActivityIdAsync(f.Provider, "QueenAnt");
+
+        var result = await f.Service.SetAttendanceAsync(f.Admin, true, shown.Id, queenAnt, Tuesday, EventSlot.None, true);
+
+        Assert.Equal(AttendanceChangeResult.Ok, result);
+        await using var db = f.NewContext();
+        Assert.Equal(shown.Id, (await db.Attendances.SingleAsync()).UserId);
     }
 }

@@ -20,6 +20,13 @@ public class JewelServiceTests
             return await db.JewelTypes.Where(t => t.Code == code).Select(t => t.Id).SingleAsync();
         }
 
+        public async Task AddPieceDirectAsync(string userId, int jewelTypeId)
+        {
+            await using var db = Provider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext();
+            db.UserJewels.Add(new UserJewel { UserId = userId, JewelTypeId = jewelTypeId });
+            await db.SaveChangesAsync();
+        }
+
         public async Task<int> PieceCountAsync()
         {
             await using var db = Provider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext();
@@ -128,8 +135,8 @@ public class JewelServiceTests
         var reader = await TestData.CreateReaderAsync(x.Provider, "hiddenReader", Monday, showInStats: false);
         var queenAnt = await x.TypeIdAsync("QueenAntRing");
         await x.Service.AssignAsync(x.Bob, queenAnt);
-        await x.Service.AssignAsync(reader.Id, queenAnt);
-        await x.Service.AssignAsync(reader.Id, queenAnt);
+        await x.AddPieceDirectAsync(reader.Id, queenAnt);
+        await x.AddPieceDirectAsync(reader.Id, queenAnt);
 
         var summary = (await x.Service.GetGalleryAsync())[0];
 
@@ -148,5 +155,38 @@ public class JewelServiceTests
 
         Assert.DoesNotContain(players, p => p.UserId == hidden.Id);
         Assert.Contains(players, p => p.UserId == shown.Id);
+    }
+
+    [Fact]
+    public async Task Assign_HiddenReader_IsRejected()
+    {
+        await using var x = await ArrangeAsync();
+        var hidden = await TestData.CreateReaderAsync(x.Provider, "hiddenReader", Monday, showInStats: false);
+        var baium = await x.TypeIdAsync("BaiumRing");
+
+        Assert.Equal(JewelChangeResult.HiddenPlayer, await x.Service.AssignAsync(hidden.Id, baium));
+        Assert.Equal(0, await x.PieceCountAsync());
+    }
+
+    [Fact]
+    public async Task RemoveOne_HiddenReader_IsRejected()
+    {
+        await using var x = await ArrangeAsync();
+        var hidden = await TestData.CreateReaderAsync(x.Provider, "hiddenReader", Monday, showInStats: false);
+        var baium = await x.TypeIdAsync("BaiumRing");
+        await x.AddPieceDirectAsync(hidden.Id, baium);
+
+        Assert.Equal(JewelChangeResult.HiddenPlayer, await x.Service.RemoveOneAsync(hidden.Id, baium));
+        Assert.Equal(1, await x.PieceCountAsync());
+    }
+
+    [Fact]
+    public async Task Assign_ShownReader_Succeeds()
+    {
+        await using var x = await ArrangeAsync();
+        var shown = await TestData.CreateReaderAsync(x.Provider, "shownReader", Monday, showInStats: true);
+        var baium = await x.TypeIdAsync("BaiumRing");
+
+        Assert.Equal(JewelChangeResult.Ok, await x.Service.AssignAsync(shown.Id, baium));
     }
 }

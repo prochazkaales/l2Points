@@ -18,8 +18,9 @@ public class WeekGridBuilderTests
         Week? week = null,
         DateOnly? today = null,
         bool isAdmin = false,
-        DateOnly? trackingStart = null) =>
-        WeekGridBuilder.Build(activities, week ?? TestWeek, attendances ?? [], today ?? Today, trackingStart ?? TrackingStart, isAdmin);
+        DateOnly? trackingStart = null,
+        bool canEdit = true) =>
+        WeekGridBuilder.Build(activities, week ?? TestWeek, attendances ?? [], today ?? Today, trackingStart ?? TrackingStart, isAdmin, canEdit);
 
     private static WeekGridRow Row(WeekGrid grid, string code) =>
         grid.Rows.Single(r => r.Activity.Code == code);
@@ -98,6 +99,19 @@ public class WeekGridBuilderTests
         Assert.Equal(
             [true, true, true, false, false, false, false],
             cells.Select(c => c.IsEditable));
+    }
+
+    [Fact]
+    public void Build_CannotEdit_LocksEveryCell()
+    {
+        var activities = StatsTestCatalog.Create();
+        var attendances = new[] { new AttendanceEntry(activities.ByCode("QueenAnt").Id, Today, EventSlot.None) };
+
+        var grid = Build(activities, attendances, isAdmin: true, canEdit: false);
+
+        var cells = grid.Rows.SelectMany(r => r.Cells).ToList();
+        Assert.All(cells, c => Assert.False(c.IsEditable));
+        Assert.Contains(cells, c => c.IsChecked);
     }
 
     [Fact]

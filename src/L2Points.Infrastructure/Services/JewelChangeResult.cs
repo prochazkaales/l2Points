@@ -7,4 +7,5 @@ public enum JewelChangeResult
     UnknownPlayer,
     UnknownJewelType,
     NotHeld,
+    HiddenPlayer,
 }

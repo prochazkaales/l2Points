@@ -9,4 +9,5 @@ public enum AttendanceChangeResult
     UnknownActivity,
     InvalidSlot,
     WeeklyLimitReached,
+    ReadOnlyAccount,
 }
