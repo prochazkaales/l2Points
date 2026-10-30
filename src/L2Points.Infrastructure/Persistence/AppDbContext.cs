@@ -3,6 +3,7 @@ using L2Points.Domain.Attendances;
 using L2Points.Domain.Jewels;
 using L2Points.Domain.Settings;
 using L2Points.Infrastructure.Identity;
+using L2Points.Infrastructure.Reports;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<UserJewel> UserJewels => Set<UserJewel>();
 
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+
+    public DbSet<DiscordReport> DiscordReports => Set<DiscordReport>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
