@@ -228,7 +228,7 @@ else
     private async Task ResetPasswordAsync(AdminPlayer player)
     {
         if (!await ConfirmAsync("Reset hesla",
-                $"Vygenerovat hráči {player.Nick} nové heslo? Staré heslo přestane platit.", "Resetovat"))
+                $"Vygenerovat účtu {player.Nick} nové heslo? Staré heslo přestane platit.", "Resetovat"))
         {
             return;
         }
@@ -238,8 +238,8 @@ else
 
     private async Task SetActiveAsync(AdminPlayer player, bool active)
     {
-        if (!active && !await ConfirmAsync("Deaktivace hráče",
-                $"Deaktivovat hráče {player.Nick}? Nebude se moct přihlásit, jeho historie zůstane.", "Deaktivovat"))
+        if (!active && !await ConfirmAsync("Deaktivace účtu",
+                $"Deaktivovat účet {player.Nick}? Nebude se moct přihlásit, jeho historie zůstane.", "Deaktivovat"))
         {
             return;
         }
@@ -270,8 +270,8 @@ else
 
     private async Task DeleteAsync(AdminPlayer player)
     {
-        if (!await ConfirmAsync("Smazání hráče",
-                $"Smazat hráče {player.Nick}? Smaže se i jeho účast a šperky. Akci nelze vrátit.", "Smazat"))
+        if (!await ConfirmAsync("Smazání účtu",
+                $"Smazat účet {player.Nick}? Smaže se i jeho účast a šperky. Akci nelze vrátit.", "Smazat"))
         {
             return;
         }

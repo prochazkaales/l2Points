@@ -137,6 +137,16 @@
     color: var(--l2p-muted);
 }
 
+/* Today and locked (a reader's grid locks today): the solid primary fill needs its own text colour, muted would be
+   unreadable on it. The lock icon inherits currentColor and is not diluted here. */
+.l2p-grid thead th.l2p-grid-today.l2p-grid-locked {
+    color: var(--l2p-on-primary);
+}
+
+.l2p-grid thead th.l2p-grid-today.l2p-grid-locked ::deep .l2p-grid-lock {
+    opacity: 1;
+}
+
 .l2p-grid ::deep .l2p-grid-lock {
     width: 0.95rem;
     height: 0.95rem;

@@ -15,9 +15,10 @@ public class AppUser : IdentityUser
     public DateOnly? DeactivatedAt { get; set; }
 
     /// <summary>
-    /// Whether the player appears in rankings, stats and the attendance overview. Readers are never
-    /// counted (always false for them); players are always true. No database default on purpose:
-    /// it would turn an inserted false back into true.
+    /// Whether the account appears in rankings, stats and the attendance overview. Players are always true;
+    /// only a reader may be false (hidden from all statistics). No EF model default on purpose
+    /// (HasDefaultValue would turn an inserted false into true); the migration's DB default only
+    /// backfills existing rows.
     /// </summary>
     public bool ShowInStats { get; set; } = true;
 

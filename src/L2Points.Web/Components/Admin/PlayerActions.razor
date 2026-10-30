@@ -6,13 +6,20 @@
     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Medium" title="Upravit"
                    aria-label="@($"Upravit: {Player.Nick}")" Disabled="Busy"
                    OnClick="@(() => OnEdit.InvokeAsync())" />
-    <MudIconButton Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Medium" title="Účast"
-                   aria-label="@($"Účast: {Player.Nick}")"
-                   Href="@($"/admin/attendance?player={Uri.EscapeDataString(Player.UserId)}")" />
+    @* A hidden reader is not selectable on the attendance and jewels pages, so both links would be dead ends. *@
+    @if (!HiddenReader)
+    {
+        <MudIconButton Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Medium" title="Účast"
+                       aria-label="@($"Účast: {Player.Nick}")"
+                       Href="@($"/admin/attendance?player={Uri.EscapeDataString(Player.UserId)}")" />
+    }
     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Medium" AriaLabel="@($"Další akce: {Player.Nick}")"
              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-        <MudMenuItem Icon="@Icons.Material.Filled.Diamond"
-                     Href="@($"/admin/jewels?player={Uri.EscapeDataString(Player.UserId)}")">Šperky</MudMenuItem>
+        @if (!HiddenReader)
+        {
+            <MudMenuItem Icon="@Icons.Material.Filled.Diamond"
+                         Href="@($"/admin/jewels?player={Uri.EscapeDataString(Player.UserId)}")">Šperky</MudMenuItem>
+        }
         <MudMenuItem Icon="@Icons.Material.Filled.LockReset" Disabled="@(Busy || !State.CanResetPassword)"
                      OnClick="@(() => OnResetPassword.InvokeAsync())">
             <span class="l2p-menu-label">Reset hesla</span>
@@ -120,6 +127,8 @@
 
     [Parameter]
     public EventCallback<bool> OnSetShowInStats { get; set; }
+
+    private bool HiddenReader => Player.IsReader && !Player.ShowInStats;
 
     private string? DisabledReason => State.IsSelf ? "Vlastní účet" : State.ProtectedText;
 }

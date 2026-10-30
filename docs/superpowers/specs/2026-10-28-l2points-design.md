@@ -148,7 +148,7 @@ Ring of Queen Ant, Ring of Core, Earring of Orfen, Earring of Zaken, Necklace of
 
 ## 4. Stránky
 
-Celé UI je v češtině. V hlavičce je navigace, nick přihlášeného, odhlášení a **přepínač dark/light** (výchozí podle systému, volba se pamatuje).
+Celé UI je v češtině. V hlavičce je navigace, nick přihlášeného, odhlášení a **přepínač dark/light** (výchozí je tmavé, volba se pamatuje).
 
 1. **Přihlášení** – login + heslo.
 2. **Můj týden** (úvodní stránka)
