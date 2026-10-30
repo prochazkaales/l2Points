@@ -267,6 +267,22 @@ public sealed class DiscordReportService(
         var results = new List<ReportEventResult>();
         try
         {
+            // A choice committed between the guard read and the claim is what the reporter saw last, so the state is read again.
+            state = Deserialize(await db.DiscordReports
+                .AsNoTracking()
+                .Where(r => r.Id == reportId)
+                .Select(r => r.StateJson)
+                .SingleAsync(CancellationToken.None));
+            players = state.Players.Where(p => p.Confirmed).ToList();
+            if (players.Count == 0 || state.SelectedEvents.Count == 0)
+            {
+                // Nothing to write any more: release the claim so the reporter can change the choice.
+                await db.DiscordReports
+                    .Where(r => r.Id == reportId && r.Status == DiscordReportStatus.Submitting)
+                    .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, DiscordReportStatus.Pending), CancellationToken.None);
+                return await StoredViewAsync(db, reportId, DiscordReportOutcome.Ok, CancellationToken.None);
+            }
+
             var activities = await db.LoadActivitiesAsync(CancellationToken.None);
             var userIds = players.Select(p => p.UserId).ToList();
             var dates = state.SelectedEvents.Select(e => e.Date).Distinct().ToList();
@@ -310,6 +326,15 @@ public sealed class DiscordReportService(
 
                 results.Add(new ReportEventResult(entry, name, added, alreadyHad, issues));
             }
+
+            await TrySaveAsync(
+                db,
+                reportId,
+                DiscordReportStatus.Submitting,
+                DiscordReportStatus.Completed,
+                Now(),
+                Serialize(state with { Result = new ReportResult(results) }),
+                CancellationToken.None);
         }
         catch
         {
@@ -332,15 +357,21 @@ public sealed class DiscordReportService(
             throw;
         }
 
-        await TrySaveAsync(
-            db,
-            reportId,
-            DiscordReportStatus.Submitting,
-            DiscordReportStatus.Completed,
-            Now(),
-            Serialize(state with { Result = new ReportResult(results) }),
-            CancellationToken.None);
         return await StoredViewAsync(db, reportId, DiscordReportOutcome.Ok, CancellationToken.None);
+    }
+
+    public async Task<int> FailStaleAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = Now();
+        var createdBefore = now - Lifetime;
+        return await db.DiscordReports
+            .Where(r => (r.Status == DiscordReportStatus.Processing || r.Status == DiscordReportStatus.Submitting)
+                && r.CreatedAtUtc < createdBefore)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(r => r.Status, DiscordReportStatus.Failed)
+                    .SetProperty(r => r.CompletedAtUtc, now),
+                ct);
     }
 
     /// <summary>Id stored as <c>CreatedByUserId</c> of attendance written by a report.</summary>

@@ -349,5 +349,7 @@ public class DiscordInteractionHandlerTests
 
         public Task<DiscordReportView> SubmitAsync(Guid reportId, string discordUserId, CancellationToken ct = default) =>
             Record("submit", reportId, discordUserId);
+
+        public Task<int> FailStaleAsync(CancellationToken ct = default) => Task.FromResult(0);
     }
 }

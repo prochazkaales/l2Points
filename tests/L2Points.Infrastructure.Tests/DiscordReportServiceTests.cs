@@ -598,6 +598,113 @@ public class DiscordReportServiceTests
     }
 
     [Fact]
+    public async Task Submit_writes_the_choice_committed_before_its_claim()
+    {
+        var time = new HookedTimeProvider(DateTimeOffset.Parse("2026-10-30T19:45:00Z"));
+        await using var f = await CreateAsync(time);
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        var core = new AttendanceEntry(await f.ActivityAsync("ChaoticCore"), Friday, EventSlot.Evening);
+
+        // The first clock read of a submit is its expiry check, after the guard has read the state and before the claim.
+        time.OnRead = () =>
+        {
+            time.OnRead = null;
+            f.Service.SelectEventsAsync(id, "1001", [core]).GetAwaiter().GetResult();
+        };
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportStatus.Completed, view.Status);
+        Assert.Equal(core, Assert.Single(Assert.IsType<ReportResult>(view.State.Result).Events).Event);
+        Assert.Equal([core], view.State.SelectedEvents);
+        var rows = await f.AttendancesAsync();
+        Assert.Equal(2, rows.Count);
+        Assert.All(rows, r => Assert.Equal(core.ActivityId, r.ActivityId));
+    }
+
+    [Fact]
+    public async Task Submit_returns_to_pending_when_the_claimed_state_has_nothing_to_write()
+    {
+        var time = new HookedTimeProvider(DateTimeOffset.Parse("2026-10-30T19:45:00Z"));
+        await using var f = await CreateAsync(time);
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        time.OnRead = () =>
+        {
+            time.OnRead = null;
+            f.Service.SelectEventsAsync(id, "1001", []).GetAwaiter().GetResult();
+        };
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Ok, view.Outcome);
+        Assert.Equal(DiscordReportStatus.Pending, view.Status);
+        Assert.Null(view.State.Result);
+        Assert.Equal(DiscordReportStatus.Pending, (await f.LoadAsync(id)).Status);
+        Assert.Empty(await f.AttendancesAsync());
+    }
+
+    [Fact]
+    public async Task Submit_settles_as_failed_when_the_completed_save_fails()
+    {
+        var time = new HookedTimeProvider(DateTimeOffset.Parse("2026-10-30T19:45:00Z"));
+        await using var f = await CreateAsync(time);
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+
+        // Once all attendance is written, the next clock read is the completion time of the final save.
+        time.OnRead = () =>
+        {
+            if (f.AttendancesAsync().GetAwaiter().GetResult().Count < 8)
+                return;
+            time.OnRead = null;
+            throw new InvalidOperationException("Saving the completed report failed.");
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.SubmitAsync(id, "1001"));
+
+        var stored = await f.LoadAsync(id);
+        Assert.Equal(DiscordReportStatus.Failed, stored.Status);
+        Assert.NotNull(stored.CompletedAtUtc);
+        var view = await f.Service.GetAsync(id, "1001");
+        var result = Assert.IsType<ReportResult>(view.State.Result);
+        Assert.Equal(4, result.Events.Count);
+        Assert.All(result.Events, e => Assert.Equal(2, e.Added));
+    }
+
+    [Fact]
+    public async Task Fail_stale_fails_old_processing_and_submitting_reports()
+    {
+        await using var f = await CreateAsync();
+        var oldProcessing = await f.Service.CreateAsync(Reporter);
+        var oldSubmitting = await f.Service.CreateAsync(Reporter);
+        await f.SetStatusAsync(oldSubmitting, DiscordReportStatus.Submitting);
+        var oldPending = await f.AnalyzedAsync("Hubkins1010");
+        var oldCompleted = await f.Service.CreateAsync(Reporter);
+        await f.SetStatusAsync(oldCompleted, DiscordReportStatus.Completed);
+        f.Time.Advance(TimeSpan.FromMinutes(10));
+        var youngProcessing = await f.Service.CreateAsync(Reporter);
+        var youngSubmitting = await f.Service.CreateAsync(Reporter);
+        await f.SetStatusAsync(youngSubmitting, DiscordReportStatus.Submitting);
+        f.Time.Advance(TimeSpan.FromMinutes(6));
+
+        var count = await f.Service.FailStaleAsync();
+
+        Assert.Equal(2, count);
+        var now = f.Time.GetUtcNow().UtcDateTime;
+        foreach (var id in new[] { oldProcessing, oldSubmitting })
+        {
+            var stored = await f.LoadAsync(id);
+            Assert.Equal(DiscordReportStatus.Failed, stored.Status);
+            Assert.Equal(now, stored.CompletedAtUtc);
+        }
+
+        Assert.Equal(DiscordReportStatus.Pending, (await f.LoadAsync(oldPending)).Status);
+        Assert.Equal(DiscordReportStatus.Completed, (await f.LoadAsync(oldCompleted)).Status);
+        Assert.Equal(DiscordReportStatus.Processing, (await f.LoadAsync(youngProcessing)).Status);
+        Assert.Equal(DiscordReportStatus.Submitting, (await f.LoadAsync(youngSubmitting)).Status);
+        Assert.Null((await f.LoadAsync(youngSubmitting)).CompletedAtUtc);
+    }
+
+    [Fact]
     public async Task Cancel_during_analysis_wins()
     {
         await using var f = await CreateAsync();

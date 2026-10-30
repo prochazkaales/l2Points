@@ -49,4 +49,10 @@ public interface IDiscordReportService
     Task<DiscordReportView> CancelAsync(Guid reportId, string discordUserId, CancellationToken ct = default);
 
     Task<DiscordReportView> SubmitAsync(Guid reportId, string discordUserId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Fails every report still <c>Processing</c> or <c>Submitting</c> past its lifetime: the in-memory job queue is lost on a
+    /// restart, so nothing would ever settle them. Returns how many reports were failed.
+    /// </summary>
+    Task<int> FailStaleAsync(CancellationToken ct = default);
 }
