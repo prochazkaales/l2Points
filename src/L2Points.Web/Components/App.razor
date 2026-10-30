@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     @* Defines l2pTheme.apply (the single copy of the theme bootstrap) and runs it before first paint, so the stored
-       (or OS) theme is used without a flash. js/theme.js reuses it after enhanced navigation, which drops data-theme. *@
+       theme (dark by default, regardless of the OS preference) is used without a flash. js/theme.js reuses it after enhanced navigation, which drops data-theme. *@
     <script>
         window.l2pTheme = window.l2pTheme || {};
         window.l2pTheme.apply = function () {
             var theme = null;
             try { theme = window.localStorage.getItem("l2p-theme"); } catch (e) { }
             if (theme !== "dark" && theme !== "light") {
-                theme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+                theme = "dark";
             }
             document.documentElement.dataset.theme = theme;
             return theme;
@@ -24,8 +24,7 @@
     <link rel="icon" href="@Assets["favicon.svg"]" type="image/svg+xml" />
     <link rel="icon" href="@Assets["favicon-32.png"]" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="@Assets["apple-touch-icon.png"]" />
-    <meta name="theme-color" content="#E8EAF6" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0B0A1A" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#0B0A1A" />
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />

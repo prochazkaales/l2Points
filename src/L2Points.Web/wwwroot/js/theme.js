@@ -1,5 +1,5 @@
 // Persists the chosen colour theme ("dark" | "light") in the browser and mirrors it to the data-theme attribute.
-// l2pTheme.apply (read the stored or OS theme, set data-theme) is defined by the inline script in the <head> of
+// l2pTheme.apply (read the stored theme, dark by default, set data-theme) is defined by the inline script in the <head> of
 // App.razor, because it has to run before first paint; this file extends that object.
 (function () {
     var theme = window.l2pTheme = window.l2pTheme || {};

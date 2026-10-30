@@ -108,7 +108,7 @@ Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní polo
 - Obsah: `MudContainer` beze změny šířky; pozadí stránky je záře, ne `Background` barva palety (ta zůstává pro případ, kdy CSS záře nenačte).
 - Načítací placeholder `.l2p-loading` a pozadí před připojením circuitu odpovídají novému pozadí v obou režimech.
 - Přebliknutí tématu se odstraní (rozhodnutí návrhu; dnes `MainLayout` začíná tmavě a uloženou volbu z `l2pTheme` načte až po prvním renderu, placeholder se řídí jen OS):
-  - malý inline skript v `<head>` (`App.razor`) přečte `localStorage` (stejný klíč jako `l2pTheme`) a nastaví `data-theme="dark|light"` na `<html>` ještě před vykreslením; bez uložené volby podle `prefers-color-scheme`;
+  - malý inline skript v `<head>` (`App.razor`) přečte `localStorage` (stejný klíč jako `l2pTheme`) a nastaví `data-theme="dark|light"` na `<html>` ještě před vykreslením; bez uložené volby tmavé (od 30. 10. 2026, bez ohledu na OS);
   - pozadí, záře, placeholder i účtové stránky se řídí `data-theme` (CSS proměnné pod `:root[data-theme=…]`);
   - `MainLayout` vezme počáteční `_isDarkMode` z téhož zdroje, přepínač aktualizuje `localStorage` i atribut;
   - logo v app baru se řídí zvoleným tématem (dvě varianty nebo inline SVG s `currentColor`/proměnnými), ne `prefers-color-scheme` uvnitř `favicon.svg`. Favicona v záložce zůstává podle OS (to jinak nejde).
