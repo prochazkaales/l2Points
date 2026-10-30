@@ -142,7 +142,7 @@ public static class DisplayFormat
         _ => "Uložení se nepovedlo, zkus to znovu.",
     };
 
-    /// <summary>Czech count of spawns ("1 spawn", "2 spawny", "5 spawnů").</summary>
+    /// <summary>"Týdně v neděli 20:00" in Prague time for the given week (daylight saving), optionally with the UTC time.</summary>
     private static string WeeklyTimeLabel(Activity a, Week week, TimeOnly utcTime, bool withUtc)
     {
         var date = a.WeeklyDay is { } day ? week.Days.First(d => d.DayOfWeek == day) : week.Monday;
@@ -166,6 +166,7 @@ public static class DisplayFormat
         return $"průměrně {rounded.ToString("0.#", Czech)} {word} na epic";
     }
 
+    /// <summary>Czech count of spawns ("1 spawn", "2 spawny", "5 spawnů").</summary>
     private static string Spawns(int count) => count switch
     {
         1 => "1 spawn",

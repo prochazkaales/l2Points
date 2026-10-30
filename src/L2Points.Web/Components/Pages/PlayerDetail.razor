@@ -38,10 +38,12 @@ else if (_detail is null)
 else
 {
     <PageHeader Title="@_detail.Player.Nick">
-        @if (!_detail.Player.IsActive)
-        {
-            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
-        }
+        <TitleSuffix>
+            @if (!_detail.Player.IsActive)
+            {
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">neaktivní</MudChip>
+            }
+        </TitleSuffix>
     </PageHeader>
 
     <div class="l2p-pd-summaries l2p-section">

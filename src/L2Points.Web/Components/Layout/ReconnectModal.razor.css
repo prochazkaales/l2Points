@@ -102,6 +102,17 @@
         background-color: color-mix(in srgb, var(--l2p-primary) 85%, black);
     }
 
+    /* Dark text on the dark theme's primary: a darker fill would drop below 4.5:1, so hover goes lighter instead. */
+    :root[data-theme="dark"] #components-reconnect-modal button:hover {
+        background-color: var(--l2p-primary-text);
+    }
+
+@media (pointer: coarse), (max-width: 599.98px) {
+    #components-reconnect-modal button {
+        min-height: var(--l2p-touch);
+    }
+}
+
     #components-reconnect-modal button:active {
         background-color: var(--l2p-primary);
     }

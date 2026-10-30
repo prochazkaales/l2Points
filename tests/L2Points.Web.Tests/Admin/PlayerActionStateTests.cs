@@ -26,6 +26,21 @@ public class PlayerActionStateTests
     }
 
     [Fact]
+    public void Self_who_is_super_admin_is_self_not_protected()
+    {
+        // The own-account check comes before the super admin protection.
+        var state = PlayerActionState.For(Player(Actor, isSuperAdmin: true), Actor, actorIsSuperAdmin: true);
+
+        Assert.True(state.IsSelf);
+        Assert.Null(state.ProtectedText);
+        Assert.False(state.CanResetPassword);
+        Assert.False(state.CanDeactivate);
+        Assert.False(state.CanDelete);
+        Assert.False(state.CanRemoveAdmin);
+        Assert.Equal(PlayerActionState.OwnPasswordText, state.ResetPasswordHint);
+    }
+
+    [Fact]
     public void Super_admin_is_protected_from_other_admins()
     {
         var state = PlayerActionState.For(Player(Other, isSuperAdmin: true), Actor, actorIsSuperAdmin: false);

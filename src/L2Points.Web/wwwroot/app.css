@@ -142,6 +142,8 @@
     --l2p-shadow-1: inset 0 1px 0 var(--l2p-glass-hi), 0 4px 20px rgba(0, 0, 0, 0.22);
     --l2p-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.35);
     --l2p-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.45);
+    /* Edge shadow of a pinned column once its table is scrolled sideways. */
+    --l2p-shadow-pinned: rgba(0, 0, 0, 0.35);
 }
 
 :root[data-theme="light"] {
@@ -208,6 +210,7 @@
     --l2p-shadow-1: inset 0 1px 0 var(--l2p-glass-hi), 0 10px 30px rgba(60, 40, 140, 0.14);
     --l2p-shadow-2: 0 8px 24px rgba(60, 40, 140, 0.18);
     --l2p-shadow-3: 0 20px 56px rgba(60, 40, 140, 0.24);
+    --l2p-shadow-pinned: rgba(60, 40, 140, 0.18);
 }
 
 /* Page background: two glows over the base colour. It does not depend on MudThemeProvider, so it is right before
@@ -831,7 +834,7 @@ h1:focus {
 .l2p-scrolled .l2p-grid-boss,
 .l2p-scrolled .l2p-wk-grid-nick,
 .l2p-scrolled .l2p-pd-week {
-    box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.35);
+    box-shadow: 6px 0 8px -6px var(--l2p-shadow-pinned);
 }
 
 td.l2p-nick-cell .l2p-nick-chip {
@@ -938,6 +941,18 @@ td.l2p-nick-cell .l2p-nick-chip {
 .mud-typography.l2p-page-title {
     margin: 0;
     font-weight: 500;
+    /* A long nick (up to 32 characters) wraps instead of overflowing a 375px screen. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Title with a suffix right next to it (PageHeader TitleSuffix, e.g. the "neaktivní" chip on the player detail). */
+.l2p-page-title-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--l2p-space-2);
+    min-width: 0;
 }
 
 @media (max-width: 599.98px) {
@@ -1238,10 +1253,99 @@ a:not(.mud-button-root):focus-visible,
     font-variant-numeric: tabular-nums;
 }
 
-/* Touch targets of 44px on phones and touch screens (arrows, day picker and grid checkboxes are in their scoped CSS). */
+/* Touch targets of 44px on phones and touch screens (arrows, day picker and grid checkboxes are in their scoped CSS).
+   The MudBlazor rules are not limited to .mud-main-content: dialogs, menus and popovers render outside it. */
 @media (pointer: coarse), (max-width: 599.98px) {
     .mud-main-content .mud-switch {
         min-height: var(--l2p-touch);
+    }
+
+    /* Every button and icon button, in pages, dialogs and message boxes alike. The switch base is MudSwitch's thumb
+       (its label is the 44px target) and keeps its size. */
+    .mud-button-root.mud-button {
+        min-height: var(--l2p-touch);
+    }
+
+    .mud-button-root.mud-icon-button:not(.mud-switch-base) {
+        min-width: var(--l2p-touch);
+        min-height: var(--l2p-touch);
+    }
+
+    /* Chips that are links (jewel holders, attendees on /week) are 44px tall. */
+    .mud-chip.mud-clickable {
+        height: auto;
+        min-height: var(--l2p-touch);
+    }
+
+    /* Dense outlined inputs (the spawn times on /admin/schedule) are 40px by default. */
+    .mud-input.mud-input-outlined .mud-input-root.mud-input-root-margin-dense {
+        padding-block: 12.5px;
+    }
+
+    /* Sort headers fill the header cell height instead of the text height. */
+    .mud-table-sort-label {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--l2p-touch);
+    }
+
+    .mud-main-content .mud-table tr > .mud-table-cell:has(> .mud-table-sort-label) {
+        padding-block: 0;
+    }
+
+    /* Right-aligned sort headers of the ranking tables: the narrow cell hands its side padding to the label, so the
+       label is 44px wide and neighbouring labels stay 8px apart; the text keeps lining up with the cells below. The
+       hidden icon of an unsorted column (visible only on hover) takes no room. */
+    .mud-main-content .mud-table tr > th.mud-table-cell.l2p-rank-col {
+        padding-inline: calc(var(--l2p-touch-gap) / 2);
+    }
+
+    th.l2p-rank-col .mud-table-sort-label {
+        display: flex;
+        justify-content: flex-end;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: var(--l2p-touch);
+        padding-inline: calc(var(--l2p-cell-x) - var(--l2p-touch-gap) / 2);
+    }
+
+    th.l2p-rank-col .mud-table-sort-label-icon.mud-direction-none {
+        display: none;
+    }
+
+    /* Links that stand on their own line ("Detail hráče …", "Zpět do aplikace", "Načíst znovu" in the error banner). */
+    .l2p-standalone-link,
+    .account-link,
+    #blazor-error-ui .reload {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--l2p-touch);
+    }
+
+    #blazor-error-ui .dismiss {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: var(--l2p-touch);
+        min-height: var(--l2p-touch);
+        top: 0;
+        right: 0.25rem;
+    }
+
+    /* "Zapamatovat" on the login page: the whole label is the target. */
+    .account-check,
+    .account-button {
+        min-height: var(--l2p-touch);
+    }
+
+    /* Menu items (Další akce on /admin/players) are 48px rows; keep neighbouring items 8px apart. */
+    .mud-menu-list .mud-menu-item + .mud-menu-item {
+        margin-top: var(--l2p-touch-gap);
+    }
+
+    /* Theme toggle and log out in the app bar sit 8px apart. */
+    .l2p-logout-form {
+        margin-inline-start: var(--l2p-touch-gap);
     }
 
     .l2p-view-label {
@@ -1253,12 +1357,17 @@ a:not(.mud-button-root):focus-visible,
         padding-block: 0.6rem;
     }
 
-    /* The nick link fills the cell height (a 44px row); chip and jewels keep their own layout beside or below it. */
-    .mud-main-content .mud-table td.l2p-nick-cell {
-        padding-block: 0;
+    /* The nick link is 44px tall with 4px above and below, so links in neighbouring rows are 8px apart; chip and jewels
+       keep their own layout beside or below it. */
+    .mud-main-content .mud-table td.l2p-nick-cell:has(> a),
+    .mud-main-content .mud-table td.l2p-pd-week:has(> a) {
+        padding-block: calc(var(--l2p-touch-gap) / 2);
     }
 
-    .l2p-nick-cell a {
+    /* Links that fill a table cell: player nicks, the week grid nicks on /week and the history weeks on /players/{id}. */
+    .l2p-nick-cell a,
+    .l2p-wk-grid-nick a,
+    td.l2p-pd-week a {
         display: inline-flex;
         align-items: center;
         min-width: var(--l2p-touch);

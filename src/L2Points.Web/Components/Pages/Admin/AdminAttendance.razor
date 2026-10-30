@@ -40,7 +40,7 @@ else
     @if (SelectedPlayer is { } selected)
     {
         <div class="mb-2">
-            <MudLink Href="@DisplayFormat.PlayerUrl(selected.UserId)">Detail hráče @selected.Nick</MudLink>
+            <MudLink Href="@DisplayFormat.PlayerUrl(selected.UserId)" Class="l2p-standalone-link">Detail hráče @selected.Nick</MudLink>
         </div>
 
         <div class="mb-3">

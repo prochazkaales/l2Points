@@ -42,7 +42,6 @@ else
                 <MudTable T="Activity" Items="items" Dense="true" Elevation="0" Outlined="true" Breakpoint="Breakpoint.None">
                     <HeaderContent>
                         <MudTh Class="l2p-nick-cell">Název</MudTh>
-                        <MudTh>Rozpis</MudTh>
                         <MudTh Class="l2p-col-points">Body</MudTh>
                         @if (category == ActivityCategory.ChaoticEpic)
                         {
@@ -53,6 +52,8 @@ else
                         {
                             <MudTh Class="l2p-col-wide">Očekáváno/týden</MudTh>
                         }
+                        @* The schedule comes after the fixed-width columns, so Body lines up across the tables (as on /points). *@
+                        <MudTh>Rozpis</MudTh>
                         <MudTh Class="l2p-col-narrow">Aktivní</MudTh>
                         <MudTh Class="l2p-col-narrow">Upravit</MudTh>
                     </HeaderContent>
@@ -61,7 +62,6 @@ else
                             var activity = context;
                         }
                         <MudTd Class="l2p-nick-cell">@activity.Name</MudTd>
-                        <MudTd>@DisplayFormat.ScheduleLabel(activity, _week, withUtc: true)</MudTd>
                         <MudTd Class="l2p-col-points">@activity.Points</MudTd>
                         @if (category == ActivityCategory.ChaoticEpic)
                         {
@@ -72,6 +72,7 @@ else
                         {
                             <MudTd Class="l2p-col-wide">@(activity.ScheduleType == ScheduleType.Flexible ? activity.ExpectedPerWeek?.ToString() : "")</MudTd>
                         }
+                        <MudTd>@DisplayFormat.ScheduleLabel(activity, _week, withUtc: true)</MudTd>
                         <MudTd Class="l2p-col-narrow">
                             @if (activity.IsActive)
                             {

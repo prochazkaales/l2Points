@@ -234,7 +234,7 @@
 
 /* Scrolled sideways: the marker and the pinned-column shadow share one box-shadow. */
 .l2p-scrolled .l2p-wk-grid tr.l2p-wk-grid-me .l2p-wk-grid-nick {
-    box-shadow: inset 3px 0 0 var(--l2p-primary), 6px 0 8px -6px rgba(0, 0, 0, 0.35);
+    box-shadow: inset 3px 0 0 var(--l2p-primary), 6px 0 8px -6px var(--l2p-shadow-pinned);
 }
 
 .l2p-wk-grid ::deep .l2p-wk-yes {
@@ -276,6 +276,11 @@
 
 @media (pointer: coarse), (max-width: 599.98px) {
     .l2p-wk-days {
+        gap: var(--l2p-touch-gap);
+    }
+
+    /* Attendee chips are 44px links (app.css): keep them 8px apart. */
+    .l2p-wk-attendees {
         gap: var(--l2p-touch-gap);
     }
 

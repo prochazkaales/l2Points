@@ -148,8 +148,8 @@
 /* Hover (desktop, editable grid only): the whole row gets a primary tint, visible on glass in both themes, so a row
    can be followed across seven days. It is an image layer, so today's tint and the opaque pinned column stay. */
 @media (hover: hover) {
-    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid tbody tr:hover > th,
-    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid tbody tr:hover > td {
+    .l2p-grid-stack:not(.l2p-grid-readonly) .l2p-grid-scroll .l2p-grid tbody tr:hover > th,
+    .l2p-grid-stack:not(.l2p-grid-readonly) .l2p-grid-scroll .l2p-grid tbody tr:hover > td {
         background-image: linear-gradient(
             color-mix(in srgb, var(--l2p-primary) 8%, transparent),
             color-mix(in srgb, var(--l2p-primary) 8%, transparent)),
@@ -251,7 +251,7 @@
 }
 
 @media (hover: hover) {
-    .l2p-grid-scroll:not(.l2p-grid-readonly) .l2p-grid-check:not(.l2p-cell-blocked) ::deep .mud-checkbox .mud-icon-button:hover::before {
+    .l2p-grid-stack:not(.l2p-grid-readonly) .l2p-grid-scroll .l2p-grid-check:not(.l2p-cell-blocked) ::deep .mud-checkbox .mud-icon-button:hover::before {
         border-color: var(--l2p-primary);
     }
 }

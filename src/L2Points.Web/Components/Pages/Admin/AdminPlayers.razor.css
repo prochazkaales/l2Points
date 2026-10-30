@@ -11,7 +11,8 @@
     gap: var(--l2p-gap-tiles);
 }
 
-.l2p-ap-card {
+/* MudPaper renders the card root, which does not carry the scoped attribute: reach it via ::deep. */
+.l2p-ap-cards ::deep .l2p-ap-card {
     display: flex;
     flex-direction: column;
     gap: var(--l2p-space-2);

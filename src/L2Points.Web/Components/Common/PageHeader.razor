@@ -1,11 +1,25 @@
-@* Page title as the single h1 of the page; controls that belong to the whole page sit on the right. *@
+@* Page title as the single h1 of the page; controls that belong to the whole page sit on the right.
+   TitleSuffix (a status chip, for example) sits right next to the title instead. *@
 <div class="l2p-page-head">
-    <MudText Typo="Typo.h4" HtmlTag="h1" Class="l2p-page-title">@Title</MudText>
+    @if (TitleSuffix is null)
+    {
+        <MudText Typo="Typo.h4" HtmlTag="h1" Class="l2p-page-title">@Title</MudText>
+    }
+    else
+    {
+        <div class="l2p-page-title-group">
+            <MudText Typo="Typo.h4" HtmlTag="h1" Class="l2p-page-title">@Title</MudText>
+            @TitleSuffix
+        </div>
+    }
     @ChildContent
 </div>
 
 @code {
     [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    /// <summary>Content rendered right next to the title (not pushed to the right like ChildContent).</summary>
+    [Parameter] public RenderFragment? TitleSuffix { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

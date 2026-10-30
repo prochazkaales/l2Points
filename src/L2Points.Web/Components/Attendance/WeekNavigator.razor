@@ -4,11 +4,12 @@
 <div class="l2p-week-nav">
     <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" aria-label="Předchozí týden"
                    OnClick="() => WeekChanged.InvokeAsync(Week.Previous())" />
-    <MudText Typo="Typo.h6" HtmlTag="p" Class="l2p-week-nav-label">@DisplayFormat.WeekLabel(Week)</MudText>
+    @* A plain element (MudText gives no element reference): it takes focus after "Tento týden", which then hides. *@
+    <p @ref="_label" tabindex="-1" class="mud-typography mud-typography-h6 l2p-week-nav-label">@DisplayFormat.WeekLabel(Week)</p>
     <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" aria-label="Další týden"
                    OnClick="() => WeekChanged.InvokeAsync(Week.Next())" />
     <MudButton Variant="Variant.Text" Size="Size.Small" Color="Color.Primary" Class="@CurrentWeekClass"
-               OnClick="() => WeekChanged.InvokeAsync(Week.Containing(Today))">Tento týden</MudButton>
+               OnClick="GoToCurrentWeekAsync">Tento týden</MudButton>
 </div>
 
 @code {
@@ -26,4 +27,32 @@
     // In the current week the button is hidden, not disabled: it keeps its space (the arrows do not jump) and leaves
     // both the tab order and the accessibility tree.
     private string CurrentWeekClass => IsCurrentWeek ? "ml-2 l2p-week-nav-current l2p-invisible" : "ml-2 l2p-week-nav-current";
+
+    private ElementReference _label;
+    private bool _focusLabel;
+
+    // The clicked button hides in the current week, and focus would fall back to the page body: move it to the label.
+    private async Task GoToCurrentWeekAsync()
+    {
+        _focusLabel = true;
+        await WeekChanged.InvokeAsync(Week.Containing(Today));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusLabel || !IsCurrentWeek)
+        {
+            return;
+        }
+
+        _focusLabel = false;
+        try
+        {
+            await _label.FocusAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, nothing to focus.
+        }
+    }
 }

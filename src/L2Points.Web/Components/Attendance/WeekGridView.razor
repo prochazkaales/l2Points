@@ -4,7 +4,7 @@
 @using L2Points.Web.Formatting
 @inject IJSRuntime JS
 
-<div class="l2p-grid-stack">
+<div class="@StackClass">
     @foreach (var table in Tables)
     {
         <section class="l2p-grid-section">
@@ -15,7 +15,8 @@
                 }
                 @table.Title
             </h2>
-            <div class="@RootClass">
+            @* A static class: l2p-scrolled (js/scroll.js) stays on the scroller when ReadOnly toggles. *@
+            <div class="l2p-grid-scroll l2p-glass">
                 <table class="l2p-grid" aria-label="@table.Title">
                     <thead>
                         <tr>
@@ -108,7 +109,9 @@
                 .ToList()))
             .Where(t => t.Rows.Count > 0);
 
-    private string RootClass => ReadOnly ? "l2p-grid-scroll l2p-glass l2p-grid-readonly" : "l2p-grid-scroll l2p-glass";
+    // The read-only marker sits on the wrapper, not on the scrollers: rewriting a scroller's class attribute would drop
+    // the l2p-scrolled class that js/scroll.js adds to it.
+    private string StackClass => ReadOnly ? "l2p-grid-stack l2p-grid-readonly" : "l2p-grid-stack";
 
     private static string CheckClass(GridCellState state, WeekGridCell cell)
     {

@@ -12,6 +12,6 @@ document.addEventListener("click", function (event) {
 
     var show = input.type === "password";
     input.type = show ? "text" : "password";
+    // A toggle button keeps its label ("Zobrazit heslo"); only its pressed state changes.
     button.setAttribute("aria-pressed", show ? "true" : "false");
-    button.setAttribute("aria-label", show ? "Skrýt heslo" : "Zobrazit heslo");
 });
