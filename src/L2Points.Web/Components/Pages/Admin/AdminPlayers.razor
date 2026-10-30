@@ -31,7 +31,7 @@ else
 {
     <div class="mb-3">
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
-                   Disabled="_saving" OnClick="CreateAsync">Nový hráč</MudButton>
+                   Disabled="_saving" OnClick="CreateAsync">Nový účet</MudButton>
     </div>
 
     <div class="l2p-ap">
@@ -42,7 +42,7 @@ else
                 <MudTh>Login</MudTh>
                 <MudTh>Aktivní od</MudTh>
                 <MudTh>Stav</MudTh>
-                <MudTh>Admin</MudTh>
+                <MudTh>Role</MudTh>
                 <MudTh>Akce</MudTh>
             </HeaderContent>
             <RowTemplate>
@@ -51,7 +51,15 @@ else
                     var state = PlayerActionState.For(player, _actorId, ActorIsSuperAdmin);
                 }
                 <MudTd Class="l2p-nick-cell">
-                    <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover">@player.Nick</MudLink>
+                    @* A hidden reader has no detail page (it is "not found" for everybody), so no link. *@
+                    @if (IsHidden(player))
+                    {
+                        <span>@player.Nick</span>
+                    }
+                    else
+                    {
+                        <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover">@player.Nick</MudLink>
+                    }
                 </MudTd>
                 <MudTd>@player.Login</MudTd>
                 <MudTd>@FormatDate(player.ActiveFrom)</MudTd>
@@ -74,13 +82,23 @@ else
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">admin</MudChip>
                     }
+                    @if (player.IsReader)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">čtenář</MudChip>
+                    }
+                    @if (IsHidden(player))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">skrytý</MudChip>
+                    }
                 </MudTd>
                 <MudTd>
                     <PlayerActions Player="player" State="state" Busy="_saving" OnEdit="@(() => EditAsync(player))"
                                    OnResetPassword="@(() => ResetPasswordAsync(player))"
                                    OnDelete="@(() => DeleteAsync(player))"
                                    OnSetActive="@(active => SetActiveAsync(player, active))"
-                                   OnSetAdmin="@(isAdmin => SetAdminAsync(player, isAdmin))" />
+                                   OnSetAdmin="@(isAdmin => SetAdminAsync(player, isAdmin))"
+                                   OnSetReader="@(isReader => SetReaderAsync(player, isReader))"
+                                   OnSetShowInStats="@(show => SetShowInStatsAsync(player, show))" />
                 </MudTd>
             </RowTemplate>
         </MudTable>
@@ -91,8 +109,15 @@ else
                 var state = PlayerActionState.For(player, _actorId, ActorIsSuperAdmin);
                 <MudPaper Outlined="true" Class="l2p-tile l2p-ap-card" @key="player.UserId">
                     <div class="l2p-ap-card-head">
-                        <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover"
-                                 Class="l2p-ap-card-nick">@player.Nick</MudLink>
+                        @if (IsHidden(player))
+                        {
+                            <span class="l2p-ap-card-nick">@player.Nick</span>
+                        }
+                        else
+                        {
+                            <MudLink Href="@DisplayFormat.PlayerUrl(player.UserId)" Underline="Underline.Hover"
+                                     Class="l2p-ap-card-nick">@player.Nick</MudLink>
+                        }
                         <div class="l2p-ap-card-chips">
                             @if (player.IsActive)
                             {
@@ -110,6 +135,14 @@ else
                             {
                                 <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">admin</MudChip>
                             }
+                            @if (player.IsReader)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">čtenář</MudChip>
+                            }
+                            @if (IsHidden(player))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">skrytý</MudChip>
+                            }
                         </div>
                     </div>
                     <div class="l2p-ap-card-meta">@player.Login · aktivní od @FormatDate(player.ActiveFrom)</div>
@@ -117,7 +150,9 @@ else
                                    OnResetPassword="@(() => ResetPasswordAsync(player))"
                                    OnDelete="@(() => DeleteAsync(player))"
                                    OnSetActive="@(active => SetActiveAsync(player, active))"
-                                   OnSetAdmin="@(isAdmin => SetAdminAsync(player, isAdmin))" />
+                                   OnSetAdmin="@(isAdmin => SetAdminAsync(player, isAdmin))"
+                                   OnSetReader="@(isReader => SetReaderAsync(player, isReader))"
+                                   OnSetShowInStats="@(show => SetShowInStatsAsync(player, show))" />
                 </MudPaper>
             }
         </div>
@@ -162,6 +197,8 @@ else
 
     private static string FormatDate(DateOnly date) => date.ToString("d. M. yyyy", CultureInfo.InvariantCulture);
 
+    private static bool IsHidden(AdminPlayer player) => player.IsReader && !player.ShowInStats;
+
     private static string InactiveText(AdminPlayer player) =>
         player.DeactivatedAt is { } date ? $"neaktivní od {FormatDate(date)}" : "neaktivní";
 
@@ -174,7 +211,7 @@ else
             return;
         }
 
-        await ChangeAsync(ct => PlayerAdmin.CreateAsync(values.Login, values.Nick, values.ActiveFrom, ct: ct), values.Nick);
+        await ChangeAsync(ct => PlayerAdmin.CreateAsync(values.Login, values.Nick, values.ActiveFrom, values.IsReader, values.ShowInStats, ct), values.Nick);
     }
 
     private async Task EditAsync(AdminPlayer player)
@@ -224,6 +261,12 @@ else
 
         await ChangeAsync(ct => PlayerAdmin.SetAdminAsync(_actorId!, player.UserId, isAdmin, ct));
     }
+
+    private Task SetReaderAsync(AdminPlayer player, bool isReader) =>
+        ChangeAsync(ct => PlayerAdmin.SetReaderAsync(_actorId!, player.UserId, isReader, ct));
+
+    private Task SetShowInStatsAsync(AdminPlayer player, bool show) =>
+        ChangeAsync(ct => PlayerAdmin.SetShowInStatsAsync(_actorId!, player.UserId, show, ct));
 
     private async Task DeleteAsync(AdminPlayer player)
     {
@@ -333,6 +376,9 @@ else
         PlayerAdminStatus.RequiresSuperAdmin => "Admin práva může měnit jen super admin.",
         PlayerAdminStatus.SuperAdminProtected => PlayerActionState.SuperAdminProtectedText,
         PlayerAdminStatus.AdminProtected => PlayerActionState.AdminProtectedText,
+        PlayerAdminStatus.AdminCannotBeReader => PlayerActionState.AdminReaderText,
+        PlayerAdminStatus.ReaderCannotBeAdmin => "Čtenáři nejde dát admina, nejdřív ho přepni na hráče.",
+        PlayerAdminStatus.NotReader => "Ze statistik jde skrýt jen čtenář.",
         _ => result.Message ?? "Uložení se nepovedlo, zkus to znovu.",
     };
 

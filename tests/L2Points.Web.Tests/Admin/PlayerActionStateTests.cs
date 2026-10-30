@@ -8,8 +8,8 @@ public class PlayerActionStateTests
     private const string Actor = "actor-id";
     private const string Other = "other-id";
 
-    private static AdminPlayer Player(string id, bool isAdmin = false, bool isSuperAdmin = false) =>
-        new(id, "login", "Nick", true, new DateOnly(2026, 10, 26), null, isAdmin || isSuperAdmin, isSuperAdmin, false, true);
+    private static AdminPlayer Player(string id, bool isAdmin = false, bool isSuperAdmin = false, bool isReader = false) =>
+        new(id, "login", "Nick", true, new DateOnly(2026, 10, 26), null, isAdmin || isSuperAdmin, isSuperAdmin, isReader, true);
 
     [Fact]
     public void Self_cannot_reset_deactivate_delete_or_remove_admin()
@@ -108,5 +108,43 @@ public class PlayerActionStateTests
         var state = PlayerActionState.For(Player(Other, isSuperAdmin: true), Actor, actorIsSuperAdmin: false);
 
         Assert.Equal(state.ProtectedText, state.ResetPasswordHint);
+    }
+
+    [Fact]
+    public void Player_CanSwitchToReader()
+    {
+        var state = PlayerActionState.For(Player(Other), Actor, actorIsSuperAdmin: false);
+
+        Assert.True(state.CanSwitchToReader);
+        Assert.Null(state.SwitchToReaderHint);
+    }
+
+    [Fact]
+    public void Self_CannotSwitchToReader()
+    {
+        var state = PlayerActionState.For(Player(Actor), Actor, actorIsSuperAdmin: false);
+
+        Assert.False(state.CanSwitchToReader);
+        Assert.Equal("Vlastní účet", state.SwitchToReaderHint);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Admin_CannotSwitchToReader(bool actorIsSuperAdmin)
+    {
+        var state = PlayerActionState.For(Player(Other, isAdmin: true), Actor, actorIsSuperAdmin);
+
+        Assert.False(state.CanSwitchToReader);
+        Assert.Equal(PlayerActionState.AdminReaderText, state.SwitchToReaderHint);
+    }
+
+    [Fact]
+    public void Reader_DoesNotOfferSwitchToReader()
+    {
+        var state = PlayerActionState.For(Player(Other, isReader: true), Actor, actorIsSuperAdmin: false);
+
+        Assert.False(state.CanSwitchToReader);
+        Assert.Null(state.SwitchToReaderHint);
     }
 }

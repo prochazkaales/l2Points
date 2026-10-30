@@ -167,7 +167,8 @@ else
         _playersError = false;
         try
         {
-            _players = await PlayerAdmin.GetPlayersAsync(_disposed.Token);
+            // A hidden reader has no attendance to correct: the same "not found" as an unknown id in ?player=.
+            _players = (await PlayerAdmin.GetPlayersAsync(_disposed.Token)).Where(p => p.ShowInStats).ToList();
         }
         catch (OperationCanceledException)
         {

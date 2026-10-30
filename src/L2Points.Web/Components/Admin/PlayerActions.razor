@@ -37,8 +37,28 @@
             <MudMenuItem Icon="@Icons.Material.Filled.HowToReg" Disabled="Busy"
                          OnClick="@(() => OnSetActive.InvokeAsync(true))">Aktivovat</MudMenuItem>
         }
-        @* Only the super admin manages admin roles, so the item is hidden for others. *@
-        @if (State.ShowAdminToggle)
+        @if (Player.IsReader)
+        {
+            <MudMenuItem Icon="@Icons.Material.Filled.SportsEsports" Disabled="Busy"
+                         OnClick="@(() => OnSetReader.InvokeAsync(false))">Přepnout na hráče</MudMenuItem>
+            <MudMenuItem Icon="@(Player.ShowInStats ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                         Disabled="Busy" OnClick="@(() => OnSetShowInStats.InvokeAsync(!Player.ShowInStats))">
+                @(Player.ShowInStats ? "Skrýt ze statistik" : "Zobrazit ve statistikách")
+            </MudMenuItem>
+        }
+        else
+        {
+            <MudMenuItem Icon="@Icons.Material.Filled.MenuBook" Disabled="@(Busy || !State.CanSwitchToReader)"
+                         OnClick="@(() => OnSetReader.InvokeAsync(true))">
+                <span class="l2p-menu-label">Přepnout na čtenáře</span>
+                @if (!State.CanSwitchToReader)
+                {
+                    <span class="l2p-menu-hint">@State.SwitchToReaderHint</span>
+                }
+            </MudMenuItem>
+        }
+        @* Only the super admin manages admin roles, so the item is hidden for others; readers cannot be admins. *@
+        @if (State.ShowAdminToggle && !Player.IsReader)
         {
             if (Player.IsAdmin)
             {
@@ -94,6 +114,12 @@
 
     [Parameter]
     public EventCallback<bool> OnSetAdmin { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnSetReader { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnSetShowInStats { get; set; }
 
     private string? DisabledReason => State.IsSelf ? "Vlastní účet" : State.ProtectedText;
 }

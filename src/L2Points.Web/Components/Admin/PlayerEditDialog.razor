@@ -2,7 +2,7 @@
    Returns Values on save; the caller passes them to PlayerAdminService, which trims and validates again. *@
 <MudDialog>
     <TitleContent>
-        <MudText Typo="Typo.h6">@(IsCreate ? "Nový hráč" : "Upravit hráče")</MudText>
+        <MudText Typo="Typo.h6">@(IsCreate ? "Nový účet" : "Upravit hráče")</MudText>
     </TitleContent>
     <DialogContent>
         <MudForm @ref="_form">
@@ -15,7 +15,19 @@
                           Required="true" RequiredError="Zadej nick." MaxLength="AppUser.NickMaxLength"
                           Counter="AppUser.NickMaxLength" />
             <MudDatePicker @bind-Date="_activeFrom" Label="Aktivní od" Variant="Variant.Outlined"
-                           DateFormat="d. M. yyyy" Required="true" RequiredError="Zadej datum." />
+                           DateFormat="d. M. yyyy" Required="true" RequiredError="Zadej datum." Class="mb-3" />
+            @if (IsCreate)
+            {
+                <MudRadioGroup T="bool" @bind-Value="_isReader">
+                    <MudRadio T="bool" Value="false" Color="Color.Primary">Hráč</MudRadio>
+                    <MudRadio T="bool" Value="true" Color="Color.Primary">Čtenář</MudRadio>
+                </MudRadioGroup>
+                @if (_isReader)
+                {
+                    <MudCheckBox T="bool" @bind-Value="_showInStats" Color="Color.Primary"
+                                 Label="Zobrazovat ve statistikách" />
+                }
+            }
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -25,12 +37,14 @@
 </MudDialog>
 
 @code {
-    public sealed record Values(string Login, string Nick, DateOnly ActiveFrom);
+    public sealed record Values(string Login, string Nick, DateOnly ActiveFrom, bool IsReader, bool ShowInStats);
 
     private MudForm _form = default!;
     private string? _login;
     private string? _nick;
     private DateTime? _activeFrom;
+    private bool _isReader;
+    private bool _showInStats;
 
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
@@ -65,7 +79,9 @@
         MudDialog.Close(DialogResult.Ok(new Values(
             _login?.Trim() ?? string.Empty,
             _nick?.Trim() ?? string.Empty,
-            DateOnly.FromDateTime(activeFrom))));
+            DateOnly.FromDateTime(activeFrom),
+            IsReader: IsCreate && _isReader,
+            ShowInStats: _isReader && _showInStats)));
     }
 
     private void Cancel() => MudDialog.Cancel();

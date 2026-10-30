@@ -14,6 +14,8 @@ namespace L2Points.Web.Components.Admin;
 /// <param name="CanDelete">Deleting the player is allowed.</param>
 /// <param name="ShowAdminToggle">The actor may grant or remove the Admin role (super admin only).</param>
 /// <param name="CanRemoveAdmin">Removing the Admin role from this player is allowed.</param>
+/// <param name="CanSwitchToReader">Switching a player to a reader is allowed (not for readers, the own account or admins).</param>
+/// <param name="SwitchToReaderHint">Why switching to a reader is not possible (own account, admin); null otherwise.</param>
 public sealed record PlayerActionState(
     bool IsSelf,
     string? ProtectedText,
@@ -22,10 +24,13 @@ public sealed record PlayerActionState(
     bool CanDeactivate,
     bool CanDelete,
     bool ShowAdminToggle,
-    bool CanRemoveAdmin)
+    bool CanRemoveAdmin,
+    bool CanSwitchToReader,
+    string? SwitchToReaderHint)
 {
     public const string SuperAdminProtectedText = "Super admina nelze měnit.";
     public const string AdminProtectedText = "Jiného admina může měnit jen super admin.";
+    public const string AdminReaderText = "Admina nejde přepnout na čtenáře.";
     public const string OwnPasswordText = "Vlastní heslo změníš v profilu.";
 
     private const string ResetPasswordText = "Reset hesla";
@@ -42,6 +47,13 @@ public sealed record PlayerActionState(
         var isProtected = protectedText is not null;
         var canManage = !isSelf && !isProtected;
 
+        // Readers are never admins; switching a reader back to a player is always allowed, so only the way to a reader is gated.
+        var canSwitchToReader = !player.IsReader && !isSelf && !player.IsAdmin;
+        var switchHint = player.IsReader ? null
+            : isSelf ? "Vlastní účet"
+            : player.IsAdmin ? AdminReaderText
+            : null;
+
         var resetHint = isSelf ? OwnPasswordText : protectedText ?? ResetPasswordText;
 
         return new PlayerActionState(
@@ -52,6 +64,8 @@ public sealed record PlayerActionState(
             CanDeactivate: canManage,
             CanDelete: canManage,
             ShowAdminToggle: actorIsSuperAdmin,
-            CanRemoveAdmin: canManage);
+            CanRemoveAdmin: canManage,
+            CanSwitchToReader: canSwitchToReader,
+            SwitchToReaderHint: switchHint);
     }
 }

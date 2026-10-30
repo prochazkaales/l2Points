@@ -128,6 +128,9 @@ else
                 case JewelChangeResult.UnknownPlayer:
                     Snackbar.Add("Hráč už neexistuje.", Severity.Warning);
                     break;
+                case JewelChangeResult.HiddenPlayer:
+                    Snackbar.Add("Skrytému čtenáři nejde měnit šperky.", Severity.Warning);
+                    break;
                 default:
                     Snackbar.Add("Šperk už neexistuje.", Severity.Warning);
                     break;
