@@ -612,10 +612,6 @@ h1:focus {
     gap: var(--l2p-space-2);
     margin: auto var(--l2p-space-2) 0;
     padding: var(--l2p-space-2);
-    border-radius: var(--l2p-radius-lg);
-    border: var(--l2p-line-width) solid var(--l2p-line);
-    background: var(--l2p-glass-strong);
-    box-shadow: inset 0 1px 0 var(--l2p-glass-hi);
 }
 
 /* Keeps the card off the last nav item when the drawer is short. */
