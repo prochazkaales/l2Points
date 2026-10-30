@@ -1261,12 +1261,13 @@ a:not(.mud-button-root):focus-visible,
     }
 
     /* Every button and icon button, in pages, dialogs and message boxes alike. The switch base is MudSwitch's thumb
-       (its label is the 44px target) and keeps its size. */
+       (its label is the 44px target) and keeps its size. The day cells of MudDatePicker are icon buttons too, but the
+       calendar has a fixed width for seven 36px days; 44px days would overflow it, so they keep the picker's size. */
     .mud-button-root.mud-button {
         min-height: var(--l2p-touch);
     }
 
-    .mud-button-root.mud-icon-button:not(.mud-switch-base) {
+    .mud-button-root.mud-icon-button:not(.mud-switch-base):not(.mud-day) {
         min-width: var(--l2p-touch);
         min-height: var(--l2p-touch);
     }
