@@ -15,6 +15,13 @@
       - keep the passwords, the budget, the current image and the current super admin login and nick
         (-AdminUserName, -AdminNick and -BudgetEmail are ignored).
 
+    Discord report bot (optional): pass -DiscordApplicationId, -DiscordPublicKey and -DiscordGuildId. The bot token and
+    the Anthropic API key are asked for with -SetDiscordSecrets (hidden input, they travel only in the temporary
+    parameter file and are stored in Key Vault). The first time Discord is enabled the switch is required; later runs
+    read the Discord values from the running app, so a plain update keeps the bot as it is. When the secrets are
+    replaced on an app that already runs the bot, the active revision is restarted afterwards: only Key Vault values
+    change, so no new revision is created and the replica would keep the old ones.
+
     At the end it prints the app URL and the values of the GitHub repository variables for the CI deploy.
 
 .EXAMPLE
@@ -32,7 +39,16 @@ param(
     # Required only on the first provisioning; the script asks for missing values.
     [string] $AdminUserName,
     [string] $AdminNick,
-    [string] $BudgetEmail
+    [string] $BudgetEmail,
+
+    # Discord report bot (see docs/deployment.md). On update, values not passed are read from the running app.
+    [string] $DiscordApplicationId,
+    [string] $DiscordPublicKey,
+    [string] $DiscordGuildId,
+    [string] $AnthropicModel,
+
+    # Asks for the Discord bot token and the Anthropic API key (hidden input) and stores them in Key Vault.
+    [switch] $SetDiscordSecrets
 )
 
 $ErrorActionPreference = 'Stop'
@@ -154,6 +170,14 @@ function Get-EnvValue($Container, [string] $Name) {
     return $item.value
 }
 
+# Reads a secret with hidden input, never from an argument or the pipeline.
+function Read-RequiredSecret([string] $Prompt) {
+    while ($true) {
+        $value = (ConvertTo-PlainText (Read-Host -Prompt $Prompt -AsSecureString)).Trim()
+        if ($value) { return $value }
+    }
+}
+
 # --- 1. Subscription -----------------------------------------------------------------------------------------
 
 Invoke-Az account set --subscription $SubscriptionId | Out-Null
@@ -204,6 +228,9 @@ $initialSetup = $existingApps.Count -eq 0
 $adminPassword = ''
 $sqlAdminPassword = ''
 $budgetStartDate = ''
+$discordBotToken = ''
+$anthropicApiKey = ''
+$currentDiscordApplicationId = $null
 
 if ($initialSetup) {
     Write-Host 'Container app not found: initial setup.'
@@ -265,6 +292,13 @@ else {
     $AdminNick = $currentNick
     $BudgetEmail = ''
 
+    # Discord values the app runs with now; used when they are not passed again, so an update never drops the bot.
+    $currentDiscordApplicationId = Get-EnvValue $container 'Discord__ApplicationId'
+    if (-not $DiscordApplicationId) { $DiscordApplicationId = $currentDiscordApplicationId }
+    if (-not $DiscordPublicKey) { $DiscordPublicKey = Get-EnvValue $container 'Discord__PublicKey' }
+    if (-not $DiscordGuildId) { $DiscordGuildId = Get-EnvValue $container 'Discord__GuildId' }
+    if (-not $AnthropicModel) { $AnthropicModel = Get-EnvValue $container 'Anthropic__Model' }
+
     # The budget is created only on the initial setup, so an update cannot restore a missing one. Warn only;
     # a failing check (preview command, permissions) must not stop the update.
     $budgetFound = $false
@@ -280,6 +314,29 @@ else {
     }
 }
 Write-Host "Image: $image"
+
+# --- 6. Discord report bot -----------------------------------------------------------------------------------
+
+if ($DiscordApplicationId -or $DiscordPublicKey -or $DiscordGuildId -or $SetDiscordSecrets) {
+    if (-not ($DiscordApplicationId -and $DiscordPublicKey -and $DiscordGuildId)) {
+        throw 'The Discord bot needs -DiscordApplicationId, -DiscordPublicKey and -DiscordGuildId together (see docs/deployment.md).'
+    }
+    # The Key Vault secrets do not exist until they are written once; a revision that references them would not start.
+    if (-not $currentDiscordApplicationId -and -not $SetDiscordSecrets) {
+        throw 'Enabling the Discord bot for the first time needs -SetDiscordSecrets: it asks for the bot token and the Anthropic API key and stores them in Key Vault.'
+    }
+    $DiscordApplicationId = $DiscordApplicationId.Trim()
+    $DiscordPublicKey = $DiscordPublicKey.Trim()
+    $DiscordGuildId = $DiscordGuildId.Trim()
+    if ($SetDiscordSecrets) {
+        $discordBotToken = Read-RequiredSecret 'Discord bot token'
+        $anthropicApiKey = Read-RequiredSecret 'Anthropic API key'
+    }
+    Write-Host "Discord bot: enabled (application $DiscordApplicationId)$(if ($SetDiscordSecrets) { ', secrets will be stored in Key Vault' } else { ', secrets stay as stored' })."
+}
+else {
+    Write-Host 'Discord bot: not configured.'
+}
 
 # --- 7. Deployment -------------------------------------------------------------------------------------------
 
@@ -297,6 +354,12 @@ $parameters = [ordered]@{
         sqlEntraAdminObjectId = @{ value = $signedInUser.id }
         budgetEmail           = @{ value = $BudgetEmail }
         budgetStartDate       = @{ value = $budgetStartDate }
+        discordApplicationId  = @{ value = [string] $DiscordApplicationId }
+        discordPublicKey      = @{ value = [string] $DiscordPublicKey }
+        discordGuildId        = @{ value = [string] $DiscordGuildId }
+        discordBotToken       = @{ value = $discordBotToken }
+        anthropicApiKey       = @{ value = $anthropicApiKey }
+        anthropicModel        = @{ value = [string] $AnthropicModel }
     }
 }
 
@@ -340,7 +403,24 @@ finally {
     }
     $adminPassword = $null
     $sqlAdminPassword = $null
+    $discordBotToken = $null
+    $anthropicApiKey = $null
     $parameters = $null
+}
+
+# --- 7b. Secret rotation -------------------------------------------------------------------------------------
+
+# Replaced Key Vault values do not change the Container App template, so no revision is created and the running
+# replica keeps the old secrets. Restart the active revision (no secrets on the command line).
+if ($SetDiscordSecrets -and $currentDiscordApplicationId) {
+    $revisionName = ((Invoke-Az containerapp revision list --resource-group $ResourceGroup --name $ContainerAppName --query '[?properties.active].name' --output tsv) | Select-Object -First 1)
+    if ([string]::IsNullOrWhiteSpace($revisionName)) {
+        Write-Warning 'Could not find the active revision; restart it yourself so the new Discord secrets take effect (az containerapp revision restart).'
+    }
+    else {
+        Write-Host "Restarting revision $revisionName so it picks up the new Discord secrets ..."
+        Invoke-Az containerapp revision restart --resource-group $ResourceGroup --name $ContainerAppName --revision $revisionName --output none | Out-Null
+    }
 }
 
 # --- 8. Result -----------------------------------------------------------------------------------------------

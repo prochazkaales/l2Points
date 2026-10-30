@@ -51,6 +51,26 @@ param budgetStartDate string = ''
 @description('Repository part of the GitHub OIDC subject: GitHub issues it with immutable IDs (owner@ownerId/name@repositoryId), see the error AADSTS700213 in docs/deployment.md.')
 param githubOidcRepository string = 'prochazkaales@142387925/l2Points@1437856239'
 
+@description('Discord application id (Discord__ApplicationId). Empty = the Discord report bot is off and none of its settings are deployed.')
+param discordApplicationId string = ''
+
+@description('Ed25519 public key of the Discord application as hex (Discord__PublicKey). Not a secret.')
+param discordPublicKey string = ''
+
+@description('Id of the Discord server the bot works for (Discord__GuildId).')
+param discordGuildId string = ''
+
+@secure()
+@description('Discord bot token (Discord__BotToken). Written to Key Vault only when non-empty, otherwise the stored value stays.')
+param discordBotToken string = ''
+
+@secure()
+@description('Anthropic API key (Anthropic__ApiKey). Written to Key Vault only when non-empty, otherwise the stored value stays.')
+param anthropicApiKey string = ''
+
+@description('Optional Anthropic model override (Anthropic__Model). Empty = the app default.')
+param anthropicModel string = ''
+
 // Short suffix for globally unique names (Key Vault, SQL server).
 var suffix = substring(uniqueString(resourceGroup().id), 0, 6)
 
@@ -62,6 +82,12 @@ var containerPort = 8080
 
 var sqlConnectionStringSecretName = 'sql-connection-string'
 var adminPasswordSecretName = 'admin-password'
+var discordBotTokenSecretName = 'discord-bot-token'
+var anthropicApiKeySecretName = 'anthropic-api-key'
+
+// The Discord report bot is deployed only when the application id is given. Its two Key Vault secrets must exist
+// by then (deploy.ps1 -SetDiscordSecrets writes them), otherwise the new revision cannot start.
+var discordEnabled = !empty(discordApplicationId)
 
 // Built-in role definitions (well-known ids, identical in every tenant).
 var contributorRoleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
@@ -198,6 +224,24 @@ resource adminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if
   }
 }
 
+// Discord and Anthropic secrets are written only when the caller passes a value, so an update without them keeps
+// the stored secrets.
+resource discordBotTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(discordBotToken)) {
+  parent: keyVault
+  name: discordBotTokenSecretName
+  properties: {
+    value: discordBotToken
+  }
+}
+
+resource anthropicApiKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(anthropicApiKey)) {
+  parent: keyVault
+  name: anthropicApiKeySecretName
+  properties: {
+    value: anthropicApiKey
+  }
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Azure SQL
 // ---------------------------------------------------------------------------------------------------------------
@@ -292,18 +336,34 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         ]
       }
       // Versionless Key Vault references: the app always gets the current secret version.
-      secrets: [
-        {
-          name: sqlConnectionStringSecretName
-          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${sqlConnectionStringSecretName}'
-          identity: appIdentity.id
-        }
-        {
-          name: adminPasswordSecretName
-          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${adminPasswordSecretName}'
-          identity: appIdentity.id
-        }
-      ]
+      secrets: concat(
+        [
+          {
+            name: sqlConnectionStringSecretName
+            keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${sqlConnectionStringSecretName}'
+            identity: appIdentity.id
+          }
+          {
+            name: adminPasswordSecretName
+            keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${adminPasswordSecretName}'
+            identity: appIdentity.id
+          }
+        ],
+        discordEnabled
+          ? [
+              {
+                name: discordBotTokenSecretName
+                keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${discordBotTokenSecretName}'
+                identity: appIdentity.id
+              }
+              {
+                name: anthropicApiKeySecretName
+                keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${anthropicApiKeySecretName}'
+                identity: appIdentity.id
+              }
+            ]
+          : []
+      )
     }
     template: {
       containers: [
@@ -314,41 +374,75 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
-          env: [
-            {
-              name: 'ConnectionStrings__Default'
-              secretRef: sqlConnectionStringSecretName
-            }
-            {
-              name: 'Admin__UserName'
-              value: adminUserName
-            }
-            {
-              name: 'Admin__Nick'
-              value: adminNick
-            }
-            {
-              name: 'Admin__Password'
-              secretRef: adminPasswordSecretName
-            }
-            {
-              name: 'DataProtection__KeyVaultKeyUri'
-              value: dataProtectionKey.properties.keyUri
-            }
-            {
-              // The app connects as server admin; never let it create a missing database (default tier is expensive).
-              name: 'Database__CreateIfMissing'
-              value: 'false'
-            }
-            {
-              name: 'ForwardedHeaders__TrustAllProxies'
-              value: 'true'
-            }
-            {
-              name: 'AZURE_CLIENT_ID'
-              value: appIdentity.properties.clientId
-            }
-          ]
+          env: concat(
+            [
+              {
+                name: 'ConnectionStrings__Default'
+                secretRef: sqlConnectionStringSecretName
+              }
+              {
+                name: 'Admin__UserName'
+                value: adminUserName
+              }
+              {
+                name: 'Admin__Nick'
+                value: adminNick
+              }
+              {
+                name: 'Admin__Password'
+                secretRef: adminPasswordSecretName
+              }
+              {
+                name: 'DataProtection__KeyVaultKeyUri'
+                value: dataProtectionKey.properties.keyUri
+              }
+              {
+                // The app connects as server admin; never let it create a missing database (default tier is expensive).
+                name: 'Database__CreateIfMissing'
+                value: 'false'
+              }
+              {
+                name: 'ForwardedHeaders__TrustAllProxies'
+                value: 'true'
+              }
+              {
+                name: 'AZURE_CLIENT_ID'
+                value: appIdentity.properties.clientId
+              }
+            ],
+            discordEnabled
+              ? [
+                  {
+                    name: 'Discord__ApplicationId'
+                    value: discordApplicationId
+                  }
+                  {
+                    name: 'Discord__PublicKey'
+                    value: discordPublicKey
+                  }
+                  {
+                    name: 'Discord__GuildId'
+                    value: discordGuildId
+                  }
+                  {
+                    name: 'Discord__BotToken'
+                    secretRef: discordBotTokenSecretName
+                  }
+                  {
+                    name: 'Anthropic__ApiKey'
+                    secretRef: anthropicApiKeySecretName
+                  }
+                ]
+              : [],
+            discordEnabled && !empty(anthropicModel)
+              ? [
+                  {
+                    name: 'Anthropic__Model'
+                    value: anthropicModel
+                  }
+                ]
+              : []
+          )
           probes: [
             {
               // The app listens only after migrations and seeding, and may first wait up to 3 minutes on the
@@ -402,6 +496,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     adminPasswordSecret
     sqlDatabase
     sqlAllowAzureServices
+    discordBotTokenSecret
+    anthropicApiKeySecret
   ]
 }
 

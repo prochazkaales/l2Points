@@ -1,5 +1,6 @@
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
+using L2Points.Infrastructure.Reports;
 using L2Points.Infrastructure.Services;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,8 @@ public class DependencyInjectionTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<JewelService>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<PlayerAdminService>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IScreenshotReader>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IDiscordReportService>());
     }
 
     [Fact]

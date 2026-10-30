@@ -2,7 +2,7 @@
 # Smoke test of a built L2Points image against SQL Server in a container (docker compose).
 # Usage: scripts/smoke-test.sh <image>
 # Checks: health live/ready, /login renders the Czech UI, case-sensitive static files,
-# tzdata (Europe/Prague) and ICU in the image, no fail/crit log entries from the web container.
+# Discord endpoint disabled (404), tzdata (Europe/Prague) and ICU in the image, no fail/crit log entries from the web container.
 set -euo pipefail
 
 if [[ $# -ne 1 || -z "$1" ]]; then
@@ -117,6 +117,11 @@ code="$(curl -sS -o /dev/null -D "$headers_file" -w '%{http_code}' --max-time 10
 [[ "$code" == "200" ]] || fail "/_framework/blazor.web.js returned $code"
 grep -qiE '^content-type: *text/javascript' "$headers_file" || fail "/_framework/blazor.web.js is not served as JavaScript"
 echo "OK: /_framework/blazor.web.js -> 200 text/javascript"
+
+# Discord interactions endpoint is off without configuration (the smoke test has none): 404, nothing processed.
+code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 -X POST "$BASE_URL/discord/interactions")"
+[[ "$code" == "404" ]] || fail "POST /discord/interactions returned $code (expected 404 without Discord configuration)"
+echo "OK: POST /discord/interactions -> 404 (Discord disabled)"
 
 # Time zone data and ICU in the runtime image.
 docker run --rm --entrypoint sh "$IMAGE" -c 'test -f /usr/share/zoneinfo/Europe/Prague && ls /usr/lib/*/libicuuc.so.*' \

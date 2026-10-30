@@ -1,6 +1,7 @@
 using L2Points.Infrastructure;
 using L2Points.Infrastructure.Identity;
 using L2Points.Infrastructure.Persistence;
+using L2Points.Infrastructure.Reports;
 using L2Points.Infrastructure.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +52,9 @@ internal static class TestServices
         services.AddScoped<JewelService>();
         services.AddScoped<CatalogAdminService>();
         services.AddScoped<PlayerAdminService>();
+        services.AddSingleton<FakeScreenshotReader>();
+        services.AddSingleton<IScreenshotReader>(sp => sp.GetRequiredService<FakeScreenshotReader>());
+        services.AddScoped<IDiscordReportService, DiscordReportService>();
 
         var provider = services.BuildServiceProvider();
 
