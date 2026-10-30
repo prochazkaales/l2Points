@@ -360,7 +360,7 @@ h1:focus {
    the scrolled cells must not show through them. */
 .mud-main-content .mud-table .mud-table-cell.l2p-nick-cell,
 .mud-main-content .mud-table .mud-table-cell.l2p-pd-week {
-    background: var(--l2p-row-bg, var(--l2p-surface-solid));
+    background: var(--l2p-row-bg, var(--l2p-surface-pinned));
 }
 
 /* Table header row: one opaque tinted band in every cell, pinned ones included (the same style as the attendance grid
@@ -819,9 +819,19 @@ h1:focus {
     left: 0;
     z-index: 2;
     white-space: nowrap;
-    /* Opaque, otherwise the scrolled cells show through the pinned column. */
-    background: var(--l2p-row-bg, var(--l2p-surface-solid));
+    /* Opaque, otherwise the scrolled cells show through the pinned column; a soft tint, not a dark box. */
+    background: var(--l2p-row-bg, var(--l2p-surface-pinned));
     border-right: var(--l2p-line-width) solid var(--l2p-line);
+}
+
+/* The shadow of a pinned column appears only once its table has been scrolled sideways (the scroll listener in
+   js/scroll.js toggles l2p-scrolled on the scroll container). The "me" row of the week grid combines it with its marker in
+   WeekOverview.razor.css. */
+.l2p-scrolled .l2p-nick-cell,
+.l2p-scrolled .l2p-grid-boss,
+.l2p-scrolled .l2p-wk-grid-nick,
+.l2p-scrolled .l2p-pd-week {
+    box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.35);
 }
 
 td.l2p-nick-cell .l2p-nick-chip {
@@ -856,7 +866,7 @@ td.l2p-nick-cell .l2p-nick-chip {
     .l2p-jewels {
         display: flex;
         width: fit-content;
-        margin: var(--l2p-space-1) 0 0;
+        margin: var(--l2p-space-1) 0 var(--l2p-space-2);
     }
 }
 

@@ -5,6 +5,16 @@
     vertical-align: middle;
 }
 
+/* The icons are art on a dark background: a framed tile keeps them from reading as a black square on a light surface. */
+.l2p-jewel-tile {
+    display: inline-block;
+    padding: 2px;
+    line-height: 0;
+    background: var(--l2p-icon-tile);
+    border: var(--l2p-line-width) solid var(--l2p-line);
+    border-radius: var(--l2p-radius-sm);
+}
+
 .l2p-jewel img {
     display: block;
 }

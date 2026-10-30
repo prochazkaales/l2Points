@@ -54,6 +54,8 @@ Formát nálezu: **ID – název** (závažnost · režim), pak místo, co je š
 
 ### A. Barevná paleta a kontrast
 
+**Stav:** opraveno v `feature/ui-audit`: A1–A8. A9 (pruh bodů) zůstává beze změny podle auditu.
+
 **A1 – Neaktivní tlačítka čitelná na 2:1** (vysoká · dark, light, mobil)
 - Kde: `Components/Attendance/WeekNavigator.razor:10-12` („Tento týden“ s `Disabled="@IsCurrentWeek"`), tlačítko „Vrátit“ v `/admin/schedule`.
 - Co je špatně: MudBlazor kreslí neaktivní text jako `rgba(255,255,255,.26)` (dark), resp. `rgba(0,0,0,.26)` (light). Naměřeno 2,24:1 a nad září 2,29:1 (dark), 1,86:1 (light). WCAG neaktivní prvky z limitu vyjímá, jenže tady jde o běžný stav: aktuální týden je výchozí na Můj týden, Týden, Přehled i Detailu hráče, takže uživatel skoro pořád vidí vybledlý „rozbitý“ prvek.
@@ -130,6 +132,8 @@ Pozitivní: všechny ostatní páry text/plocha jsou v obou režimech nad 4,5:1,
 
 ### B. Odsazení, rytmus a typografie
 
+**Stav:** opraveno v `feature/ui-audit`: B1–B5.
+
 **B1 – Spacing bez škály** (střední · všechny)
 - Kde: `app.css`, všechny `*.razor.css`.
 - Co je špatně: v CSS je 16 různých hodnot (0,15 · 0,2 · 0,25 · 0,3 · 0,35 · 0,4 · 0,45 · 0,5 · 0,6 · 0,65 · 0,75 · 0,9 · 1 · 1,25 · 1,4 · 1,5 rem) a k tomu utility MudBlazor (`mb-1`, `mb-2`, `mt-4`, `my-4`, `pa-4`). Stejná role má jinou mezeru: titulek sekce → karta 0,4 rem (`l2p-section-head`) proti 8 px (`mb-2` na `/points`) proti 0,4 rem (`l2p-grid-title`).
@@ -166,6 +170,8 @@ Pozitivní: všechny ostatní páry text/plocha jsou v obou režimech nad 4,5:1,
 
 ### C. Ohraničení a radiusy
 
+**Stav:** opraveno v `feature/ui-audit`: C1–C3 (C3: přilepené buňky mají jemný odstín `--l2p-surface-pinned` a stín až po posunu tabulky).
+
 **C1 – Radiusy mimo škálu** (střední · všechny)
 - Kde a co: škála ze specu 12/10/8/6 se dodržuje, ale vedle ní žijí:
   - 4 px u všech `MudButton` (výchozí MudBlazor), dialogu (`.mud-dialog`, naměřeno 4 px), `.l2p-legend-box` (`WeekGridView.razor.css:327`) a `.l2p-wk-kind` (0,25 rem),
@@ -196,6 +202,8 @@ Pozitivní: všechny ostatní páry text/plocha jsou v obou režimech nad 4,5:1,
 
 ### D. Stínování a hloubka
 
+**Stav:** opraveno v `feature/ui-audit`: D1–D3.
+
 **D1 – Dialogy v jiném jazyce než zbytek** (střední · oba)
 - Kde: všechny `MudDialog` (`Components/Admin/*`), screenshot 06.
 - Co je špatně: radius 4 px, Material elevace 24 (`0 11px 15px -7px …`), bez hrany. Karty mají 12 px, hranu a měkký stín.
@@ -218,6 +226,8 @@ Pozitivní: všechny ostatní páry text/plocha jsou v obou režimech nad 4,5:1,
 Pozitivní: vnořené plochy blur nemají, popovery, menu a dialogy jsou neprůhledné, fallbacky pro `prefers-reduced-transparency` a chybějící `backdrop-filter` existují (`app.css:405-429`).
 
 ### E. Přehlednost a hierarchie
+
+**Stav:** opraveno v `feature/ui-audit`: E1–E8.
 
 **E1 – Sémantika nadpisů** (vysoká · přístupnost)
 - Kde:
@@ -273,6 +283,8 @@ Pozitivní: vnořené plochy blur nemají, popovery, menu a dialogy jsou neprůh
 
 ### F. Stavy (načítání, prázdno, chyba, zamčeno)
 
+**Stav:** opraveno v `feature/ui-audit`: F1–F5.
+
 **F1 – Načítání jako tenká čára na prázdné stránce** (střední · všechny)
 - Kde: `MudProgressLinear … Class="my-4"` v 15 místech (`MyWeek.razor:32`, `Leaderboard.razor:33`, `PlayerDetail.razor:30`, `Points.razor:21`, `Jewels.razor:21`, všechny admin stránky).
 - Co je špatně: prerender je vypnutý, takže každá navigace začne nadpisem a čárou a pak obsah „vyskočí“ (CLS). Přepnutí týdne už je dobře vyřešené (starý obsah zůstane a čára je přes hranu karty, `Leaderboard.razor.css:84-92`).
@@ -303,6 +315,8 @@ Pozitivní: vnořené plochy blur nemají, popovery, menu a dialogy jsou neprůh
 Pozitivní: zamčený stav buňky (čárkovaný okraj, zámek v hlavičce, legenda) a jen čtecí mřížka bez vyblednutí jsou srozumitelné a odpovídají CLAUDE.md.
 
 ### G. Focus a přístupnost
+
+**Stav:** opraveno v `feature/ui-audit`: G1–G4.
 
 **G1 – Neviditelný focus** (vysoká · oba)
 - Kde: všechny `MudIconButton` (app bar, šipky týdne, admin akce), `MudNavLink`, `MudButton`, `MudLink`. Při navigaci Tabem naměřeno `outline: none` a pozadí `rgba(79,74,110,.06)`.
@@ -335,6 +349,8 @@ Pozitivní: zamčený stav buňky (čárkovaný okraj, zámek v hlavičce, legen
 - Pravidla: skill `reduced-motion`.
 
 ### H. Dotykové cíle a mobil (375×812)
+
+**Stav:** opraveno v `feature/ui-audit`: H1–H4 a H7. H5 (žebříček na mobilu) a H6 (spodní navigace) odloženo, viz roadmapa.
 
 Naměřené velikosti interaktivních prvků pod 44 px:
 
@@ -388,6 +404,8 @@ Naměřené velikosti interaktivních prvků pod 44 px:
 Pozitivní: žádná stránka na 375 px nemá vodorovný scroll celé stránky (`scrollWidth` = 375), široké tabulky scrollují uvnitř karty a přilepený sloupec funguje.
 
 ### I. Ikony a obrázky
+
+**Stav:** opraveno v `feature/ui-audit`: I1 (ikony šperků v rámečku `--l2p-icon-tile`). I2 je jen pravidlo ve specu glass UI (Filled a Outlined ikony), bez změny kódu.
 
 **I1 – Ikony šperků v light jako černé čtverce** (střední · light)
 - Kde: `Jewels/JewelIcon.razor`, `PlayerNickCell.razor` (screenshot 07, Semtex).

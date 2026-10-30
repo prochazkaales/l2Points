@@ -208,7 +208,7 @@
     white-space: nowrap;
     font-weight: 500;
     /* Opaque, so the scrolled cells do not show through the pinned column. */
-    background: var(--l2p-surface-solid);
+    background: var(--l2p-surface-pinned);
     border-right: var(--l2p-line-width) solid var(--l2p-line);
 }
 
@@ -230,6 +230,11 @@
 .l2p-wk-grid tr.l2p-wk-grid-me .l2p-wk-grid-nick {
     box-shadow: inset 3px 0 0 var(--l2p-primary);
     font-weight: 600;
+}
+
+/* Scrolled sideways: the marker and the pinned-column shadow share one box-shadow. */
+.l2p-scrolled .l2p-wk-grid tr.l2p-wk-grid-me .l2p-wk-grid-nick {
+    box-shadow: inset 3px 0 0 var(--l2p-primary), 6px 0 8px -6px rgba(0, 0, 0, 0.35);
 }
 
 .l2p-wk-grid ::deep .l2p-wk-yes {

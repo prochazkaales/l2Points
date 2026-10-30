@@ -1,9 +1,11 @@
 @using L2Points.Domain.Jewels
 @using L2Points.Web.Formatting
 
-@* One jewel type: its icon and, when the player holds more than one piece, a "×N" count. *@
+@* One jewel type: its framed icon and, when the player holds more than one piece, a "×N" count. *@
 <span class="l2p-jewel" title="@(Decorative ? null : Title)">
-    <img src="@Type.ImagePath" alt="@(Decorative ? "" : Title)" width="@Size" height="@Size" />
+    <span class="l2p-jewel-tile">
+        <img src="@Type.ImagePath" alt="@(Decorative ? "" : Title)" width="@Size" height="@Size" />
+    </span>
     @if (Count > 1)
     {
         <span class="l2p-jewel-count">×@Count</span>

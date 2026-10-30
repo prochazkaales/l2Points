@@ -71,7 +71,7 @@
     font-weight: 400;
     white-space: nowrap;
     color: var(--l2p-text);
-    background-color: var(--l2p-surface-solid);
+    background-color: var(--l2p-surface-pinned);
     border-right: var(--l2p-line-width) solid var(--l2p-line);
 }
 
