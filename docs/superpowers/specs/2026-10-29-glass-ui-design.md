@@ -13,7 +13,7 @@ Celá aplikace dostane jednotný vzhled ve stylu „minimal glassmorphism“: tm
 - Jednotný glass vzhled na všech stránkách (interaktivních i účtových `/login`, `/profile`), dark i light.
 - Můj týden (a mřížka v `/admin/attendance` a na detailu hráče, sdílí `WeekGridView`) je na první pohled čitelnější: hned je vidět dnešní den, kategorie aktivity, slot Večerní/Ranní a co je zamčené.
 - Velká čísla (body, KPI, procenta v souhrnu) v tenkém řezu, jako hlavní vizuální prvek.
-- Funguje na mobilu (dotykové cíle ≥ 40 px v mřížce), v obou režimech má text kontrast aspoň 4,5:1.
+- Funguje na mobilu (dotykové cíle ≥ 44 px, v mřížce s mezerou 4 px, jinde 8 px), v obou režimech má text kontrast aspoň 4,5:1.
 
 ## Necíle
 
@@ -86,7 +86,7 @@ Pravidlo dávkování: plná primary jen na jednom prvku v kartě (aktivní polo
 ## Sklo
 
 - Globální třída `.l2p-glass`: výplň, 1px hrana, `inset 0 1px 0` horní světlo, stín, `border-radius: 12px`, `backdrop-filter: blur(20px) saturate(140%)` (s `-webkit-` prefixem). Karty (outlined `MudPaper`/`MudTable`) mají `overflow: clip`, aby neprůhledné přilepené buňky v rohu nevyčnívaly přes zaoblení. Zaoblení je střídmé: karta 12 px, vnořená plocha 10 px, položka draweru, čip a výběr dne 8 px, štítek procent 6 px. Hlavička každé tabulky (MudTable i vlastní tabulky) je stejný neprůhledný pruh `--l2p-table-head` s popisky v barvě textu a váze 600; nadpisy sekcí nad kartami mají před sebou ikonu v `--l2p-primary-text`.
-- Blur jen na velkých kontejnerech: app bar, drawer, karty sekcí. Nikdy na řádcích, buňkách, chipech (výkon na mobilu). Vnořené plochy uvnitř karty používají jen „silnější sklo“ bez blur. Stejně tak dlaždice v mřížce (`.l2p-tile`: KPI, karty stupňů vítězů, karty šperků) jsou sklo bez blur, takže na stránce zbývají nejvýš čtyři vrstvy s `backdrop-filter` (app bar, drawer a karty tabulek).
+- Blur jen na velkých kontejnerech: app bar, drawer, karty sekcí. Nikdy na řádcích, buňkách, chipech (výkon na mobilu). Vnořené plochy uvnitř karty používají jen „silnější sklo“ bez blur. Stejně tak dlaždice v mřížce (`.l2p-tile`: KPI, karty stupňů vítězů, karty šperků) jsou sklo bez blur: `backdrop-filter` mají jen app bar, drawer a karty sekcí, dlaždice nikdy (počet vrstev tedy závisí na počtu sekcí stránky).
 - Škály (tokeny `--l2p-*` v `app.css`, společné pro všechny stránky): mezery `--l2p-space-1..7` (4/8/12/16/24/32/48 px) a rytmus podle role (`--l2p-gap-title` 8 px pod nadpisem sekce, `--l2p-gap-tiles` 12 px mezi dlaždicemi, `--l2p-gap-section` 32 px mezi sekcemi, `--l2p-pad-card` 16 px, pod 600 px 12 px, `--l2p-page-head` 24 px pod nadpisem stránky); buňky tabulek a mřížky mají vlastní tokeny (`--l2p-cell-*`, `--l2p-grid-cell-*`). Radiusy `--l2p-radius-sm|md|lg|xl|full` (6/8/10/12 px/pilulka): štítky, checkbox a legenda sm; tlačítka, vstupy, čipy, položky draweru a výběr dne md; vnořené plochy a dlaždice lg; karty a dialogy xl; metry a pruhy full. Stíny `--l2p-shadow-1` (karta, `--l2p-glass-shadow` je jeho alias), `-2` (popover), `-3` (dialog). Písmo `--l2p-font-xs..3xl` (12 až 32 px, nejmenší text 12 px), čáry `--l2p-line-width` a `--l2p-line-width-strong`.
 - Dialog (`.mud-dialog`) je neprůhledný se zaoblením xl, hranou `--l2p-line` a stínem 3, popover má radius md, hranu a stín 2; scrim dialogu a draweru je `--l2p-scrim`.
 - Ikony (I2): navigace a akce jsou Filled, ikony nadpisů sekcí Outlined.
@@ -136,7 +136,7 @@ Všechny sekce, které dnes stojí na `MudPaper`/`MudTable`, dostanou sklo (tř�
   - nezaškrtnuté a nejde přidat (zamčený den, mimo rozpis, limit): slabý čárkovaný obrys.
 - Jen čtecí mřížka (`ReadOnly`, tj. `/players/{Id}`) a mřížka během načítání v `EditableWeekGrid` (`ReadOnly="_loading"`) se **nevybledí**: zaškrtnuté zůstanou plnou primary a nezaškrtnuté obrysem, jen bez kurzoru a hoveru. Zředění a čárkování patří jen buňkám, které jsou zamčené v editovatelné mřížce. Komponenta k tomu potřebuje rozlišit „celá mřížka jen ke čtení“ od „tahle buňka nejde měnit“ (dnes obojí končí jako `Disabled`).
 - Hover řádku (desktop) zvýrazní celý řádek silnějším sklem, aby se dalo sledovat přes 7 dní. Přilepený první sloupec má neprůhledný povrch.
-- Dotykový cíl zaškrtávátka aspoň 40×40 px na mobilu.
+- Dotykový cíl zaškrtávátka aspoň 44×44 px na mobilu a na `(pointer: coarse)`, mezi poli slotu 4 px.
 - Pod mřížkou krátká legenda: zaškrtnuto, nezaškrtnuto, zamčeno, mimo rozpis, V/R tečky.
 - Tooltipy (limit, „Mimo rozpis“) zůstávají.
 

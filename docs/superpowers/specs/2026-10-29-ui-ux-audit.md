@@ -54,7 +54,7 @@ Formát nálezu: **ID – název** (závažnost · režim), pak místo, co je š
 
 ### A. Barevná paleta a kontrast
 
-**Stav:** opraveno v `feature/ui-audit`: A1–A8. A9 (pruh bodů) zůstává beze změny podle auditu.
+**Stav:** opraveno v rámci UI auditu: A1–A8. A9 (pruh bodů) zůstává beze změny podle auditu.
 
 **A1 – Neaktivní tlačítka čitelná na 2:1** (vysoká · dark, light, mobil)
 - Kde: `Components/Attendance/WeekNavigator.razor:10-12` („Tento týden“ s `Disabled="@IsCurrentWeek"`), tlačítko „Vrátit“ v `/admin/schedule`.
@@ -132,7 +132,7 @@ Pozitivní: všechny ostatní páry text/plocha jsou v obou režimech nad 4,5:1,
 
 ### B. Odsazení, rytmus a typografie
 
-**Stav:** opraveno v `feature/ui-audit`: B1–B5.
+**Stav:** opraveno v rámci UI auditu: B1–B4 (B4: `/points` i `/admin/activities` mají pevné sloupce a Rozpis až za sloupci bodů a očekávaných počtů, takže „Body“ lícuje ve všech třech tabulkách). B5 beze změny, hustota tabulek na desktopu byla v pořádku (dotyk viz H4).
 
 **B1 – Spacing bez škály** (střední · všechny)
 - Kde: `app.css`, všechny `*.razor.css`.
@@ -170,7 +170,7 @@ Pozitivní: všechny ostatní páry text/plocha jsou v obou režimech nad 4,5:1,
 
 ### C. Ohraničení a radiusy
 
-**Stav:** opraveno v `feature/ui-audit`: C1–C3 (C3: přilepené buňky mají jemný odstín `--l2p-surface-pinned` a stín až po posunu tabulky).
+**Stav:** opraveno v rámci UI auditu: C1–C3 (C3: přilepené buňky mají jemný odstín `--l2p-surface-pinned` a stín až po posunu tabulky).
 
 **C1 – Radiusy mimo škálu** (střední · všechny)
 - Kde a co: škála ze specu 12/10/8/6 se dodržuje, ale vedle ní žijí:
@@ -202,7 +202,7 @@ Pozitivní: všechny ostatní páry text/plocha jsou v obou režimech nad 4,5:1,
 
 ### D. Stínování a hloubka
 
-**Stav:** opraveno v `feature/ui-audit`: D1–D3.
+**Stav:** opraveno v rámci UI auditu: D1–D3.
 
 **D1 – Dialogy v jiném jazyce než zbytek** (střední · oba)
 - Kde: všechny `MudDialog` (`Components/Admin/*`), screenshot 06.
@@ -227,7 +227,7 @@ Pozitivní: vnořené plochy blur nemají, popovery, menu a dialogy jsou neprůh
 
 ### E. Přehlednost a hierarchie
 
-**Stav:** opraveno v `feature/ui-audit`: E1–E8.
+**Stav:** opraveno v rámci UI auditu: E1–E8.
 
 **E1 – Sémantika nadpisů** (vysoká · přístupnost)
 - Kde:
@@ -283,7 +283,7 @@ Pozitivní: vnořené plochy blur nemají, popovery, menu a dialogy jsou neprůh
 
 ### F. Stavy (načítání, prázdno, chyba, zamčeno)
 
-**Stav:** opraveno v `feature/ui-audit`: F1–F5.
+**Stav:** opraveno v rámci UI auditu: F1 a F3–F5. F2 částečně: komponenta `EmptyState` je ve všech uvedených místech a admin výběry hráče mají text „Vyber hráče, …“; seznam naposledy upravených hráčů v admin výběrech odložen, viz roadmapa.
 
 **F1 – Načítání jako tenká čára na prázdné stránce** (střední · všechny)
 - Kde: `MudProgressLinear … Class="my-4"` v 15 místech (`MyWeek.razor:32`, `Leaderboard.razor:33`, `PlayerDetail.razor:30`, `Points.razor:21`, `Jewels.razor:21`, všechny admin stránky).
@@ -316,7 +316,7 @@ Pozitivní: zamčený stav buňky (čárkovaný okraj, zámek v hlavičce, legen
 
 ### G. Focus a přístupnost
 
-**Stav:** opraveno v `feature/ui-audit`: G1–G4.
+**Stav:** opraveno v rámci UI auditu: G1–G4.
 
 **G1 – Neviditelný focus** (vysoká · oba)
 - Kde: všechny `MudIconButton` (app bar, šipky týdne, admin akce), `MudNavLink`, `MudButton`, `MudLink`. Při navigaci Tabem naměřeno `outline: none` a pozadí `rgba(79,74,110,.06)`.
@@ -350,7 +350,7 @@ Pozitivní: zamčený stav buňky (čárkovaný okraj, zámek v hlavičce, legen
 
 ### H. Dotykové cíle a mobil (375×812)
 
-**Stav:** opraveno v `feature/ui-audit`: H1–H4 a H7. H5 (žebříček na mobilu) a H6 (spodní navigace) odloženo, viz roadmapa.
+**Stav:** opraveno v rámci UI auditu: H1–H4 a H7 a s nimi všechny zbylé dotykové cíle pod 44 px na `(pointer: coarse)` a pod 600 px (tlačítka a ikonová tlačítka všude včetně dialogů a potvrzení, položky menu 8 px od sebe, čipy-odkazy v `/jewels` a `/week`, hlavičky řazení v žebříčcích, husté inputy v `/admin/schedule`, samostatné odkazy, nicky v mřížce `/week`, týdny v historii `/players/{id}`, „Zapamatovat“ a tlačítka na účtových stránkách, mezera 8 px mezi sousedními odkazy v řádcích tabulek). H5 (žebříček na mobilu) a H6 (spodní navigace) odloženo, viz roadmapa.
 
 Naměřené velikosti interaktivních prvků pod 44 px:
 
@@ -405,7 +405,7 @@ Pozitivní: žádná stránka na 375 px nemá vodorovný scroll celé stránky (
 
 ### I. Ikony a obrázky
 
-**Stav:** opraveno v `feature/ui-audit`: I1 (ikony šperků v rámečku `--l2p-icon-tile`). I2 je jen pravidlo ve specu glass UI (Filled a Outlined ikony), bez změny kódu.
+**Stav:** opraveno v rámci UI auditu: I1 (ikony šperků v rámečku `--l2p-icon-tile`). I2 je jen pravidlo ve specu glass UI (Filled a Outlined ikony), bez změny kódu.
 
 **I1 – Ikony šperků v light jako černé čtverce** (střední · light)
 - Kde: `Jewels/JewelIcon.razor`, `PlayerNickCell.razor` (screenshot 07, Semtex).
