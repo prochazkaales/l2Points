@@ -123,18 +123,30 @@ Ruční kroky, v tomto pořadí:
 
 1. **Discord Developer Portal** ([discord.com/developers/applications](https://discord.com/developers/applications)): New Application, záložka Bot (přidat bota, Reset Token a token zkopírovat), na General Information zkopírovat Application ID a Public Key. Guild ID získat v Discordu (Nastavení > Pokročilé > Vývojářský režim, pak pravé tlačítko na server > Kopírovat ID serveru).
 2. **console.anthropic.com**: založit API klíč, nahrát kredit a v nastavení organizace nastavit měsíční limit útraty (Limits). Odhad při ~10 screenech denně je jednotky dolarů měsíčně i se Sonnetem.
-3. **Nasadit konfiguraci:**
+3. **Pozvat aplikaci na server** (před nasazením): stačí Application ID, bot token ani aplikace v Azure zatím nejsou potřeba. V Developer Portalu OAuth2 > URL Generator, scope `applications.commands` (případně otevřít `https://discord.com/oauth2/authorize?client_id=<application-id>&scope=applications.commands`), otevřít vygenerovanou adresu a vybrat náš server. Pořadí je důležité: příkaz `/report` se registruje jako guild command jen jednou při startu aplikace a pokud aplikace na serveru ještě není, Discord registraci odmítne (Missing Access); aplikace to jen zaloguje jako varování a `/report` se neobjeví až do dalšího restartu.
+4. **Nasadit konfiguraci:**
    ```powershell
    pwsh ./infra/deploy.ps1 -SubscriptionId <subscription-id> `
        -DiscordApplicationId <application-id> -DiscordPublicKey <public-key> -DiscordGuildId <guild-id> `
        -SetDiscordSecrets
    ```
-   Přepínač `-SetDiscordSecrets` se zeptá na token bota a klíč Claude API (skrytý vstup), uloží je do Key Vaultu a nasadí aplikaci s novou konfigurací. Tajemství nikdy nejdou na příkazovou řádku, jen do dočasného souboru s parametry, který se po nasazení smaže. Při prvním zapnutí je přepínač povinný (jinak by revize odkazovala na neexistující tajemství a nenastartovala, skript proto skončí s chybou). Při pozdějších spuštěních skriptu se Discord hodnoty přečtou z běžící aplikace a tajemství v Key Vaultu zůstanou, takže běžná aktualizace infrastruktury bota nevypne. `-SetDiscordSecrets` je potřeba jen pro výměnu tokenu nebo klíče.
-4. **Interactions Endpoint URL**: v Developer Portalu na General Information nastavit `https://ca-l2points.graytree-049f5bba.polandcentral.azurecontainerapps.io/discord/interactions` a uložit. Discord při uložení pošle PING podepsaný Ed25519, aplikace proto musí už běžet s konfigurací z kroku 3 (správný Public Key); jinak uložení selže.
-5. **Pozvat aplikaci na server**: OAuth2 > URL Generator, scope `applications.commands` (příkaz se při startu aplikace zaregistruje jako guild command přes REST API s tokenem bota; registrace při selhání jen zaloguje varování a start nezastaví). Otevřít vygenerovanou adresu a vybrat náš server.
+   Přepínač `-SetDiscordSecrets` se zeptá na token bota a klíč Claude API (skrytý vstup), uloží je do Key Vaultu a nasadí aplikaci s novou konfigurací. Tajemství nikdy nejdou na příkazovou řádku, jen do dočasného souboru s parametry, který se po nasazení smaže. Při prvním zapnutí je přepínač povinný (jinak by revize odkazovala na neexistující tajemství a nenastartovala, skript proto skončí s chybou). Při pozdějších spuštěních skriptu se Discord hodnoty přečtou z běžící aplikace a tajemství v Key Vaultu zůstanou, takže běžná aktualizace infrastruktury bota nevypne. `-SetDiscordSecrets` je potřeba jen pro výměnu tokenu nebo klíče. Při výměně tokenu nebo klíče (`-SetDiscordSecrets` na aplikaci, která už Discord má) skript po nasazení restartuje aktivní revizi, protože se tím jen změní hodnoty v Key Vaultu, šablona Container App zůstane stejná, nová revize nevznikne a běžící replika by držela staré hodnoty.
+5. **Interactions Endpoint URL**: v Developer Portalu na General Information nastavit `https://ca-l2points.graytree-049f5bba.polandcentral.azurecontainerapps.io/discord/interactions` a uložit. Discord při uložení pošle PING podepsaný Ed25519, aplikace proto musí už běžet s konfigurací z kroku 4 (správný Public Key); jinak uložení selže.
 6. **Oprávnění příkazu**: příkaz je ve výchozím stavu vidět jen správcům serveru. V Discordu: Nastavení serveru > Integrace > aplikace > `/report` a povolit vybrané role a kanály.
 
 Aplikace sama oprávnění nekontroluje, vynucuje je Discord. Interakce z jiného serveru, než je `Discord__GuildId`, a z DM se odmítnou.
+
+**Když `/report` na serveru chybí.** Nejčastěji se registrace příkazu při startu nepovedla (aplikace nebyla pozvaná dřív, než nastartovala, nebo Discord chvíli neodpovídal; důvod je ve varování v logu). Po opravě stačí restartovat aktivní revizi, aplikace příkaz zaregistruje znovu:
+```bash
+az containerapp revision list -g rg-l2points -n ca-l2points --query "[?properties.active].name" -o tsv
+az containerapp revision restart -g rg-l2points -n ca-l2points --revision <revision-name>
+```
+
+**Vypnutí bota.** Smazat jeho proměnné z Container App:
+```bash
+az containerapp update -g rg-l2points -n ca-l2points --remove-env-vars Discord__ApplicationId Discord__PublicKey Discord__GuildId Discord__BotToken Anthropic__ApiKey Anthropic__Model
+```
+Endpoint pak vrací 404 a nic se nevolá. Tajemství v Key Vaultu zůstanou. `deploy.ps1` Discord hodnoty čte z běžící aplikace, takže bot zůstane vypnutý i po dalším spuštění skriptu, dokud ho znovu nezapnete parametry z kroku 4.
 
 **Změna modelu.** Výchozí je `claude-haiku-5-5` (levný, ~0,2 USD měsíčně). Přesnější `claude-sonnet-5-5` (~4 USD měsíčně) se zapne jedním spuštěním skriptu, které model předá do `Anthropic__Model` (ostatní Discord hodnoty skript přečte z běžící aplikace):
 ```powershell

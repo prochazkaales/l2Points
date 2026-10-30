@@ -18,7 +18,9 @@
     Discord report bot (optional): pass -DiscordApplicationId, -DiscordPublicKey and -DiscordGuildId. The bot token and
     the Anthropic API key are asked for with -SetDiscordSecrets (hidden input, they travel only in the temporary
     parameter file and are stored in Key Vault). The first time Discord is enabled the switch is required; later runs
-    read the Discord values from the running app, so a plain update keeps the bot as it is.
+    read the Discord values from the running app, so a plain update keeps the bot as it is. When the secrets are
+    replaced on an app that already runs the bot, the active revision is restarted afterwards: only Key Vault values
+    change, so no new revision is created and the replica would keep the old ones.
 
     At the end it prints the app URL and the values of the GitHub repository variables for the CI deploy.
 
@@ -404,6 +406,21 @@ finally {
     $discordBotToken = $null
     $anthropicApiKey = $null
     $parameters = $null
+}
+
+# --- 7b. Secret rotation -------------------------------------------------------------------------------------
+
+# Replaced Key Vault values do not change the Container App template, so no revision is created and the running
+# replica keeps the old secrets. Restart the active revision (no secrets on the command line).
+if ($SetDiscordSecrets -and $currentDiscordApplicationId) {
+    $revisionName = ((Invoke-Az containerapp revision list --resource-group $ResourceGroup --name $ContainerAppName --query '[?properties.active].name' --output tsv) | Select-Object -First 1)
+    if ([string]::IsNullOrWhiteSpace($revisionName)) {
+        Write-Warning 'Could not find the active revision; restart it yourself so the new Discord secrets take effect (az containerapp revision restart).'
+    }
+    else {
+        Write-Host "Restarting revision $revisionName so it picks up the new Discord secrets ..."
+        Invoke-Az containerapp revision restart --resource-group $ResourceGroup --name $ContainerAppName --revision $revisionName --output none | Out-Null
+    }
 }
 
 # --- 8. Result -----------------------------------------------------------------------------------------------
