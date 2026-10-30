@@ -28,7 +28,9 @@ public static class DiscordViews
 
     /// <summary>
     /// An edit keeps the visibility of the message it replaces (the reply is already ephemeral), so the flags are left
-    /// out and the edit changes only the content and components.
+    /// out. Discord keeps every field an edit omits, so a message without controls sends an empty component list to
+    /// remove the panel's selects and buttons.
     /// </summary>
-    public static DiscordMessage ForEdit(DiscordMessage message) => message with { Flags = null };
+    public static DiscordMessage ForEdit(DiscordMessage message) =>
+        message with { Flags = null, Components = message.Components ?? [] };
 }

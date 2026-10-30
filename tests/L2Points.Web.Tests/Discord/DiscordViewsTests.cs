@@ -73,6 +73,27 @@ public class DiscordViewsTests
         Assert.Equal(DiscordMessages.Texts.NotOwner, message!.Content);
     }
 
+    [Fact]
+    public void Edit_of_a_notice_removes_the_panel_controls()
+    {
+        var json = System.Text.Json.JsonSerializer.SerializeToElement(
+            DiscordViews.ForEdit(DiscordMessages.Notice(DiscordMessages.Texts.Cancelled)), DiscordJson.Options);
+
+        Assert.Equal(0, json.GetProperty("components").GetArrayLength());
+        Assert.False(json.TryGetProperty("flags", out _));
+    }
+
+    [Fact]
+    public void Edit_of_the_panel_keeps_its_rows()
+    {
+        var panel = DiscordMessages.ReportPanel(View(DiscordReportOutcome.Ok, DiscordReportStatus.Pending));
+
+        var json = System.Text.Json.JsonSerializer.SerializeToElement(DiscordViews.ForEdit(panel), DiscordJson.Options);
+
+        Assert.Equal(panel.Components!.Count, json.GetProperty("components").GetArrayLength());
+        Assert.NotEmpty(panel.Components);
+    }
+
     /// <summary>Messages hold lists, so record equality compares references; compare the serialized form instead.</summary>
     private sealed class MessageComparer : IEqualityComparer<DiscordMessage?>
     {

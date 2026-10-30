@@ -76,8 +76,10 @@ public sealed class DiscordRestClient(HttpClient http, IOptions<DiscordOptions> 
         using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
         response.EnsureSuccessStatusCode();
 
+        // The client does not follow redirects (see DiscordSetup); the final address is checked too in case it ever does.
+        var finalUrl = response.RequestMessage?.RequestUri?.AbsoluteUri ?? url;
         var headers = response.Content.Headers;
-        var check = AttachmentPolicy.Check(url, headers.ContentType?.MediaType, headers.ContentLength ?? 0);
+        var check = AttachmentPolicy.Check(finalUrl, headers.ContentType?.MediaType, headers.ContentLength ?? 0);
         if (check != AttachmentCheck.Ok)
             throw new InvalidOperationException($"The attachment was rejected: {check}.");
 

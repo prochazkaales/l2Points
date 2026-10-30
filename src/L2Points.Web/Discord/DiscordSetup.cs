@@ -21,12 +21,14 @@ public static class DiscordSetup
         services.AddSingleton<DiscordJobQueue>();
         services.AddScoped<DiscordInteractionHandler>();
 
-        // Request URLs contain the interaction token, so the client logs nothing.
+        // Request URLs contain the interaction token, so the client logs nothing. Discord's CDN serves attachments
+        // directly; without redirects a download can never leave the trusted hosts.
         services.AddHttpClient<DiscordRestClient>(client =>
             {
                 client.BaseAddress = DiscordRestClient.ApiBaseAddress;
                 client.Timeout = DiscordRestClient.RequestTimeout;
             })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false })
             .RemoveAllLoggers();
 
         var discord = configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>() ?? new DiscordOptions();

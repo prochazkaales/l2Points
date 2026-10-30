@@ -230,6 +230,7 @@ public class DiscordInteractionHandlerTests
 
         Assert.Equal(DiscordResponseType.UpdateMessage, Json(result).GetProperty("type").GetInt32());
         Assert.Equal(DiscordMessages.Texts.NotOwner, Content(result));
+        Assert.Equal(0, Json(result).GetProperty("data").GetProperty("components").GetArrayLength());
         Assert.Equal(["cancel"], _reports.Calls);
         Assert.Equal((ReportId, UserId), _reports.Target);
     }
@@ -243,7 +244,7 @@ public class DiscordInteractionHandlerTests
 
         var json = Json(result);
         Assert.Equal(DiscordResponseType.UpdateMessage, json.GetProperty("type").GetInt32());
-        Assert.True(json.GetProperty("data").TryGetProperty("components", out _));
+        Assert.NotEqual(0, json.GetProperty("data").GetProperty("components").GetArrayLength());
         Assert.Equal(["date 2026-10-29"], _reports.Calls);
     }
 
@@ -294,6 +295,7 @@ public class DiscordInteractionHandlerTests
 
         Assert.Equal(DiscordResponseType.UpdateMessage, Json(result).GetProperty("type").GetInt32());
         Assert.Equal(DiscordMessages.Texts.Expired, Content(result));
+        Assert.Equal(0, Json(result).GetProperty("data").GetProperty("components").GetArrayLength());
         Assert.Empty(await DrainQueueAsync());
     }
 
