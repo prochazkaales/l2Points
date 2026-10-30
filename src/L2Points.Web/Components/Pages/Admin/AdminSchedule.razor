@@ -69,7 +69,7 @@ else
                                 var text = _inputs[id][(day, slot)];
                                 var error = InputError(text);
                                 <MudTextField T="string" Value="@text" ValueChanged="@(v => _inputs[id][(day, slot)] = v ?? "")"
-                                              Immediate="true" Label="@DisplayFormat.SlotLabel(slot)" Placeholder="HH:mm UTC"
+                                              Immediate="true" Label="@($"{DisplayFormat.SlotLabel(slot)} (UTC)")" Placeholder="HH:mm" InputMode="InputMode.numeric"
                                               Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="_saving"
                                               HelperText="@PragueHint(day, text)" Error="@(error is not null)" ErrorText="@error" />
                             }

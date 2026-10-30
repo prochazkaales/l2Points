@@ -51,9 +51,9 @@ else
         @if (_summary.PlayersOfWeek.Count > 0)
         {
             var best = _summary.PlayersOfWeek[0];
-            <KpiCard Label="Hráč týdne" ValueTitle="@string.Join(", ", _summary.PlayersOfWeek.Select(p => p.Nick))"
+            <KpiCard Label="Hráč týdne" IsName="true" ValueTitle="@string.Join(", ", _summary.PlayersOfWeek.Select(p => p.Nick))"
                      Note="@($"{DisplayFormat.PointsCount(_summary.PlayersOfWeekPoints)} · {WeekCaption}")">
-                <MudLink Href="@DisplayFormat.PlayerUrl(best.UserId, _week)" Underline="Underline.Hover" Color="Color.Primary">@best.Nick</MudLink>
+                <MudLink Href="@DisplayFormat.PlayerUrl(best.UserId, _week)" Underline="Underline.None" Color="Color.Inherit">@best.Nick</MudLink>
                 @if (_summary.PlayersOfWeek.Count > 1)
                 {
                     <span class="l2p-kpi-more">+@(_summary.PlayersOfWeek.Count - 1)</span>

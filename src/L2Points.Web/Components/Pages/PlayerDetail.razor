@@ -98,7 +98,7 @@ else
                             <MudLink Href="@WeekHref(context.Week)" OnClick="@(() => OnHistoryWeekClickedAsync(context.Week))"
                                      Underline="Underline.Hover" Color="Color.Primary">@DisplayFormat.WeekLabel(context.Week)</MudLink>
                         </MudTd>
-                        <StatCells Stats="context.Summary.Stats" Points="context.Summary.Points" />
+                        <StatCells Stats="context.Summary.Stats" Points="context.Summary.Points" Toned="true" />
                     </RowTemplate>
                 </MudTable>
             </div>

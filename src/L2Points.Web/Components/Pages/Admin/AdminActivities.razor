@@ -1,10 +1,12 @@
 @page "/admin/activities"
 @attribute [Authorize(Roles = Roles.Admin)]
 @using L2Points.Domain.Activities
+@using L2Points.Domain.Time
 @using L2Points.Infrastructure.Services
 @using L2Points.Web.Components.Admin
 @using L2Points.Web.Formatting
 @inject CatalogAdminService CatalogAdmin
+@inject TimeProvider Time
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject ILogger<AdminActivities> Logger
@@ -59,7 +61,7 @@ else
                             var activity = context;
                         }
                         <MudTd Class="l2p-nick-cell">@activity.Name</MudTd>
-                        <MudTd>@DisplayFormat.ScheduleLabel(activity)</MudTd>
+                        <MudTd>@DisplayFormat.ScheduleLabel(activity, _week, withUtc: true)</MudTd>
                         <MudTd Class="l2p-col-points">@activity.Points</MudTd>
                         @if (category == ActivityCategory.ChaoticEpic)
                         {
@@ -93,6 +95,9 @@ else
 }
 
 @code {
+    /// <summary>The current week in Prague; weekly times are converted for its dates (daylight saving).</summary>
+    private Week _week => Week.Containing(AppTime.TodayInPrague(Time));
+
     private static readonly (ActivityCategory Category, string Title, string Icon)[] Groups =
     [
         (ActivityCategory.NormalEpic, "Normal epicy", Icons.Material.Outlined.LocalFireDepartment),

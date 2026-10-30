@@ -49,9 +49,9 @@ else
         @if (_summary.PlayersOfWeek.Count > 0)
         {
             var best = _summary.PlayersOfWeek[0];
-            <KpiCard Label="Hráč týdne" ValueTitle="@string.Join(", ", _summary.PlayersOfWeek.Select(p => p.Nick))"
+            <KpiCard Label="Hráč týdne" IsName="true" ValueTitle="@string.Join(", ", _summary.PlayersOfWeek.Select(p => p.Nick))"
                      Note="@DisplayFormat.PointsCount(_summary.PlayersOfWeekPoints)">
-                <MudLink Href="@DisplayFormat.PlayerUrl(best.UserId, _week)" Underline="Underline.Hover" Color="Color.Primary">@best.Nick</MudLink>
+                <MudLink Href="@DisplayFormat.PlayerUrl(best.UserId, _week)" Underline="Underline.None" Color="Color.Inherit">@best.Nick</MudLink>
                 @if (_summary.PlayersOfWeek.Count > 1)
                 {
                     <span class="l2p-kpi-more">+@(_summary.PlayersOfWeek.Count - 1)</span>
@@ -246,7 +246,7 @@ else
         : "za týden";
 
     private string AverageNote => _overview is { Events.Count: > 0 } overview
-        ? $"průměrně {overview.Events.Average(e => e.Attendees.Count).ToString("0.#", CultureInfo.GetCultureInfo("cs-CZ"))} lidí na epic"
+        ? DisplayFormat.AverageAttendees(overview.Events.Average(e => e.Attendees.Count))
         : "zatím nic";
 
     private IReadOnlyList<WeekEvent> EventsOn(DateOnly day) => _eventsByDay[day].ToList();

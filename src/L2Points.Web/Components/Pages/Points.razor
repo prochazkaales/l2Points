@@ -1,8 +1,10 @@
 @page "/points"
 @using L2Points.Domain.Activities
+@using L2Points.Domain.Time
 @using L2Points.Infrastructure.Services
 @using L2Points.Web.Formatting
 @inject CatalogAdminService Catalog
+@inject TimeProvider Time
 @inject ILogger<Points> Logger
 @implements IDisposable
 
@@ -58,7 +60,7 @@ else
                         {
                             <MudTd Class="l2p-points-value l2p-col-points">@context.Points</MudTd>
                         }
-                        <MudTd>@DisplayFormat.ScheduleLabel(context)</MudTd>
+                        <MudTd>@DisplayFormat.ScheduleLabel(context, _week)</MudTd>
                     </RowTemplate>
                 </MudTable>
             </div>
@@ -67,6 +69,9 @@ else
 }
 
 @code {
+    /// <summary>The current week in Prague; weekly times are converted for its dates (daylight saving).</summary>
+    private Week _week => Week.Containing(AppTime.TodayInPrague(Time));
+
     private static readonly (ActivityCategory Category, string Title, string Icon)[] Groups =
     [
         (ActivityCategory.NormalEpic, "Normal epicy", Icons.Material.Outlined.LocalFireDepartment),

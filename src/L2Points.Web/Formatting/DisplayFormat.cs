@@ -115,12 +115,15 @@ public static class DisplayFormat
         _ => $"{count} kusů",
     };
 
-    /// <summary>Czech description of when an activity happens, e.g. "Týdně v sobotu 20:00 UTC".</summary>
-    public static string ScheduleLabel(Activity a) => a.ScheduleType switch
+    /// <summary>
+    /// Czech description of when an activity happens. Weekly times are shown in Prague time for the day of <paramref name="week"/>
+    /// (so they follow the daylight saving switch), optionally followed by the stored UTC time, e.g. "Týdně v sobotu 21:00 (20:00 UTC)".
+    /// </summary>
+    public static string ScheduleLabel(Activity a, Week week, bool withUtc = false) => a.ScheduleType switch
     {
         ScheduleType.Flexible => $"Flexibilní, {a.ExpectedPerWeek}× týdně",
         ScheduleType.Weekly => a.TimeUtc is { } time
-            ? $"Týdně {DayWithPreposition(a.WeeklyDay)} {time.ToString("HH:mm", CultureInfo.InvariantCulture)} UTC"
+            ? WeeklyTimeLabel(a, week, time, withUtc)
             : $"Týdně {DayWithPreposition(a.WeeklyDay)}",
         ScheduleType.Biweekly => $"Ob týden {DayWithPreposition(a.WeeklyDay)}",
         ScheduleType.Slotted => $"Rozpis: {Spawns(a.Spawns.Count)} týdně",
@@ -140,6 +143,29 @@ public static class DisplayFormat
     };
 
     /// <summary>Czech count of spawns ("1 spawn", "2 spawny", "5 spawnů").</summary>
+    private static string WeeklyTimeLabel(Activity a, Week week, TimeOnly utcTime, bool withUtc)
+    {
+        var date = a.WeeklyDay is { } day ? week.Days.First(d => d.DayOfWeek == day) : week.Monday;
+        var prague = TimeOnly.FromDateTime(AppTime.ToPragueTime(date, utcTime)).ToString("HH:mm", CultureInfo.InvariantCulture);
+        var label = $"Týdně {DayWithPreposition(a.WeeklyDay)} {prague}";
+        return withUtc ? $"{label} ({utcTime.ToString("HH:mm", CultureInfo.InvariantCulture)} UTC)" : label;
+    }
+
+    /// <summary>Czech average attendance note, e.g. "průměrně 1,5 hráče na epic" (one decimal, plural by the shown number).</summary>
+    public static string AverageAttendees(double average)
+    {
+        var rounded = Math.Round(average, 1, MidpointRounding.AwayFromZero);
+        var word = rounded != Math.Floor(rounded)
+            ? "hráče"
+            : rounded switch
+            {
+                1 => "hráč",
+                >= 2 and <= 4 => "hráči",
+                _ => "hráčů",
+            };
+        return $"průměrně {rounded.ToString("0.#", Czech)} {word} na epic";
+    }
+
     private static string Spawns(int count) => count switch
     {
         1 => "1 spawn",

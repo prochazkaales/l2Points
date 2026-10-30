@@ -4,7 +4,7 @@
 @* Table cells (MudTd) with the points and the five participation percentages of one player and period. *@
 @if (ShowPoints)
 {
-    <MudTd Class="@Css("l2p-stat-points")">@Points</MudTd>
+    <MudTd Class="@Css("l2p-stat-points")">@DisplayFormat.Points(Points)</MudTd>
 }
 <MudTd Class="@Css("l2p-stat-pct")">@Pct(Stats.Total)</MudTd>
 <MudTd Class="@Css("l2p-stat-pct")">@Pct(Stats[StatCategory.Normal])</MudTd>

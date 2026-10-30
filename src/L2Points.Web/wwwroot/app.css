@@ -889,6 +889,26 @@ td.l2p-nick-cell .l2p-nick-chip {
     text-overflow: ellipsis;
 }
 
+/* A name as the KPI value ("Hráč týdne"): text, not a figure; the link is underlined on hover and focus. */
+.l2p-kpi-name {
+    font-size: var(--l2p-font-xl);
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--l2p-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.l2p-kpi-name a {
+    color: var(--l2p-text);
+}
+
+.l2p-kpi-name a:hover,
+.l2p-kpi-name a:focus-visible {
+    text-decoration: underline;
+}
+
 .l2p-kpi-more {
     font-size: var(--l2p-font-md);
     font-weight: 500;
@@ -1061,7 +1081,8 @@ a:not(.mud-button-root):focus-visible,
 .l2p-wk-grid :focus-visible,
 .mud-menu-item:focus-visible,
 .mud-popover .mud-list-item-clickable:focus-visible,
-.l2p-kpi-value a:focus-visible {
+.l2p-kpi-value a:focus-visible,
+.l2p-kpi-name a:focus-visible {
     outline-offset: -2px;
 }
 
@@ -1182,7 +1203,8 @@ a:not(.mud-button-root):focus-visible,
         min-height: var(--l2p-touch);
     }
 
-    .l2p-kpi-value a {
+    .l2p-kpi-value a,
+    .l2p-kpi-name a {
         display: inline-flex;
         align-items: center;
         min-width: var(--l2p-touch);

@@ -8,7 +8,7 @@
             <MudText Typo="Typo.subtitle1" HtmlTag="p">@Title</MudText>
         }
         <div class="l2p-summary-points">
-            <MudText Typo="Typo.h4" HtmlTag="p" Color="Color.Primary" Class="l2p-summary-points-value">@Summary.Points</MudText>
+            <MudText Typo="Typo.h4" HtmlTag="p" Color="Color.Primary" Class="l2p-summary-points-value">@DisplayFormat.Points(Summary.Points)</MudText>
             <MudText Typo="Typo.body2" Color="Color.Default" Class="l2p-summary-points-label">@PointsLabel</MudText>
         </div>
     </div>

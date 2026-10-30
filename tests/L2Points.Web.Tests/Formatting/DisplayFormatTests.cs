@@ -110,18 +110,64 @@ public class DisplayFormatTests
     public void Pieces_czech_plural(int count, string expected) =>
         Assert.Equal(expected, DisplayFormat.Pieces(count));
 
+    private static readonly Week WinterWeek = Week.Containing(new DateOnly(2026, 11, 2));
+
     [Fact]
     public void Schedule_label_per_type()
     {
         var catalog = DefaultCatalog.CreateActivities().ToDictionary(a => a.Code);
 
-        Assert.Equal("Flexibilní, 6× týdně", DisplayFormat.ScheduleLabel(catalog["QueenAnt"]));
-        Assert.Equal("Týdně v sobotu 20:00 UTC", DisplayFormat.ScheduleLabel(catalog["Baium"]));
-        Assert.Equal("Týdně v neděli 18:00 UTC", DisplayFormat.ScheduleLabel(catalog["CastleSiege"]));
-        Assert.Equal("Ob týden v neděli", DisplayFormat.ScheduleLabel(catalog["Antharas"]));
-        Assert.Equal("Rozpis: 6 spawnů týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticZaken"]));
-        Assert.Equal("Rozpis: 4 spawny týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticFrintezza"]));
+        Assert.Equal("Flexibilní, 6× týdně", DisplayFormat.ScheduleLabel(catalog["QueenAnt"], WinterWeek));
+        Assert.Equal("Týdně v sobotu 21:00", DisplayFormat.ScheduleLabel(catalog["Baium"], WinterWeek));
+        Assert.Equal("Týdně v neděli 19:00", DisplayFormat.ScheduleLabel(catalog["CastleSiege"], WinterWeek));
+        Assert.Equal("Ob týden v neděli", DisplayFormat.ScheduleLabel(catalog["Antharas"], WinterWeek));
+        Assert.Equal("Rozpis: 6 spawnů týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticZaken"], WinterWeek));
+        Assert.Equal("Rozpis: 4 spawny týdně", DisplayFormat.ScheduleLabel(catalog["ChaoticFrintezza"], WinterWeek));
     }
+
+    [Fact]
+    public void Schedule_label_weekly_in_summer_time()
+    {
+        var baium = DefaultCatalog.CreateActivities().Single(a => a.Code == "Baium");
+
+        Assert.Equal("Týdně v sobotu 22:00", DisplayFormat.ScheduleLabel(baium, Week.Containing(new DateOnly(2027, 6, 7))));
+    }
+
+    [Fact]
+    public void Schedule_label_weekly_across_the_dst_switch()
+    {
+        var catalog = DefaultCatalog.CreateActivities().ToDictionary(a => a.Code);
+        var week = Week.Containing(new DateOnly(2026, 10, 19));
+
+        Assert.Equal("Týdně v sobotu 22:00", DisplayFormat.ScheduleLabel(catalog["Baium"], week));
+        Assert.Equal("Týdně v neděli 19:00", DisplayFormat.ScheduleLabel(catalog["CastleSiege"], week));
+    }
+
+    [Fact]
+    public void Schedule_label_weekly_with_utc()
+    {
+        var baium = DefaultCatalog.CreateActivities().Single(a => a.Code == "Baium");
+
+        Assert.Equal("Týdně v sobotu 21:00 (20:00 UTC)", DisplayFormat.ScheduleLabel(baium, WinterWeek, withUtc: true));
+    }
+
+    [Fact]
+    public void Schedule_label_weekly_without_time()
+    {
+        var activity = new Activity { ScheduleType = ScheduleType.Weekly, WeeklyDay = DayOfWeek.Saturday, TimeUtc = null };
+
+        Assert.Equal("Týdně v sobotu", DisplayFormat.ScheduleLabel(activity, WinterWeek));
+    }
+
+    [Theory]
+    [InlineData(1.0, "průměrně 1 hráč na epic")]
+    [InlineData(1.5, "průměrně 1,5 hráče na epic")]
+    [InlineData(3.0, "průměrně 3 hráči na epic")]
+    [InlineData(5.0, "průměrně 5 hráčů na epic")]
+    [InlineData(0.33, "průměrně 0,3 hráče na epic")]
+    [InlineData(4.96, "průměrně 5 hráčů na epic")]
+    public void AverageAttendees_czech_plural(double average, string expected) =>
+        Assert.Equal(expected, DisplayFormat.AverageAttendees(average));
 
     [Fact]
     public void Catalog_message_covers_all_results()
@@ -148,6 +194,6 @@ public class DisplayFormatTests
             activity.Spawns.Add(new ActivitySpawn { DayOfWeek = DayOfWeek.Monday, Slot = EventSlot.Evening, TimeUtc = new TimeOnly(18, 0) });
         }
 
-        Assert.Equal(expected, DisplayFormat.ScheduleLabel(activity));
+        Assert.Equal(expected, DisplayFormat.ScheduleLabel(activity, WinterWeek));
     }
 }
