@@ -62,9 +62,21 @@ public class DiscordReportServiceTests
         }
     }
 
-    private static async Task<Fixture> CreateAsync()
+    /// <summary>Fake clock that runs a callback on every read, to change the database in the middle of a service call.</summary>
+    private sealed class HookedTimeProvider(DateTimeOffset start) : FakeTimeProvider(start)
     {
-        var time = new FakeTimeProvider(DateTimeOffset.Parse("2026-10-30T19:45:00Z"));
+        public Action? OnRead { get; set; }
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            OnRead?.Invoke();
+            return base.GetUtcNow();
+        }
+    }
+
+    private static async Task<Fixture> CreateAsync(FakeTimeProvider? clock = null)
+    {
+        var time = clock ?? new FakeTimeProvider(DateTimeOffset.Parse("2026-10-30T19:45:00Z"));
         var provider = TestServices.Create(timeProvider: time);
         await TestData.SeedCatalogAsync(provider);
         await TestData.CreatePlayerAsync(provider, "Hubkins1010", Monday);
@@ -514,6 +526,75 @@ public class DiscordReportServiceTests
         Assert.Equal(DiscordReportStatus.Submitting, stored.Status);
         Assert.Null(stored.CompletedAtUtc);
         Assert.Empty(await f.AttendancesAsync());
+    }
+
+    [Fact]
+    public async Task Stale_cancel_does_not_overwrite_completed_submit()
+    {
+        var time = new HookedTimeProvider(DateTimeOffset.Parse("2026-10-30T19:45:00Z"));
+        await using var f = await CreateAsync(time);
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+
+        // Cancel reads the clock twice after loading the Pending report (expiry check, completion time); a whole submit
+        // lands between its load and its save.
+        var reads = 0;
+        time.OnRead = () =>
+        {
+            if (++reads != 2)
+                return;
+            time.OnRead = null;
+            f.Service.SubmitAsync(id, "1001").GetAwaiter().GetResult();
+        };
+
+        var view = await f.Service.CancelAsync(id, "1001");
+
+        Assert.Equal(2, reads);
+        Assert.Equal(DiscordReportOutcome.Finished, view.Outcome);
+        Assert.Equal(DiscordReportStatus.Completed, view.Status);
+        Assert.NotNull(view.State.Result);
+        var stored = await f.LoadAsync(id);
+        Assert.Equal(DiscordReportStatus.Completed, stored.Status);
+        Assert.Equal(8, (await f.AttendancesAsync()).Count);
+        Assert.NotNull((await f.Service.GetAsync(id, "1001")).State.Result);
+    }
+
+    [Fact]
+    public async Task Lost_claim_on_submitting_report_is_in_progress()
+    {
+        var time = new HookedTimeProvider(DateTimeOffset.Parse("2026-10-30T19:45:00Z"));
+        await using var f = await CreateAsync(time);
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        time.OnRead = () =>
+        {
+            time.OnRead = null;
+            f.SetStatusAsync(id, DiscordReportStatus.Submitting).GetAwaiter().GetResult();
+        };
+
+        var view = await f.Service.SubmitAsync(id, "1001");
+
+        Assert.Equal(DiscordReportOutcome.Ok, view.Outcome);
+        Assert.Equal(DiscordReportStatus.Submitting, view.Status);
+        Assert.Empty(await f.AttendancesAsync());
+    }
+
+    [Fact]
+    public async Task Submit_failure_settles_report_as_failed_with_partial_result()
+    {
+        await using var f = await CreateAsync();
+        var id = await f.AnalyzedAsync("Hubkins1010", "Mayu");
+        await using (var db = f.Provider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
+            await db.Users.Where(u => u.Id == f.Mayu).ExecuteDeleteAsync();
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => f.Service.SubmitAsync(id, "1001"));
+
+        var stored = await f.LoadAsync(id);
+        Assert.Equal(DiscordReportStatus.Failed, stored.Status);
+        Assert.NotNull(stored.CompletedAtUtc);
+        var view = await f.Service.GetAsync(id, "1001");
+        Assert.Equal(DiscordReportOutcome.Finished, view.Outcome);
+        var partial = Assert.Single(Assert.IsType<ReportResult>(view.State.Result).Events);
+        Assert.Equal(1, partial.Added);
+        Assert.Single(await f.AttendancesAsync());
     }
 
     [Fact]

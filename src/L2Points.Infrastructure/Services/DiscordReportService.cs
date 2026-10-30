@@ -147,17 +147,35 @@ public sealed class DiscordReportService(
     private async Task<DiscordReportView> SaveAnalysisAsync(
         AppDbContext db, Guid reportId, DiscordReportStatus status, DateTime? completedAtUtc, DiscordReportState state, CancellationToken ct)
     {
-        var json = Serialize(state);
-        var saved = await db.DiscordReports
-            .Where(r => r.Id == reportId && r.Status == DiscordReportStatus.Processing)
+        var saved = await TrySaveAsync(db, reportId, DiscordReportStatus.Processing, status, completedAtUtc, Serialize(state), ct);
+        return await StoredViewAsync(db, reportId, saved ? DiscordReportOutcome.Ok : null, ct);
+    }
+
+    /// <summary>
+    /// Writes status, completion time and state, but only while the report still has <paramref name="expectedStatus"/>; a change committed
+    /// meanwhile by another call (cancel, submit, expiry) is never overwritten. Returns false when the report was no longer in that status.
+    /// </summary>
+    private static async Task<bool> TrySaveAsync(
+        AppDbContext db,
+        Guid reportId,
+        DiscordReportStatus expectedStatus,
+        DiscordReportStatus status,
+        DateTime? completedAtUtc,
+        string stateJson,
+        CancellationToken ct) =>
+        await db.DiscordReports
+            .Where(r => r.Id == reportId && r.Status == expectedStatus)
             .ExecuteUpdateAsync(
                 s => s.SetProperty(r => r.Status, status)
                     .SetProperty(r => r.CompletedAtUtc, completedAtUtc)
-                    .SetProperty(r => r.StateJson, json),
-                ct);
+                    .SetProperty(r => r.StateJson, stateJson),
+                ct) == 1;
 
-        var report = await db.DiscordReports.AsNoTracking().SingleAsync(r => r.Id == reportId, ct);
-        return await ViewOfAsync(db, report, saved == 1 ? DiscordReportOutcome.Ok : StatusOutcome(report.Status), ct);
+    /// <summary>The report as stored now; without an explicit <paramref name="outcome"/> the outcome follows the stored status.</summary>
+    private async Task<DiscordReportView> StoredViewAsync(AppDbContext db, Guid reportId, DiscordReportOutcome? outcome, CancellationToken ct)
+    {
+        var stored = await db.DiscordReports.AsNoTracking().SingleAsync(r => r.Id == reportId, ct);
+        return await ViewOfAsync(db, stored, outcome ?? StatusOutcome(stored.Status), ct);
     }
 
     public async Task<DiscordReportView> MarkFailedAsync(Guid reportId, CancellationToken ct = default)
@@ -168,13 +186,9 @@ public sealed class DiscordReportService(
             return MissingView(reportId, DiscordReportOutcome.NotFound);
 
         if (report.Status == DiscordReportStatus.Processing)
-        {
-            report.Status = DiscordReportStatus.Failed;
-            report.CompletedAtUtc = Now();
-            await db.SaveChangesAsync(ct);
-        }
+            await TrySaveAsync(db, reportId, DiscordReportStatus.Processing, DiscordReportStatus.Failed, Now(), report.StateJson, ct);
 
-        return await ViewOfAsync(db, report, StatusOutcome(report.Status), ct);
+        return await StoredViewAsync(db, reportId, null, ct);
     }
 
     public Task<DiscordReportView> GetAsync(Guid reportId, string discordUserId, CancellationToken ct = default) =>
@@ -244,54 +258,89 @@ public sealed class DiscordReportService(
         var claimed = await db.DiscordReports
             .Where(r => r.Id == reportId && r.Status == DiscordReportStatus.Pending)
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, DiscordReportStatus.Submitting), ct);
+        // A lost claim means another call got there first: show what is stored (Submitting is still in progress, not finished).
         if (claimed == 0)
-        {
-            var stored = await db.DiscordReports.AsNoTracking().SingleAsync(r => r.Id == reportId, ct);
-            return await ViewOfAsync(db, stored, DiscordReportOutcome.Finished, ct);
-        }
+            return await StoredViewAsync(db, reportId, null, CancellationToken.None);
 
-        var activities = await db.LoadActivitiesAsync(ct);
-        var userIds = players.Select(p => p.UserId).ToList();
-        var dates = state.SelectedEvents.Select(e => e.Date).Distinct().ToList();
-        var existing = (await db.Attendances
-                .AsNoTracking()
-                .Where(a => userIds.Contains(a.UserId) && dates.Contains(a.Date))
-                .Select(a => new { a.UserId, a.ActivityId, a.Date, a.Slot })
-                .ToListAsync(ct))
-            .Select(a => (a.UserId, new AttendanceEntry(a.ActivityId, a.Date, a.Slot)))
-            .ToHashSet();
-
-        var actor = ActorId(reportId);
+        // From here on the report is Submitting and nothing else settles it, so the phase ignores the caller's cancellation
+        // and any failure moves the report to Failed (with the partial result) instead of leaving it stuck.
         var results = new List<ReportEventResult>();
-        foreach (var entry in state.SelectedEvents)
+        try
         {
-            int added = 0, alreadyHad = 0;
-            var issues = new List<ReportPlayerIssue>();
-            foreach (var player in players)
+            var activities = await db.LoadActivitiesAsync(CancellationToken.None);
+            var userIds = players.Select(p => p.UserId).ToList();
+            var dates = state.SelectedEvents.Select(e => e.Date).Distinct().ToList();
+            var existing = (await db.Attendances
+                    .AsNoTracking()
+                    .Where(a => userIds.Contains(a.UserId) && dates.Contains(a.Date))
+                    .Select(a => new { a.UserId, a.ActivityId, a.Date, a.Slot })
+                    .ToListAsync(CancellationToken.None))
+                .Select(a => (a.UserId, new AttendanceEntry(a.ActivityId, a.Date, a.Slot)))
+                .ToHashSet();
+
+            var actor = ActorId(reportId);
+            foreach (var entry in state.SelectedEvents)
             {
-                if (existing.Contains((player.UserId, entry)))
+                int added = 0, alreadyHad = 0;
+                var issues = new List<ReportPlayerIssue>();
+                var name = activities.FirstOrDefault(a => a.Id == entry.ActivityId)?.Name ?? string.Empty;
+                try
                 {
-                    alreadyHad++;
-                    continue;
+                    foreach (var player in players)
+                    {
+                        if (existing.Contains((player.UserId, entry)))
+                        {
+                            alreadyHad++;
+                            continue;
+                        }
+
+                        var result = await attendance.SetAttendanceAsync(
+                            actor, true, player.UserId, entry.ActivityId, entry.Date, entry.Slot, true, CancellationToken.None);
+                        if (result == AttendanceChangeResult.Ok)
+                            added++;
+                        else
+                            issues.Add(new ReportPlayerIssue(player.Nick, result));
+                    }
+                }
+                catch
+                {
+                    results.Add(new ReportEventResult(entry, name, added, alreadyHad, issues));
+                    throw;
                 }
 
-                var result = await attendance.SetAttendanceAsync(
-                    actor, true, player.UserId, entry.ActivityId, entry.Date, entry.Slot, true, ct);
-                if (result == AttendanceChangeResult.Ok)
-                    added++;
-                else
-                    issues.Add(new ReportPlayerIssue(player.Nick, result));
+                results.Add(new ReportEventResult(entry, name, added, alreadyHad, issues));
+            }
+        }
+        catch
+        {
+            try
+            {
+                await TrySaveAsync(
+                    db,
+                    reportId,
+                    DiscordReportStatus.Submitting,
+                    DiscordReportStatus.Failed,
+                    Now(),
+                    Serialize(state with { Result = new ReportResult(results) }),
+                    CancellationToken.None);
+            }
+            catch
+            {
+                // Settling is best effort; the original failure is what the caller has to see.
             }
 
-            var name = activities.FirstOrDefault(a => a.Id == entry.ActivityId)?.Name ?? string.Empty;
-            results.Add(new ReportEventResult(entry, name, added, alreadyHad, issues));
+            throw;
         }
 
-        report.Status = DiscordReportStatus.Completed;
-        report.CompletedAtUtc = Now();
-        report.StateJson = Serialize(state with { Result = new ReportResult(results) });
-        await db.SaveChangesAsync(ct);
-        return await ViewOfAsync(db, report, DiscordReportOutcome.Ok, ct);
+        await TrySaveAsync(
+            db,
+            reportId,
+            DiscordReportStatus.Submitting,
+            DiscordReportStatus.Completed,
+            Now(),
+            Serialize(state with { Result = new ReportResult(results) }),
+            CancellationToken.None);
+        return await StoredViewAsync(db, reportId, DiscordReportOutcome.Ok, CancellationToken.None);
     }
 
     /// <summary>Id stored as <c>CreatedByUserId</c> of attendance written by a report.</summary>
@@ -316,14 +365,18 @@ public sealed class DiscordReportService(
             return early;
         var report = loaded!;
 
-        if (canRun(report.Status))
+        var loadedStatus = report.Status;
+        if (canRun(loadedStatus))
         {
             var activities = await db.LoadActivitiesAsync(ct);
             var work = new Work(
                 db, report, Deserialize(report.StateJson), activities, AppTime.TodayInPrague(time), await db.GetTrackingStartAsync(ct));
             await operation(work);
-            report.StateJson = Serialize(work.State);
-            await db.SaveChangesAsync(ct);
+
+            // Conditional on the status seen at load: a submit or cancel committed meanwhile wins and is shown as stored.
+            if (!await TrySaveAsync(db, reportId, loadedStatus, report.Status, report.CompletedAtUtc, Serialize(work.State), ct))
+                return await StoredViewAsync(db, reportId, null, ct);
+            return await StoredViewAsync(db, reportId, DiscordReportOutcome.Ok, ct);
         }
 
         return await ViewOfAsync(db, report, DiscordReportOutcome.Ok, ct);
@@ -347,10 +400,8 @@ public sealed class DiscordReportService(
 
         if (report.Status != DiscordReportStatus.Submitting && time.GetUtcNow().UtcDateTime > report.CreatedAtUtc + Lifetime)
         {
-            report.Status = DiscordReportStatus.Expired;
-            report.CompletedAtUtc = Now();
-            await db.SaveChangesAsync(ct);
-            return (null, await ViewOfAsync(db, report, DiscordReportOutcome.Expired, ct));
+            var expired = await TrySaveAsync(db, reportId, report.Status, DiscordReportStatus.Expired, Now(), report.StateJson, ct);
+            return (null, await StoredViewAsync(db, reportId, expired ? DiscordReportOutcome.Expired : null, ct));
         }
 
         return (report, null);
